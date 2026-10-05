@@ -31,6 +31,17 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'SUN_SESSION_SECRET_2026_SE
 // Map of active admin session tokens -> expiration timestamp (ms)
 const activeAdminSessions = new Map();
 
+// SUN Connect: Map of pending device pairing requests
+// requestId -> { code, createdAt, expiresAt, status: 'pending'|'linked', token, userKey, user }
+const activePairRequests = new Map();
+
+function cleanupPairRequests() {
+    const now = Date.now();
+    for (const [id, req] of activePairRequests.entries()) {
+        if (now > req.expiresAt) activePairRequests.delete(id);
+    }
+}
+
 function timingSafeCompare(a, b) {
     if (typeof a !== 'string' || typeof b !== 'string') return false;
     const bufA = Buffer.from(a);
@@ -1406,6 +1417,130 @@ const server = http.createServer((req, res) => {
         return res.end(JSON.stringify({ success: true }));
     }
 
+    // 3.66 SUN Connect API: Запрос кода сопряжения (вызывается клиентом Minecraft)
+    if (parsedUrl.pathname === '/api/auth/pair/request' && (req.method === 'POST' || req.method === 'GET')) {
+        cleanupPairRequests();
+        const requestId = crypto.randomBytes(16).toString('hex');
+        // Генерируем 6-значный пин-код (например, 749218)
+        const codeNum = crypto.randomInt(100000, 999999).toString();
+        const code = `${codeNum.substring(0, 3)}-${codeNum.substring(3)}`;
+        const now = Date.now();
+        const expiresAt = now + 5 * 60 * 1000; // 5 минут
+
+        activePairRequests.set(requestId, {
+            id: requestId,
+            code: code,
+            cleanCode: codeNum,
+            createdAt: now,
+            expiresAt: expiresAt,
+            status: 'pending',
+            token: null,
+            userKey: null,
+            user: null
+        });
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify({
+            success: true,
+            requestId: requestId,
+            code: code,
+            expiresInSeconds: 300
+        }));
+    }
+
+    // 3.67 SUN Connect API: Подтверждение кода сопряжения на сайте (пользователь вводит код в ЛК)
+    if (parsedUrl.pathname === '/api/auth/pair/link' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk;
+            if (body.length > 1024 * 64) req.destroy();
+        });
+        req.on('end', () => {
+            try {
+                cleanupPairRequests();
+                const data = JSON.parse(body || '{}');
+                const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
+                const inputCode = (data.code || '').trim().replace(/[^0-9]/g, '');
+
+                const auth = getUserBySessionToken(sessionToken);
+                if (!auth) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Авторизуйтесь на сайте перед привязкой игры" }));
+                }
+
+                if (!inputCode || inputCode.length !== 6) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Введите 6-значный код сопряжения из игры" }));
+                }
+
+                let foundPair = null;
+                for (const pair of activePairRequests.values()) {
+                    if (pair.cleanCode === inputCode && pair.status === 'pending') {
+                        foundPair = pair;
+                        break;
+                    }
+                }
+
+                if (!foundPair) {
+                    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Код не найден или срок его действия истек" }));
+                }
+
+                const u = auth.user;
+                const foundKey = auth.key;
+                const newClientToken = createSessionToken(foundKey, u.username);
+
+                foundPair.status = 'linked';
+                foundPair.token = newClientToken;
+                foundPair.userKey = foundKey;
+                foundPair.user = {
+                    uid: u.uid || 10,
+                    username: u.username,
+                    coins: u.coins || 0,
+                    cosmetics: u.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
+                };
+
+                console.log(`[SUN-CONNECT] Игрок ${u.username} успешно связал клиент через код ${foundPair.code}!`);
+
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({
+                    success: true,
+                    message: "Клиент игры успешно привязан к вашему аккаунту SUN!",
+                    username: u.username
+                }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ error: e.message || "Ошибка привязки" }));
+            }
+        });
+        return;
+    }
+
+    // 3.68 SUN Connect API: Опрос статуса клиентом игры (poll раз в 2 сек)
+    if (parsedUrl.pathname === '/api/auth/pair/poll' && (req.method === 'GET' || req.method === 'POST')) {
+        cleanupPairRequests();
+        const requestId = (parsedUrl.query.id || parsedUrl.query.requestId || '').trim();
+        if (!requestId || !activePairRequests.has(requestId)) {
+            res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+            return res.end(JSON.stringify({ error: "Сессия сопряжения не найдена или истекла" }));
+        }
+
+        const pair = activePairRequests.get(requestId);
+        if (pair.status === 'linked') {
+            const resultData = {
+                linked: true,
+                token: pair.token,
+                user: pair.user
+            };
+            activePairRequests.delete(requestId);
+            res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+            return res.end(JSON.stringify(resultData));
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify({ linked: false, status: 'pending' }));
+    }
+
     // 3.7 API САЙТА: Сброс привязки HWID пользователем (с кулдауном 3 дня и защитой авторизацией)
     if (parsedUrl.pathname === '/api/reset-hwid' && req.method === 'POST') {
         let body = '';
@@ -1745,21 +1880,26 @@ const server = http.createServer((req, res) => {
         }));
     }
 
-    // 4. API КЛИЕНТА: Проверка подписки и валидация HWID (Майнкрафт)
+    // 4. API КЛИЕНТА: Проверка подписки и валидация токена/ключа/HWID (Майнкрафт)
     if (parsedUrl.pathname === '/api/check') {
         const hwid = parsedUrl.query.hwid;
         const key = parsedUrl.query.key;
-
-        if (!hwid && !key) {
-            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-            return res.end(JSON.stringify({ valid: false, message: "HWID или Ключ не передан" }));
-        }
+        const token = parsedUrl.query.token;
 
         let user = null;
         let userKey = null;
 
-        // Поиск по ключу (приоритетно)
-        if (key) {
+        // Поиск по токену сессии SUN Connect (приоритетно)
+        if (token) {
+            const auth = getUserBySessionToken(token);
+            if (auth) {
+                user = auth.user;
+                userKey = auth.key;
+            }
+        }
+
+        // Поиск по ключу (если передан)
+        if (!user && key) {
             userKey = Object.keys(database).find(k => 
                 k.toUpperCase() === key.toUpperCase() || 
                 (database[k].key && database[k].key.toUpperCase() === key.toUpperCase())

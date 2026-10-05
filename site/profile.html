@@ -110,15 +110,15 @@
             </div>
           </div>
 
-          <!-- 2. Ключ активации -->
+          <!-- 2. Токен / Ключ -->
           <div class="kimiko-stat-item">
             <div class="kimiko-stat-label">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31.83 2.42 2 2.83V21c0 .55.45 1 1 1s1-.45 1-1v-1.17c1.17-.41 2-1.52 2-2.83 0-1.66-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm14-11.83V4c0-.55-.45-1-1-1h-2.17c-.41-1.17-1.52-2-2.83-2-1.66 0-3 1.34-3 3 0 1.31.83 2.42 2 2.83V9H10c-.55 0-1 .45-1 1s.45 1 1 1h4v2h-2c-.55 0-1 .45-1 1s.45 1 1 1h2v1.17c-.41 1.17-1.52 2-2.83 2-1.66 0-3 1.34-3 3 0 1.31.83 2.42 2 2.83V24c0 .55.45 1 1 1s1-.45 1-1v-1.17c1.17-.41 2-1.52 2-2.83 0-1.31-.83-2.42-2-2.83V16h3c.55 0 1-.45 1-1v-4h2c1.66 0 3-1.34 3-3 0-1.31-.83-2.42-2-2.83z"/></svg>
-              <span>Ключ активации</span>
+              <span>SUN ID</span>
             </div>
             <div class="kimiko-stat-val">
               <span id="k-key" class="kimiko-mono">SUN-XXXX-XXXX</span>
-              <button type="button" class="kimiko-mini-copy" id="btn-copy-key" title="Скопировать ключ активации">Копировать</button>
+              <button type="button" class="kimiko-mini-copy" id="btn-copy-key" title="Скопировать идентификатор">Копировать</button>
             </div>
           </div>
 
@@ -131,15 +131,15 @@
             <div class="kimiko-stat-val" id="k-login">Steve</div>
           </div>
 
-          <!-- 4. HWID -->
+          <!-- 4. Статус игры -->
           <div class="kimiko-stat-item">
             <div class="kimiko-stat-label">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M4 6h16v12H4z"/></svg>
-              <span>HWID</span>
+              <span>Клиент игры</span>
             </div>
             <div class="kimiko-stat-val" id="k-hwid-display">
               <span class="kimiko-dot" id="k-hwid-dot"></span>
-              <span id="k-hwid-text">Не привязан</span>
+              <span id="k-hwid-text">Синхронизирован</span>
             </div>
           </div>
 
@@ -153,30 +153,38 @@
           </div>
         </div>
 
-        <!-- Правая колонка: Блок «Активировать ключ» на освободившемся месте -->
+        <!-- Правая колонка: Блок «Привязать клиент» (SUN Connect) и Промокоды -->
         <div class="kimiko-activate-card">
           <div class="kimiko-activate-header">
             <div class="kimiko-activate-badge">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14zm-4.2-5.78v1.75l3.2-2.97-3.2-2.97v1.75c-3.15 0-4.8 1.63-4.8 4.72.93-1.3 2.1-2.28 4.8-2.28z"/></svg>
             </div>
             <div>
-              <h3 class="kimiko-block-title">Активировать ключ</h3>
-              <p class="kimiko-block-sub">Подписка, роли или сброс HWID</p>
+              <h3 class="kimiko-block-title">Подключить игру (SUN Connect)</h3>
+              <p class="kimiko-block-sub">Введите 6-значный код из экрана игры</p>
             </div>
           </div>
-          <form id="f-activate-key" class="kimiko-activate-form">
-            <input type="text" id="act-key" placeholder="SUN_xxxxxxxx" required autocomplete="off">
-            <button type="submit" class="kimiko-btn-primary">Применить</button>
+          <form id="f-pair-client" class="kimiko-activate-form" style="margin-bottom: 0.8rem;">
+            <input type="text" id="pair-code" placeholder="000-000" maxlength="7" required autocomplete="off" style="letter-spacing: 2px; font-weight: 700; text-align: center;">
+            <button type="submit" class="kimiko-btn-primary">Привязать</button>
           </form>
+
+          <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.75rem;">
+            <div style="font-size: 0.76rem; color: #8b93a7; margin-bottom: 0.4rem;">Активация промокода или Sparks:</div>
+            <form id="f-activate-key" class="kimiko-activate-form">
+              <input type="text" id="act-key" placeholder="SUN_xxxxxxxx" autocomplete="off" style="font-size: 0.8rem; padding: 0.5rem 0.8rem;">
+              <button type="submit" class="kimiko-btn-primary" style="padding: 0.5rem 0.9rem; font-size: 0.8rem;">Применить</button>
+            </form>
+          </div>
         </div>
       </div>
 
-      <!-- Под ними: Кнопка скачать сам мод и краткая инструкция с ключом -->
+      <!-- Под ними: Кнопка скачать сам мод и понятная инструкция -->
       <div class="kimiko-client-download-box">
         <div class="kimiko-download-bar">
           <div class="kimiko-dl-info">
-            <div class="kimiko-dl-name">SUN Visuals (Beta) — Клиент 1.21.4 Fabric</div>
-            <div class="kimiko-dl-hint">Официальная сборка без сторонних модов • Встроенный ClickGUI и оптимизация</div>
+            <div class="kimiko-dl-name">SUN Visuals (Бесплатно) — Клиент 1.21.4 Fabric</div>
+            <div class="kimiko-dl-hint">Клиент полностью бесплатный • Доступен сразу после скачивания</div>
           </div>
           <a class="kimiko-dl-btn" id="btn-download-client" href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
@@ -188,22 +196,22 @@
           <div class="kimiko-guide-step">
             <span class="kimiko-guide-num">1</span>
             <div class="kimiko-guide-body">
-              <strong>Скопируйте ключ активации</strong>
-              <p>Нажмите «Копировать» у поля «Ключ активации» выше в вашем профиле.</p>
+              <strong>Скачайте и запустите мод</strong>
+              <p>Поместите скачанный <code>.jar</code> в папку <code>.minecraft/mods/</code> на Fabric 1.21.4. Все 65 модулей работают сразу!</p>
             </div>
           </div>
           <div class="kimiko-guide-step">
             <span class="kimiko-guide-num">2</span>
             <div class="kimiko-guide-body">
-              <strong>Поместите файл в папку mods</strong>
-              <p>Нажмите «Скачать мод» и переместите <code>.jar</code> в <code>.minecraft/mods/</code> (на чистый Fabric 1.21.4).</p>
+              <strong>Откройте меню в игре</strong>
+              <p>В игре нажмите <kbd class="kbd-inline">Правый Shift</kbd>. В левом нижнем углу или настройках нажмите «Войти в SUN ID».</p>
             </div>
           </div>
           <div class="kimiko-guide-step">
             <span class="kimiko-guide-num">3</span>
             <div class="kimiko-guide-body">
-              <strong>Активируйте в игре</strong>
-              <p>При первом запуске Minecraft вставьте ключ. Он привяжется к вашему ПК. Меню в игре — <kbd class="kbd-inline">Правый Shift</kbd>.</p>
+              <strong>Введите 6-значный код</strong>
+              <p>Введите код сопряжения в поле выше. Баланс Sparks и вся косметика мгновенно появятся в игре без ключей и HWID!</p>
             </div>
           </div>
         </div>
@@ -624,7 +632,41 @@ function initCardTilt() {
 }
 initCardTilt();
 
-// Активация ключа
+// Привязка клиента через SUN Connect (код из игры)
+const fPairClient = $('#f-pair-client');
+const pairCodeInput = $('#pair-code');
+if (pairCodeInput) {
+  pairCodeInput.oninput = () => {
+    let raw = pairCodeInput.value.replace(/[^0-9]/g, '');
+    if (raw.length > 3) {
+      pairCodeInput.value = raw.substring(0, 3) + '-' + raw.substring(3, 6);
+    } else {
+      pairCodeInput.value = raw;
+    }
+  };
+}
+
+if (fPairClient) {
+  fPairClient.onsubmit = async (e) => {
+    e.preventDefault();
+    const code = pairCodeInput ? pairCodeInput.value.trim() : '';
+    if (!code) return;
+    try {
+      const res = await api('auth/pair/link', {
+        sessionToken: currentUser?.sessionToken || getStoredToken(),
+        code: code
+      });
+      toast(res.message || 'Игра успешно привязана к аккаунту SUN!');
+      if ($('#k-hwid-text')) $('#k-hwid-text').textContent = 'В сети (Синхронизирован)';
+      if ($('#k-hwid-dot')) $('#k-hwid-dot').className = 'kimiko-dot active';
+      if (pairCodeInput) pairCodeInput.value = '';
+    } catch (err) {
+      toast(err.message || 'Ошибка сопряжения игры');
+    }
+  };
+}
+
+// Активация промокода / ключа
 const fActKey = $('#f-activate-key');
 if (fActKey) {
   fActKey.onsubmit = async (e) => {

@@ -128,8 +128,8 @@
 
   <section id="install" class="reveal stagger">
     <div class="section-head">
-      <h2>Установка</h2>
-      <p class="section-sub">Простая интеграция за 3 шага — без сторонних библиотек и сложных настроек</p>
+      <h2>Установка и запуск</h2>
+      <p class="section-sub">Клиент полностью бесплатен — играйте сразу без ключей активации и ограничений</p>
     </div>
 
     <!-- Ряд 1: Блочный режим — 3 ключевых шага -->
@@ -146,38 +146,34 @@
         <div class="step-head">
           <span class="step-badge">Шаг 02</span>
           <h3>Папка mods</h3>
-          <p>Поместите скачанный <code>sun-client-1.21.4.jar</code> в папку <code>mods</code> вашего Minecraft. Файл должен оставаться единым jar-файлом.</p>
+          <p>Поместите скачанный <code>sun-client-1.21.4.jar</code> в папку <code>mods</code> вашего Minecraft. Никаких дополнительных модов не требуется.</p>
         </div>
       </div>
 
       <div class="card install-step-card st">
         <div class="step-head">
           <span class="step-badge">Шаг 03</span>
-          <h3>Запуск клиента</h3>
-          <p>Нажмите «Играть». Меню клиента и модули открываются в игре по нажатию клавиши <kbd class="kbd-inline">Правый Shift</kbd>.</p>
+          <h3>Играйте свободно</h3>
+          <p>Нажмите «Играть». Меню клиента открывается по нажатию <kbd class="kbd-inline">Правый Shift</kbd>. Все 65 визуальных и оптимизационных модулей работают сразу!</p>
         </div>
       </div>
     </div>
 
-    <!-- Ряд 2: 2 блока под шагами (Лаунчеры + Предупреждение по поводу модов) -->
+    <!-- Ряд 2: SUN Connect сопряжение + Предупреждение по поводу модов -->
     <div class="install-sub-grid">
-      <!-- Блок 1: Как выбрать Fabric в лаунчере -->
+      <!-- Блок 1: SUN Connect (Связка с аккаунтом) -->
       <div class="card launcher-guide-card st">
         <div class="launcher-header">
-          <h3 class="more-title">Как выбрать Fabric в лаунчере</h3>
-          <p class="muted">Выберите лаунчер для пошаговой подсказки</p>
+          <div class="banner-badge-wrap" style="margin-bottom: 0.4rem;">
+            <span class="banner-tag" style="background: rgba(255,255,255,0.08); padding: 0.18rem 0.65rem; border-radius: 999px; border: 1px solid var(--line);">SUN CONNECT</span>
+          </div>
+          <h3 class="more-title">Связка профиля и баланса Sparks</h3>
+          <p class="muted">Хотите видеть баланс Sparks, кастомную косметику и аватарку в игре?</p>
         </div>
-        <div class="launcher-pills">
-          <button type="button" class="launcher-pill on" data-launcher-tab="tl">TLauncher</button>
-          <button type="button" class="launcher-pill" data-launcher-tab="legacy">Legacy</button>
-          <button type="button" class="launcher-pill" data-launcher-tab="prism">Prism / Modrinth</button>
-          <button type="button" class="launcher-pill" data-launcher-tab="official">Официальный</button>
-        </div>
-        <div class="launcher-infos">
-          <div class="launcher-info on" data-launcher="tl"><p>В списке версий найдите <strong>Fabric 1.21.4</strong> (именно чистый Fabric, <u>не</u> версию со сторонними модами). Лаунчер загрузит всё самостоятельно.</p></div>
-          <div class="launcher-info" data-launcher="legacy"><p>Выберите тип <strong>Fabric</strong> и версию <strong>1.21.4</strong>. Убедитесь, что сторонние моды не отмечены галочками.</p></div>
-          <div class="launcher-info" data-launcher="prism"><p>Нажмите «Добавить инстанс» &rarr; версия <strong>1.21.4</strong> &rarr; «Установить Fabric» &rarr; нажмите «ОК».</p></div>
-          <div class="launcher-info" data-launcher="official"><p>Скачайте официальный Fabric Installer с <code>fabricmc.net</code>, выберите версию <strong>1.21.4</strong> и нажмите кнопку «Install».</p></div>
+        <div style="font-size: 0.86rem; color: var(--tx2); line-height: 1.55; display: flex; flex-direction: column; gap: 0.5rem; margin-top: auto;">
+          <div>1. В игре откройте меню (<kbd class="kbd-inline">Правый Shift</kbd>) &rarr; Настройки GUI &rarr; <strong>«Аккаунт SUN»</strong>.</div>
+          <div>2. Нажмите <strong>«Привязать игру»</strong> и получите 6-значный пин-код.</div>
+          <div>3. Введите код в Личном Кабинете на сайте. Профиль моментально синхронизируется без привязки HWID!</div>
         </div>
       </div>
 
@@ -205,16 +201,16 @@
     </div>
     <div class="faq-grid">
       <div class="card faq-item st">
+        <h4>Нужен ли ключ активации?</h4>
+        <p>Нет! Клиент полностью бесплатен. Запускайте игру сразу без ключей, регистрации и привязок оборудования (HWID).</p>
+      </div>
+      <div class="card faq-item st">
+        <h4>Зачем нужен SUN ID на сайте?</h4>
+        <p>Регистрация нужна только для сохранения Sparks, косметики и профиля. Вы можете привязать игру в 1 клик через SUN Connect.</p>
+      </div>
+      <div class="card faq-item st">
         <h4>Игра вылетает при запуске?</h4>
         <p>В папке <code>mods</code> остались Fabric API, Sodium или другие моды. Очистите папку перед запуском SUN Client.</p>
-      </div>
-      <div class="card faq-item st">
-        <h4>Не открывается меню?</h4>
-        <p>Нажимайте именно <strong>Правый Shift</strong> — горячая клавиша по умолчанию для открытия ClickGUI в игре.</p>
-      </div>
-      <div class="card faq-item st">
-        <h4>Нужно ли ставить Java?</h4>
-        <p>Нет. Все современные лаунчеры скачивают и настраивают изолированную среду Java 21 автоматически.</p>
       </div>
     </div>
   </section>

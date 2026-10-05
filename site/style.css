@@ -370,90 +370,130 @@ input:focus-visible{outline:0}
 }
 
 
-/* ===== Kimiko-Style Personal Dashboard ===== */
-.kimiko-body{background:#0e1017;color:#e5e7eb;min-height:100vh;display:flex;flex-direction:column}
-.kimiko-topbar{padding:1.5rem 2rem 0.5rem;max-width:1200px;margin:0 auto;width:100%}
-.kimiko-back-btn{display:inline-flex;align-items:center;gap:8px;color:#71717a;text-decoration:none;font-size:0.85rem;font-weight:500;transition:color 0.2s}
-.kimiko-back-btn:hover{color:#fff}
+/* ===== SUN Visuals — Bento Command Center (Уникальный Личный Кабинет) ===== */
+.sun-dash-body{background:#090b11;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,system-ui,-apple-system,sans-serif}
+.sun-dash-topbar{position:sticky;top:0;z-index:100;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(9,11,17,0.85);border-bottom:1px solid rgba(255,255,255,0.07);padding:0.75rem 1.5rem}
+.sun-dash-topbar-inner{max-width:1240px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1.5rem}
 
-.kimiko-layout{display:flex;max-width:1200px;margin:1.5rem auto 3rem;width:calc(100% - 4rem);gap:3rem;align-items:flex-start}
-.kimiko-sidebar{width:220px;flex:none;display:flex;flex-direction:column;gap:1.75rem}
-.kimiko-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem;color:#fff;padding-left:0.5rem}
-.kimiko-nav{display:flex;flex-direction:column;gap:3px}
-.kimiko-nav-item{display:flex;align-items:center;gap:12px;padding:0.65rem 0.9rem;border-radius:8px;font-size:0.88rem;font-weight:500;color:#71717a;background:transparent;border:0;cursor:pointer;transition:all 0.2s;text-align:left;width:100%;border-left:3px solid transparent}
-.kimiko-nav-item:hover{color:#d1d5db;background:rgba(255,255,255,0.03)}
-.kimiko-nav-item.active{color:#fff;background:rgba(139,92,246,0.08);border-left-color:#8b5cf6;font-weight:600}
-.kimiko-logout{margin-top:0.75rem}
-.kimiko-logout:hover{color:#ef4444;background:rgba(239,68,68,0.06);border-left-color:#ef4444}
+.sun-dash-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff;font-weight:800;font-size:1.05rem;letter-spacing:-0.01em}
+.sun-dash-version{font-size:0.7rem;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.28);padding:2px 7px;border-radius:999px}
 
-.kimiko-content{flex:1;min-width:0}
-.kimiko-tab-pane{display:none}
-.kimiko-tab-pane.active{display:block}
-.kimiko-pane-head{margin-bottom:1.5rem}
-.kimiko-page-title{font-size:1.9rem;font-weight:800;letter-spacing:-0.02em;color:#fff;margin:0 0 0.25rem;text-align:left;background:none;-webkit-text-fill-color:initial}
-.kimiko-page-sub{color:#71717a;font-size:0.88rem;margin:0}
+.sun-dash-nav{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.04);padding:3px;border-radius:10px;border:1px solid rgba(255,255,255,0.06)}
+.sun-dash-pill{background:transparent;border:0;color:#94a3b8;font-size:0.83rem;font-weight:600;padding:0.45rem 0.95rem;border-radius:7px;cursor:pointer;transition:all 0.2s}
+.sun-dash-pill:hover{color:#fff;background:rgba(255,255,255,0.04)}
+.sun-dash-pill.active{color:#f59e0b;background:rgba(245,158,11,0.12);box-shadow:0 0 12px rgba(245,158,11,0.15)}
 
-/* User Profile Banner */
-.kimiko-user-banner{position:relative;border-radius:14px;overflow:hidden;background:#151822;border:1px solid rgba(255,255,255,0.07);margin-bottom:2rem}
-.kimiko-banner-cover{height:110px;background:linear-gradient(180deg,rgba(14,16,23,0.3),rgba(14,16,23,0.95)),url(assets/bg.webp) center 30%/cover}
-.kimiko-banner-profile{display:flex;align-items:center;gap:18px;padding:0 1.5rem 1.25rem;margin-top:-32px;position:relative;z-index:2}
-.kimiko-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#f97316,#e11d48);border:3px solid #151822;color:#fff;display:grid;place-items:center;font-size:1.6rem;font-weight:800;flex:none;box-shadow:0 4px 15px rgba(0,0,0,0.4)}
-.kimiko-banner-meta{display:flex;flex-direction:column;gap:2px;padding-top:20px}
-.kimiko-banner-name{font-size:1.25rem;font-weight:700;color:#fff}
-.kimiko-banner-email{font-size:0.82rem;color:#71717a}
+.sun-dash-actions{display:flex;align-items:center;gap:12px}
+.sun-sparks-pill{display:flex;align-items:center;gap:7px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.22);padding:0.35rem 0.75rem;border-radius:999px;font-size:0.82rem;font-weight:700;color:#fbbf24}
+.sun-user-pill{display:flex;align-items:center;gap:8px;font-size:0.85rem;font-weight:600;color:#f1f5f9;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:0.35rem 0.75rem;border-radius:999px}
+.sun-user-avatar-mini{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:grid;place-items:center;font-size:0.75rem;font-weight:800;color:#fff}
+.sun-action-link{color:#94a3b8;text-decoration:none;font-size:0.82rem;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:color 0.2s}
+.sun-action-link:hover{color:#fff}
+.sun-btn-logout-icon{background:transparent;border:0;color:#ef4444;cursor:pointer;padding:6px;border-radius:6px;display:grid;place-items:center;transition:background 0.2s}
+.sun-btn-logout-icon:hover{background:rgba(239,68,68,0.1)}
 
-/* Stats Table matching screenshot */
-.kimiko-stats-table{display:flex;flex-direction:column;border-top:1px solid rgba(255,255,255,0.07);margin-bottom:2.5rem}
-.kimiko-stat-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid rgba(255,255,255,0.07)}
-.kimiko-stat-item{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1.25rem;gap:1rem}
-.kimiko-stat-label{display:flex;align-items:center;gap:10px;font-size:0.85rem;color:#71717a;font-weight:500}
-.kimiko-stat-val{font-size:0.88rem;font-weight:600;color:#e5e7eb;display:flex;align-items:center;gap:8px;text-align:right}
-.kimiko-mono{font-family:ui-monospace,Consolas,monospace;letter-spacing:0.04em}
-.kimiko-mini-copy{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#9ca3af;font-size:0.72rem;padding:2px 7px;border-radius:4px;cursor:pointer;transition:all 0.2s}
-.kimiko-mini-copy:hover{color:#fff;background:rgba(255,255,255,0.14)}
-.kimiko-highlight{color:#a78bfa;font-weight:600}
-.kimiko-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#6b7280}
-.kimiko-dot.active{background:#10b981;box-shadow:0 0 8px rgba(16,185,129,0.6)}
-.kimiko-dot.warning{background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,0.6)}
+/* Bento Container */
+.sun-dash-main{max-width:1240px;margin:1.8rem auto 3rem;padding:0 1.5rem;width:100%}
+.sun-bento-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1.25rem}
 
-/* Dashboard Block Sections */
-.kimiko-section-block{margin-bottom:2.2rem;border-top:1px solid rgba(255,255,255,0.07);padding-top:1.5rem}
-.kimiko-block-title{font-size:1rem;font-weight:600;color:#fff;margin:0 0 0.25rem}
-.kimiko-block-sub{font-size:0.82rem;color:#71717a;margin:0 0 1rem}
+.col-12{grid-column:span 12}
+.col-8{grid-column:span 8}
+.col-7{grid-column:span 7}
+.col-6{grid-column:span 6}
+.col-5{grid-column:span 5}
+.col-4{grid-column:span 4}
 
-.kimiko-password-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:center}
-.kimiko-key-grid{display:grid;grid-template-columns:1fr auto;gap:10px;max-width:480px;align-items:center}
-.kimiko-password-grid input, .kimiko-key-grid input{background:#151822;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.65rem 0.9rem;color:#fff;font-size:0.85rem;outline:none;transition:border-color 0.2s}
-.kimiko-password-grid input:focus, .kimiko-key-grid input:focus{border-color:#8b5cf6}
+.sun-card{background:rgba(16,21,31,0.65);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:1.4rem;position:relative;overflow:hidden;transition:border-color 0.2s,box-shadow 0.2s}
+.sun-card:hover{border-color:rgba(245,158,11,0.2);box-shadow:0 8px 30px rgba(0,0,0,0.3)}
 
-.kimiko-btn-primary{background:#2b273d;border:1px solid #4338ca;color:#e0e7ff;font-weight:600;font-size:0.85rem;padding:0.65rem 1.3rem;border-radius:8px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
-.kimiko-btn-primary:hover{background:#3730a3;color:#fff}
-.kimiko-btn-secondary{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#d1d5db;font-weight:600;font-size:0.85rem;padding:0.65rem 1.3rem;border-radius:8px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
-.kimiko-btn-secondary:hover{background:rgba(255,255,255,0.1);color:#fff}
+.sun-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem}
+.sun-card-title-group{display:flex;align-items:center;gap:10px}
+.sun-card-icon{width:32px;height:32px;border-radius:8px;background:rgba(245,158,11,0.1);color:#f59e0b;display:grid;place-items:center;flex:none}
+.sun-card-title{font-size:1rem;font-weight:700;color:#fff;margin:0}
+.sun-card-sub{font-size:0.78rem;color:#71717a;margin:2px 0 0}
 
-/* Other Panes */
-.kimiko-sub-card, .kimiko-sparks-card{background:#151822;border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:1.75rem}
-.kimiko-sub-badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:0.75rem;font-weight:700;background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);margin-bottom:0.75rem}
-.kimiko-sub-plan{font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.4rem}
-.kimiko-sub-exp{font-size:0.9rem;color:#9ca3af;margin-bottom:0.75rem}
-.kimiko-sub-desc{font-size:0.85rem;color:#71717a;line-height:1.55}
+/* Passport Card */
+.sun-passport-profile{display:flex;align-items:center;gap:14px;margin-bottom:1.2rem}
+.sun-passport-avatar{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff;display:grid;place-items:center;font-size:1.5rem;font-weight:800;flex:none;box-shadow:0 4px 16px rgba(245,158,11,0.25)}
+.sun-passport-name{font-size:1.15rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
+.sun-passport-role{font-size:0.68rem;font-weight:700;color:#fbbf24;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.3);padding:2px 7px;border-radius:999px;letter-spacing:0.04em}
+.sun-passport-email{font-size:0.8rem;color:#71717a}
 
-.kimiko-sparks-top{display:flex;align-items:center;gap:16px;margin-bottom:1rem}
-.kimiko-sparks-amount{font-size:2rem;font-weight:800;color:#ffc107}
-.kimiko-sparks-sub{font-size:0.82rem;color:#71717a}
-.kimiko-sparks-text{font-size:0.85rem;color:#9ca3af;line-height:1.55}
+.sun-key-box{background:#0a0d14;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:0.75rem 0.9rem;margin-bottom:1rem}
+.sun-key-label{font-size:0.68rem;font-weight:700;letter-spacing:0.06em;color:#94a3b8;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.sun-key-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sun-key-value{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.88rem;font-weight:600;color:#f59e0b;letter-spacing:0.05em}
+.sun-btn-copy{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#e2e8f0;font-size:0.72rem;font-weight:600;padding:4px 9px;border-radius:6px;cursor:pointer;transition:all 0.2s}
+.sun-btn-copy:hover{background:rgba(245,158,11,0.15);color:#f59e0b;border-color:rgba(245,158,11,0.3)}
 
-.kimiko-cosmetics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.kimiko-cosmetic-card{background:#151822;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:1.25rem}
-.kimiko-cosm-tag{font-size:0.7rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.12);padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:0.5rem}
-.kimiko-cosmetic-card h3{font-size:1rem;color:#fff;margin-bottom:0.3rem}
-.kimiko-cosmetic-card p{font-size:0.8rem;color:#71717a;line-height:1.4}
+.sun-passport-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid rgba(255,255,255,0.06);padding-top:0.85rem}
+.sun-meta-item{display:flex;flex-direction:column;gap:2px}
+.sun-meta-label{font-size:0.72rem;color:#71717a}
+.sun-meta-val{font-size:0.82rem;font-weight:600;color:#cbd5e1}
 
-@media(max-width:960px){
-  .kimiko-layout{flex-direction:column;gap:2rem;width:calc(100% - 2rem)}
-  .kimiko-sidebar{width:100%}
-  .kimiko-nav{flex-direction:row;flex-wrap:wrap}
-  .kimiko-stat-row{grid-template-columns:1fr}
-  .kimiko-password-grid{grid-template-columns:1fr}
-  .kimiko-cosmetics-grid{grid-template-columns:1fr}
+/* License & HWID Card */
+.sun-status-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:0.74rem;font-weight:700}
+.sun-status-badge.active{background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3)}
+.sun-status-badge.inactive{background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3)}
+.sun-badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.sun-hwid-module{background:#0a0d14;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:0.9rem;margin:1rem 0}
+.sun-hwid-status-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sun-hwid-tag{font-size:0.82rem;font-weight:600;color:#f1f5f9;display:flex;align-items:center;gap:7px}
+.sun-hwid-indicator{width:7px;height:7px;border-radius:50%;background:#64748b}
+.sun-hwid-indicator.locked{background:#10b981;box-shadow:0 0 8px rgba(16,185,129,0.6)}
+.sun-hwid-indicator.unlocked{background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,0.6)}
+.sun-hwid-note{font-size:0.75rem;color:#71717a;line-height:1.45}
+
+/* Sparks Vault Card */
+.sun-sparks-hero{display:flex;align-items:center;gap:16px;margin:0.8rem 0 1rem}
+.sun-sparks-emblem{width:56px;height:56px;flex:none;filter:drop-shadow(0 0 12px rgba(245,158,11,0.35))}
+.sun-sparks-counter{font-size:2rem;font-weight:800;letter-spacing:-0.02em;color:#fbbf24}
+.sun-sparks-label{font-size:0.78rem;color:#71717a}
+.sun-sparks-desc{font-size:0.8rem;color:#94a3b8;line-height:1.5;margin-bottom:1rem}
+
+/* Download Hero Card */
+.sun-download-hero{display:flex;align-items:center;justify-content:space-between;gap:2rem;margin-bottom:1.5rem}
+.sun-dl-meta-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0.5rem 0 1rem}
+.sun-meta-pill{font-size:0.72rem;font-weight:600;color:#94a3b8;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);padding:2px 8px;border-radius:6px}
+.sun-btn-download-hero{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;font-weight:700;font-size:0.92rem;padding:0.75rem 1.6rem;border-radius:10px;text-decoration:none;box-shadow:0 4px 18px rgba(245,158,11,0.3);transition:all 0.2s}
+.sun-btn-download-hero:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(245,158,11,0.45);color:#000}
+
+.sun-steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;border-top:1px solid rgba(255,255,255,0.06);padding-top:1.1rem}
+.sun-step-box{background:#0a0d14;border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:0.8rem}
+.sun-step-num{font-size:0.68rem;font-weight:800;color:#f59e0b;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px}
+.sun-step-txt{font-size:0.78rem;color:#cbd5e1;line-height:1.4}
+
+/* Forms & Inputs */
+.sun-form-col{display:flex;flex-direction:column;gap:10px}
+.sun-input{background:#0a0d14;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.68rem 0.9rem;color:#fff;font-size:0.85rem;outline:none;transition:border-color 0.2s;width:100%}
+.sun-input:focus{border-color:#f59e0b}
+.sun-input-group{display:flex;gap:8px}
+
+.sun-btn-submit{background:#1e293b;border:1px solid rgba(255,255,255,0.12);color:#fff;font-weight:600;font-size:0.85rem;padding:0.68rem 1.25rem;border-radius:8px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.sun-btn-submit:hover{background:#f59e0b;color:#000;border-color:#f59e0b}
+.sun-btn-action{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-weight:600;font-size:0.82rem;padding:0.55rem 1rem;border-radius:8px;cursor:pointer;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.sun-btn-action:hover{background:rgba(255,255,255,0.1);color:#fff}
+
+/* Cosmetics Showcase */
+.sun-cosmetics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sun-cosm-item{background:#0a0d14;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.9rem}
+.sun-cosm-badge{font-size:0.65rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.12);padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:6px}
+.sun-cosm-title{font-size:0.88rem;font-weight:700;color:#fff;margin:0 0 3px}
+.sun-cosm-sub{font-size:0.75rem;color:#71717a;line-height:1.35;margin:0}
+
+/* Filter Sections */
+.sun-tab-view{display:contents}
+.sun-tab-view.hidden{display:none}
+
+@media(max-width:1024px){
+  .col-8, .col-7, .col-6, .col-5, .col-4{grid-column:span 6}
+  .sun-download-hero{flex-direction:column;align-items:flex-start}
+}
+@media(max-width:768px){
+  .col-8, .col-7, .col-6, .col-5, .col-4{grid-column:span 12}
+  .sun-dash-topbar-inner{flex-direction:column;align-items:stretch;gap:0.8rem}
+  .sun-dash-nav{overflow-x:auto}
+  .sun-steps-grid{grid-template-columns:1fr}
+  .sun-cosmetics-row{grid-template-columns:1fr}
 }

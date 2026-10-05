@@ -4,334 +4,312 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Личный кабинет — SUN Visuals</title>
-<meta name="description" content="Личный кабинет SUN Visuals: данные аккаунта, подписка, привязка HWID и баланс Sparks.">
+<meta name="description" content="Личный кабинет SUN Visuals: данные аккаунта, статус лицензии, привязка HWID, баланс Sparks и загрузка клиента.">
 <link rel="icon" type="image/svg+xml" href="assets/logo.svg?v=white2">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 <script>document.documentElement.classList.add('js')</script>
 </head>
-<body class="kimiko-body">
+<body class="sun-dash-body">
 <div class="bg"></div>
 
-<!-- Верхняя строка: Вернуться на главную -->
-<header class="kimiko-topbar">
-  <a href="/" class="kimiko-back-btn">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-    <span>Вернуться на главную</span>
-  </a>
+<!-- Верхняя командная панель (Command Header) -->
+<header class="sun-dash-topbar">
+  <div class="sun-dash-topbar-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="/" class="sun-dash-brand">
+        <img src="assets/logo.svg" alt="" width="26" height="26">
+        <span>SUN VISUALS</span>
+      </a>
+      <span class="sun-dash-version">1.21.4 Fabric</span>
+    </div>
+
+    <!-- Сегментированная навигация по разделам -->
+    <nav class="sun-dash-nav" role="tablist">
+      <button type="button" class="sun-dash-pill active" data-dash-tab="all">Все разделы</button>
+      <button type="button" class="sun-dash-pill" data-dash-tab="overview">Обзор</button>
+      <button type="button" class="sun-dash-pill" data-dash-tab="security">Безопасность</button>
+      <button type="button" class="sun-dash-pill" data-dash-tab="cosmetics">Косметика</button>
+      <button type="button" class="sun-dash-pill" data-dash-tab="download">Загрузка</button>
+    </nav>
+
+    <!-- Правый блок: Баланс Sparks, Пользователь и Выход -->
+    <div class="sun-dash-actions">
+      <div class="sun-sparks-pill" title="Наградные Sparks">
+        <img src="assets/sparks.svg" alt="" width="16" height="16" class="sparks-mark" style="filter:none;">
+        <span id="top-sparks-val">0</span> Sparks
+      </div>
+
+      <div class="sun-user-pill">
+        <div class="sun-user-avatar-mini" id="top-user-avatar">U</div>
+        <span id="top-user-name">Steve</span>
+      </div>
+
+      <a href="/" class="sun-action-link" title="Вернуться на сайт">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>На сайт</span>
+      </a>
+
+      <button type="button" class="sun-btn-logout-icon" id="btn-sun-logout" title="Выйти из аккаунта">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      </button>
+    </div>
+  </div>
 </header>
 
-<div class="kimiko-layout">
-  <!-- Левая колонка: Меню навигации -->
-  <aside class="kimiko-sidebar">
-    <div class="kimiko-brand">
-      <img src="assets/logo.svg" alt="" width="26" height="26">
-      <span>SUN Visuals</span>
-    </div>
+<!-- Основная рабочая область Bento Grid -->
+<main class="sun-dash-main">
+  <div class="sun-bento-grid">
 
-    <nav class="kimiko-nav" role="tablist">
-      <button type="button" class="kimiko-nav-item active" data-tab="account">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 1.79 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        <span>Аккаунт</span>
-      </button>
-
-      <button type="button" class="kimiko-nav-item" data-tab="subscription">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
-        <span>Подписка</span>
-      </button>
-
-      <button type="button" class="kimiko-nav-item" data-tab="cosmetics">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <span>Косметика</span>
-      </button>
-
-      <button type="button" class="kimiko-nav-item" data-tab="sparks">
-        <img src="assets/sparks.svg" alt="" width="18" height="18" class="sparks-mark" style="filter:none;">
-        <span>Баланс Sparks</span>
-      </button>
-
-      <button type="button" class="kimiko-nav-item" data-tab="download">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-        <span>Скачать клиент</span>
-      </button>
-
-      <button type="button" class="kimiko-nav-item" data-tab="configs">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
-        <span>Конфиги</span>
-      </button>
-
-      <button type="button" class="kimiko-nav-item" data-tab="help">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
-        <span>Помощь</span>
-      </button>
-
-      <button type="button" class="kimiko-nav-item kimiko-logout" id="btn-kimiko-logout">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-        <span>Выход</span>
-      </button>
-    </nav>
-  </aside>
-
-  <!-- Правая колонка: Основной контент -->
-  <main class="kimiko-content">
-
-    <!-- Вкладка 1: Аккаунт (Основной экран по образцу со скриншота) -->
-    <div class="kimiko-tab-pane active" id="pane-account">
-      <div class="kimiko-pane-head">
-        <h1 class="kimiko-page-title">Аккаунт</h1>
-        <p class="kimiko-page-sub">Ваш профиль, активность и данные аккаунта</p>
-      </div>
-
-      <!-- Баннер пользователя с обложкой -->
-      <div class="kimiko-user-banner">
-        <div class="kimiko-banner-cover"></div>
-        <div class="kimiko-banner-profile">
-          <div class="kimiko-avatar" id="avatar-box">
-            <span id="avatar-initial">U</span>
+    <!-- Блок 1: Паспорт SUN ID (Карта идентичности игрока) -->
+    <section class="sun-card col-4 sun-tab-view" data-view="overview">
+      <div class="sun-card-header">
+        <div class="sun-card-title-group">
+          <div class="sun-card-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
           </div>
-          <div class="kimiko-banner-meta">
-            <div class="kimiko-banner-name" id="banner-username">Загрузка...</div>
-            <div class="kimiko-banner-email" id="banner-email">user@gmail.com</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Таблица характеристик (сетка 2 колонки по 4 элемента со скриншота) -->
-      <div class="kimiko-stats-table">
-        <div class="kimiko-stat-row">
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-              <span>UID</span>
-            </div>
-            <div class="kimiko-stat-val">
-              <span id="k-uid" class="kimiko-mono">SUN-XXXX</span>
-              <button type="button" class="kimiko-mini-copy" id="btn-copy-uid" title="Скопировать ключ">Копировать</button>
-            </div>
-          </div>
-
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-              <span>Подписка</span>
-            </div>
-            <div class="kimiko-stat-val">
-              <span id="k-sub-status" class="kimiko-highlight">Активна</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="kimiko-stat-row">
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 1.79 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-              <span>Логин</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-login">Steve</div>
-          </div>
-
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              <span>Роль</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-role">Бета-тестер</div>
-          </div>
-        </div>
-
-        <div class="kimiko-stat-row">
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>
-              <span>Дата регистрации</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-reg-date">5 октября 2026 г.</div>
-          </div>
-
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-              <span>Почта</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-email">user@gmail.com</div>
-          </div>
-        </div>
-
-        <div class="kimiko-stat-row">
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-              <span>Последний заход</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-last-seen">Сегодня</div>
-          </div>
-
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M4 6h16v12H4z"/></svg>
-              <span>HWID</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-hwid-display">
-              <span class="kimiko-dot" id="k-hwid-dot"></span>
-              <span id="k-hwid-text">Не привязан</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Блок: Изменить пароль -->
-      <div class="kimiko-section-block">
-        <h3 class="kimiko-block-title">Изменить пароль</h3>
-        <p class="kimiko-block-sub">Введите текущий и новый пароль (8–128 символов)</p>
-        <form id="f-change-password" class="kimiko-password-grid">
-          <input type="password" id="cp-current" placeholder="Текущий пароль" required autocomplete="current-password">
-          <input type="password" id="cp-new" placeholder="Новый пароль" minlength="8" required autocomplete="new-password">
-          <input type="password" id="cp-confirm" placeholder="Повторите новый пароль" minlength="8" required autocomplete="new-password">
-          <button type="submit" class="kimiko-btn-primary" id="btn-save-pass">Сохранить</button>
-        </form>
-      </div>
-
-      <!-- Блок: Привязка к оборудованию HWID -->
-      <div class="kimiko-section-block">
-        <h3 class="kimiko-block-title">Привязка к устройству (HWID)</h3>
-        <p class="kimiko-block-sub" id="k-hwid-explain">Аппаратная привязка защищает аккаунт. Сброс доступен 1 раз в 3 дня.</p>
-        <button type="button" class="kimiko-btn-secondary" id="btn-reset-hwid-kimiko">Сбросить HWID</button>
-      </div>
-
-      <!-- Блок: Активировать ключ -->
-      <div class="kimiko-section-block">
-        <h3 class="kimiko-block-title">Активировать ключ</h3>
-        <p class="kimiko-block-sub">Подписка, роли или сброс HWID</p>
-        <form id="f-activate-key" class="kimiko-key-grid">
-          <input type="text" id="act-key" placeholder="SUN_xxxxxxxx" required>
-          <button type="submit" class="kimiko-btn-primary">Применить</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Вкладка 2: Подписка -->
-    <div class="kimiko-tab-pane" id="pane-subscription">
-      <div class="kimiko-pane-head">
-        <h1 class="kimiko-page-title">Подписка</h1>
-        <p class="kimiko-page-sub">Информация о вашей активной лицензии SUN Client</p>
-      </div>
-      <div class="kimiko-sub-card">
-        <div class="kimiko-sub-badge">Активна</div>
-        <div class="kimiko-sub-plan">Открытый бета-тест SUN 2.0</div>
-        <div class="kimiko-sub-exp">Действует до: <strong id="sub-pane-exp">2026-12-04</strong></div>
-        <p class="kimiko-sub-desc">Полный доступ ко всем модулям оптимизации, ClickGUI, HUD и косметике бета-тестера.</p>
-        <a href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar" class="kimiko-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-top:1rem;">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-          <span>Скачать SUN Client (.jar)</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- Вкладка 3: Косметика -->
-    <div class="kimiko-tab-pane" id="pane-cosmetics">
-      <div class="kimiko-pane-head">
-        <h1 class="kimiko-page-title">Косметика</h1>
-        <p class="kimiko-page-sub">Разблокированные 3D модели и эффекты для вашего персонажа</p>
-      </div>
-      <div class="kimiko-cosmetics-grid">
-        <div class="kimiko-cosmetic-card">
-          <span class="kimiko-cosm-tag">Разблокировано</span>
-          <h3>Огненные крылья</h3>
-          <p>3D модель анимированных крыльев феникса с кастомным рендером.</p>
-        </div>
-        <div class="kimiko-cosmetic-card">
-          <span class="kimiko-cosm-tag">Разблокировано</span>
-          <h3>Золотая корона</h3>
-          <p>Вращающаяся золотая корона над головой игрока с мягким свечением.</p>
-        </div>
-        <div class="kimiko-cosmetic-card">
-          <span class="kimiko-cosm-tag">Разблокировано</span>
-          <h3>Плащ SUN</h3>
-          <p>Фирменный черный анимированный плащ с логотипом клиента.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Вкладка 4: Баланс Sparks -->
-    <div class="kimiko-tab-pane" id="pane-sparks">
-      <div class="kimiko-pane-head">
-        <h1 class="kimiko-page-title">Баланс Sparks</h1>
-        <p class="kimiko-page-sub">Внутренняя наградная валюта клиента SUN</p>
-      </div>
-      <div class="kimiko-sparks-card">
-        <div class="kimiko-sparks-top">
-          <img src="assets/sparks.svg" alt="" width="36" height="36" class="sparks-mark-lg">
           <div>
-            <div class="kimiko-sparks-amount"><span id="sparks-pane-val">0</span> Sparks</div>
-            <div class="kimiko-sparks-sub">Баланс баг-тестера</div>
+            <h2 class="sun-card-title">Паспорт SUN ID</h2>
+            <p class="sun-card-sub">Профиль и идентификатор игрока</p>
           </div>
         </div>
-        <p class="kimiko-sparks-text">Sparks начисляются за найденные баги, активность в тестировании и участие в сообществе. На релизе баланс сохранится и откроет эксклюзивную косметику.</p>
-        <a href="https://t.me/SUN_Visual" target="_blank" rel="noopener" class="kimiko-btn-secondary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-top:1rem;">
-          <span>Отправить баг-репорт в Telegram</span>
-        </a>
       </div>
-    </div>
 
-    <!-- Вкладка 5: Скачать клиент -->
-    <div class="kimiko-tab-pane" id="pane-download">
-      <div class="kimiko-pane-head">
-        <h1 class="kimiko-page-title">Скачать клиент</h1>
-        <p class="kimiko-page-sub">Актуальный официальный билд SUN Visuals 1.21.4 Fabric</p>
-      </div>
-      <div class="kimiko-section-block">
-        <h3 class="kimiko-block-title">Официальный установщик</h3>
-        <p class="kimiko-block-sub">Minecraft 1.21.4 · Fabric Loader · Java 21 · Размер: 10 MB</p>
-        <a href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar" class="kimiko-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-top:.8rem;">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-          <span>Скачать sun-client-1.21.4.jar</span>
-        </a>
-        <div style="margin-top:1.5rem;font-size:0.85rem;color:var(--tx2);line-height:1.6;">
-          <strong>Быстрая установка:</strong><br>
-          1. Установите чистый профиль Fabric 1.21.4.<br>
-          2. Скопируйте файл <code>sun-client-1.21.4.jar</code> в папку <code>.minecraft/mods</code>.<br>
-          3. Запустите игру. Меню открывается на клавишу <strong>Правый Shift</strong>.
+      <div class="sun-passport-profile">
+        <div class="sun-passport-avatar" id="dash-avatar">U</div>
+        <div>
+          <div class="sun-passport-name">
+            <span id="dash-username">Загрузка...</span>
+            <span class="sun-passport-role" id="dash-role">BETA</span>
+          </div>
+          <div class="sun-passport-email" id="dash-email">user@gmail.com</div>
         </div>
       </div>
-    </div>
 
-    <!-- Вкладка 6: Конфиги -->
-    <div class="kimiko-tab-pane" id="pane-configs">
-      <div class="kimiko-pane-head">
-        <h1 class="kimiko-page-title">Конфигурации</h1>
-        <p class="kimiko-page-sub">Пресеты настроек и облачная синхронизация</p>
+      <div class="sun-key-box">
+        <div class="sun-key-label">
+          <span>Лицензионный ключ (UID)</span>
+          <span style="color:#64748b;font-weight:500;">Для лаунчера и API</span>
+        </div>
+        <div class="sun-key-row">
+          <span class="sun-key-value" id="dash-uid">SUN-XXXX-XXXX</span>
+          <button type="button" class="sun-btn-copy" id="btn-dash-copy-key">Копировать</button>
+        </div>
       </div>
-      <div class="kimiko-section-block">
-        <h3 class="kimiko-block-title">Готовые пресеты клиента</h3>
-        <p class="kimiko-block-sub">В клиенте уже встроены профили: PvP, FPS Boost, Visuals Only.</p>
-        <p style="font-size:0.86rem;color:var(--tx2);margin-top:.6rem;">Настройки автоматически сохраняются в <code>.minecraft/sun/configs/</code> при закрытии меню.</p>
-      </div>
-    </div>
 
-    <!-- Вкладка 7: Помощь -->
-    <div class="kimiko-tab-pane" id="pane-help">
-      <div class="kimiko-pane-head">
-        <h1 class="kimiko-page-title">Помощь и поддержка</h1>
-        <p class="kimiko-page-sub">Часто задаваемые вопросы и связь с разработчиками</p>
+      <div class="sun-passport-meta">
+        <div class="sun-meta-item">
+          <span class="sun-meta-label">Дата регистрации</span>
+          <span class="sun-meta-val" id="dash-created">5 октября 2026 г.</span>
+        </div>
+        <div class="sun-meta-item">
+          <span class="sun-meta-label">Последняя активность</span>
+          <span class="sun-meta-val" id="dash-last-seen">Сегодня</span>
+        </div>
       </div>
-      <div class="kimiko-section-block">
-        <h3 class="kimiko-block-title">Telegram канал и чат</h3>
-        <p class="kimiko-block-sub">Оперативная поддержка и новости обновлений</p>
-        <a href="https://t.me/SUN_Visual" target="_blank" rel="noopener" class="kimiko-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-top:.8rem;">
-          <span>Перейти в Telegram</span>
+    </section>
+
+    <!-- Блок 2: Лицензия и Аппаратная защита HWID -->
+    <section class="sun-card col-4 sun-tab-view" data-view="overview security">
+      <div class="sun-card-header">
+        <div class="sun-card-title-group">
+          <div class="sun-card-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+          </div>
+          <div>
+            <h2 class="sun-card-title">Лицензия & HWID Guard</h2>
+            <p class="sun-card-sub">Статус доступа и аппаратный замок</p>
+          </div>
+        </div>
+        <div class="sun-status-badge active" id="badge-sub-status">
+          <span class="sun-badge-dot"></span>
+          <span id="txt-sub-status">Активна</span>
+        </div>
+      </div>
+
+      <div style="font-size:0.85rem;color:#cbd5e1;line-height:1.5;">
+        Действует до: <strong id="dash-exp-date" style="color:#fff;">2026-12-04</strong>
+        <div style="font-size:0.75rem;color:#71717a;margin-top:2px;">Тариф: Открытый бета-тест SUN 2.0</div>
+      </div>
+
+      <div class="sun-hwid-module">
+        <div class="sun-hwid-status-row">
+          <div class="sun-hwid-tag">
+            <span class="sun-hwid-indicator unlocked" id="hwid-status-dot"></span>
+            <span id="hwid-status-text">Ожидает входа в игру</span>
+          </div>
+          <button type="button" class="sun-btn-action" id="btn-dash-reset-hwid" style="padding:3px 8px;font-size:0.72rem;">Сбросить HWID</button>
+        </div>
+        <p class="sun-hwid-note" id="hwid-status-desc">Ключ автоматически привяжется к вашему компьютеру при первом запуске клиента.</p>
+      </div>
+
+      <div style="font-size:0.75rem;color:#64748b;display:flex;align-items:center;gap:6px;">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <span>Аппаратный сброс разрешен 1 раз в 3 дня.</span>
+      </div>
+    </section>
+
+    <!-- Блок 3: Хранилище Sparks (Sparks Vault) -->
+    <section class="sun-card col-4 sun-tab-view" data-view="overview">
+      <div class="sun-card-header">
+        <div class="sun-card-title-group">
+          <div class="sun-card-icon" style="background:rgba(245,158,11,0.15);color:#fbbf24;">
+            <img src="assets/sparks.svg" alt="" width="18" height="18" class="sparks-mark" style="filter:none;">
+          </div>
+          <div>
+            <h2 class="sun-card-title">Хранилище Sparks</h2>
+            <p class="sun-card-sub">Внутренняя наградная валюта</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sun-sparks-hero">
+        <img src="assets/sparks.svg" alt="" class="sun-sparks-emblem">
+        <div>
+          <div class="sun-sparks-counter"><span id="dash-sparks-val">0</span> Sparks</div>
+          <div class="sun-sparks-label">Накопительный баланс</div>
+        </div>
+      </div>
+
+      <p class="sun-sparks-desc">
+        Sparks начисляются за поиск багов, предложения улучшений и активность. На релизе баланс откроет редкую косметику.
+      </p>
+
+      <a href="https://t.me/SUN_Visual" target="_blank" rel="noopener" class="sun-btn-action" style="width:100%;justify-content:center;">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        <span>Сообщить о баге в Telegram</span>
+      </a>
+    </section>
+
+    <!-- Блок 4: Центр загрузки клиента SUN 1.21.4 (Hero Card) -->
+    <section class="sun-card col-8 sun-tab-view" data-view="overview download">
+      <div class="sun-download-hero">
+        <div>
+          <h2 class="sun-card-title" style="font-size:1.25rem;">Официальный клиент SUN 1.21.4</h2>
+          <p class="sun-card-sub" style="font-size:0.85rem;margin-top:4px;">Пакет максимальной оптимизации и кастомизации на Fabric Loader</p>
+          
+          <div class="sun-dl-meta-tags">
+            <span class="sun-meta-pill">Minecraft 1.21.4</span>
+            <span class="sun-meta-pill">Fabric API</span>
+            <span class="sun-meta-pill">Java 21</span>
+            <span class="sun-meta-pill">Sodium 0.6 Ready</span>
+            <span class="sun-meta-pill">10 MB</span>
+          </div>
+        </div>
+
+        <a href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar" class="sun-btn-download-hero">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+          <span>Скачать .jar файл</span>
         </a>
       </div>
-    </div>
 
-  </main>
-</div>
+      <div class="sun-steps-grid">
+        <div class="sun-step-box">
+          <div class="sun-step-num">Шаг 1</div>
+          <div class="sun-step-txt">Установите профиль Fabric 1.21.4 в любом лаунчере.</div>
+        </div>
+        <div class="sun-step-box">
+          <div class="sun-step-num">Шаг 2</div>
+          <div class="sun-step-txt">Поместите <code>sun-client-1.21.4.jar</code> в папку <code>.minecraft/mods</code>.</div>
+        </div>
+        <div class="sun-step-box">
+          <div class="sun-step-num">Шаг 3</div>
+          <div class="sun-step-txt">Запустите игру. Меню открывается на <strong>Правый Shift</strong>.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Блок 5: Активация ключей и промокодов -->
+    <section class="sun-card col-4 sun-tab-view" data-view="overview security">
+      <div class="sun-card-header">
+        <div class="sun-card-title-group">
+          <div class="sun-card-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2.5 19h19v2h-19zm19.57-9.36c-.21-.8-1.04-1.28-1.84-1.06L14.92 10l-6.9-6.43-1.39.86 4.31 7.12-4.99 1.34-2.46-1.95-1.03.62 1.81 3.14 17.21-4.62z"/></svg>
+          </div>
+          <div>
+            <h2 class="sun-card-title">Активация промокода</h2>
+            <p class="sun-card-sub">Продление подписки или начисление Sparks</p>
+          </div>
+        </div>
+      </div>
+
+      <form id="f-dash-activate-key" class="sun-form-col">
+        <div class="sun-input-group">
+          <input type="text" id="dash-act-key-input" class="sun-input" placeholder="SUN_xxxxxxxx" required autocomplete="off">
+          <button type="submit" class="sun-btn-submit" id="btn-dash-apply-key">Применить</button>
+        </div>
+        <span style="font-size:0.75rem;color:#71717a;">Ключи можно получить в официальном Telegram-канале или в конкурсах.</span>
+      </form>
+    </section>
+
+    <!-- Блок 6: Безопасность и смена пароля -->
+    <section class="sun-card col-6 sun-tab-view" data-view="security">
+      <div class="sun-card-header">
+        <div class="sun-card-title-group">
+          <div class="sun-card-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+          </div>
+          <div>
+            <h2 class="sun-card-title">Безопасность аккаунта</h2>
+            <p class="sun-card-sub">Изменение пароля учетной записи</p>
+          </div>
+        </div>
+      </div>
+
+      <form id="f-dash-change-pass" class="sun-form-col">
+        <input type="password" id="dash-cp-current" class="sun-input" placeholder="Текущий пароль" required autocomplete="current-password">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <input type="password" id="dash-cp-new" class="sun-input" placeholder="Новый пароль (от 8 знаков)" minlength="8" required autocomplete="new-password">
+          <input type="password" id="dash-cp-confirm" class="sun-input" placeholder="Подтвердите пароль" minlength="8" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="sun-btn-submit" id="btn-dash-save-pass" style="align-self:flex-start;">Обновить пароль</button>
+      </form>
+    </section>
+
+    <!-- Блок 7: Разблокированная косметика -->
+    <section class="sun-card col-6 sun-tab-view" data-view="cosmetics">
+      <div class="sun-card-header">
+        <div class="sun-card-title-group">
+          <div class="sun-card-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </div>
+          <div>
+            <h2 class="sun-card-title">Гардероб и косметика</h2>
+            <p class="sun-card-sub">3D модели и спецэффекты бета-тестера</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sun-cosmetics-row">
+        <div class="sun-cosm-item">
+          <span class="sun-cosm-badge">Разблокировано</span>
+          <h3 class="sun-cosm-title">Огненные крылья</h3>
+          <p class="sun-cosm-sub">Анимированная 3D модель пламенных крыльев феникса.</p>
+        </div>
+
+        <div class="sun-cosm-item">
+          <span class="sun-cosm-badge">Разблокировано</span>
+          <h3 class="sun-cosm-title">Золотая корона</h3>
+          <p class="sun-cosm-sub">Вращающаяся золотая корона над головой персонажа.</p>
+        </div>
+
+        <div class="sun-cosm-item">
+          <span class="sun-cosm-badge">Разблокировано</span>
+          <h3 class="sun-cosm-title">Плащ SUN</h3>
+          <p class="sun-cosm-sub">Черно-золотой плащ с кастомной физикой колебаний.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const KEY = 'sun_key';
 const SESSION_KEY = 'sun_session';
+const KEY = 'sun_key';
 
 const toastEl = $('#toast');
 let toastTimer;
@@ -366,43 +344,50 @@ async function api(path, body) {
   return d;
 }
 
-// Заполнение данных аккаунта
-function populateProfile(u) {
+function populateDashboard(u) {
   currentUser = u;
   const username = u.username || 'Пользователь';
   const firstChar = username.charAt(0).toUpperCase();
 
-  $('#avatar-initial').textContent = firstChar;
-  $('#banner-username').textContent = username;
-  $('#banner-email').textContent = u.email || 'Не привязан';
+  $('#dash-avatar').textContent = firstChar;
+  $('#top-user-avatar').textContent = firstChar;
+  $('#dash-username').textContent = username;
+  $('#top-user-name').textContent = username;
+  $('#dash-email').textContent = u.email || 'Не привязан';
+  $('#dash-uid').textContent = u.key || 'SUN-XXXX-XXXX';
+  $('#dash-created').textContent = u.created || '5 октября 2026 г.';
+  $('#top-sparks-val').textContent = u.coins || 0;
+  $('#dash-sparks-val').textContent = u.coins || 0;
+  $('#dash-exp-date').textContent = u.expires || '2026-12-04';
 
-  $('#k-uid').textContent = u.key || 'SUN-XXXX-XXXX';
-  $('#k-login').textContent = username;
-  $('#k-email').textContent = u.email || '—';
-  $('#k-reg-date').textContent = u.created || '5 октября 2026 г.';
-  $('#k-sub-status').textContent = u.active ? ('Активна (до ' + (u.expires || '2026-12-04') + ')') : 'Истекла';
+  const badgeStatus = $('#badge-sub-status');
+  const txtStatus = $('#txt-sub-status');
+  if (u.active) {
+    if (badgeStatus) badgeStatus.className = 'sun-status-badge active';
+    if (txtStatus) txtStatus.textContent = 'Активна';
+  } else {
+    if (badgeStatus) badgeStatus.className = 'sun-status-badge inactive';
+    if (txtStatus) txtStatus.textContent = 'Истекла';
+  }
 
-  if ($('#sub-pane-exp')) $('#sub-pane-exp').textContent = u.expires || '2026-12-04';
-  if ($('#sparks-pane-val')) $('#sparks-pane-val').textContent = u.coins || 0;
-
-  // HWID статус
-  const dot = $('#k-hwid-dot');
-  const hwidText = $('#k-hwid-text');
-  const hwidExplain = $('#k-hwid-explain');
+  // HWID блок
+  const hwidDot = $('#hwid-status-dot');
+  const hwidText = $('#hwid-status-text');
+  const hwidDesc = $('#hwid-status-desc');
 
   if (u.hwid) {
-    if (dot) dot.className = 'kimiko-dot active';
-    if (hwidText) hwidText.textContent = 'Привязан (' + u.hwid.substring(0, 10) + '...)';
-    if (hwidExplain) hwidExplain.textContent = 'Ключ заблокирован за вашим компьютером. Сброс доступен раз в 3 дня.';
+    if (hwidDot) hwidDot.className = 'sun-hwid-indicator locked';
+    if (hwidText) hwidText.textContent = 'Привязан к ПК (' + u.hwid.substring(0, 10) + '...)';
+    if (hwidDesc) hwidDesc.textContent = 'Ключ жестко привязан к текущей рабочей станции. Сброс доступен 1 раз в 3 дня.';
   } else {
-    if (dot) dot.className = 'kimiko-dot warning';
-    if (hwidText) hwidText.textContent = 'Не привязан';
-    if (hwidExplain) hwidExplain.textContent = 'Ключ привяжется автоматически при первом входе в игру через клиент.';
+    if (hwidDot) hwidDot.className = 'sun-hwid-indicator unlocked';
+    if (hwidText) hwidText.textContent = 'Ожидает входа в игру';
+    if (hwidDesc) hwidDesc.textContent = 'Ключ автоматически привяжется к вашему компьютеру при первом запуске клиента.';
   }
 }
 
-// Сессионный запуск
-(async function initSession() {
+// Сессионная инициализация
+(async function initDashboard() {
   const token = localStorage.getItem(SESSION_KEY);
   if (!token) {
     window.location.replace('/?openAuth=1');
@@ -410,52 +395,87 @@ function populateProfile(u) {
   }
   try {
     const res = await api('login', { sessionToken: token });
-    populateProfile(res);
+    populateDashboard(res);
   } catch (e) {
     localStorage.removeItem(SESSION_KEY);
     window.location.replace('/?openAuth=1');
   }
 })();
 
-// Переключение табов в сайдбаре
-$$('.kimiko-nav-item[data-tab]').forEach(btn => {
+// Переключение табов навигации
+$$('.sun-dash-pill[data-dash-tab]').forEach(btn => {
   btn.onclick = () => {
-    $$('.kimiko-nav-item').forEach(b => b.classList.remove('active'));
+    $$('.sun-dash-pill').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
-    const tab = btn.dataset.tab;
-    $$('.kimiko-tab-pane').forEach(p => p.classList.remove('active'));
-    const targetPane = $('#pane-' + tab);
-    if (targetPane) targetPane.classList.add('active');
+    const tab = btn.dataset.dashTab;
+    $$('.sun-tab-view').forEach(card => {
+      const views = (card.dataset.view || '').split(' ');
+      if (tab === 'all' || views.includes(tab)) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
   };
 });
 
-// Копирование UID / ключа
-const copyUidBtn = $('#btn-copy-uid');
-if (copyUidBtn) {
-  copyUidBtn.onclick = () => {
-    const key = $('#k-uid').textContent;
+// Копирование UID ключа
+const btnCopy = $('#btn-dash-copy-key');
+if (btnCopy) {
+  btnCopy.onclick = () => {
+    const key = $('#dash-uid').textContent;
     if (!key || key.includes('XXXX')) return;
-    const orig = copyUidBtn.textContent;
-    copyUidBtn.textContent = 'Скопировано!';
+    const orig = btnCopy.textContent;
+    btnCopy.textContent = 'Скопировано';
     toast('Лицензионный ключ скопирован');
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(key).catch(() => fallbackCopy(key));
     } else {
       fallbackCopy(key);
     }
-    setTimeout(() => copyUidBtn.textContent = orig, 2000);
+    setTimeout(() => btnCopy.textContent = orig, 2000);
+  };
+}
+
+// Сброс HWID
+const btnReset = $('#btn-dash-reset-hwid');
+if (btnReset) {
+  btnReset.onclick = async () => {
+    if (!currentUser || !currentUser.key) return;
+    if (!currentUser.hwid) {
+      toast('Ключ еще не привязан к ПК. Сброс не требуется.');
+      return;
+    }
+    if (!confirm('Вы действительно хотите сбросить аппаратную привязку HWID?')) return;
+
+    btnReset.disabled = true;
+    btnReset.textContent = 'Сброс...';
+    try {
+      const res = await api('reset-hwid', {
+        key: currentUser.key,
+        sessionToken: currentUser.sessionToken
+      });
+      currentUser.hwid = null;
+      populateDashboard(currentUser);
+      toast(res.message || 'Привязка HWID успешно сброшена!');
+    } catch (err) {
+      toast(err.message || 'Ошибка сброса HWID');
+    } finally {
+      btnReset.disabled = false;
+      btnReset.textContent = 'Сбросить HWID';
+    }
   };
 }
 
 // Форма изменения пароля
-const fChangePass = $('#f-change-password');
-if (fChangePass) {
-  fChangePass.onsubmit = async (e) => {
+const fPass = $('#f-dash-change-pass');
+if (fPass) {
+  fPass.onsubmit = async (e) => {
     e.preventDefault();
-    const cur = $('#cp-current').value;
-    const pNew = $('#cp-new').value;
-    const pConf = $('#cp-confirm').value;
+    const cur = $('#dash-cp-current').value;
+    const pNew = $('#dash-cp-new').value;
+    const pConf = $('#dash-cp-confirm').value;
 
     if (pNew !== pConf) {
       toast('Новые пароли не совпадают!');
@@ -466,9 +486,9 @@ if (fChangePass) {
       return;
     }
 
-    const btn = $('#btn-save-pass');
+    const btn = $('#btn-dash-save-pass');
     btn.disabled = true;
-    btn.textContent = 'Сохранение...';
+    btn.textContent = 'Обновление...';
 
     try {
       const res = await api('change-password', {
@@ -477,53 +497,28 @@ if (fChangePass) {
         newPassword: pNew
       });
       toast(res.message || 'Пароль успешно обновлен!');
-      fChangePass.reset();
+      fPass.reset();
     } catch (err) {
       toast(err.message || 'Ошибка смены пароля');
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Сохранить';
+      btn.textContent = 'Обновить пароль';
     }
   };
 }
 
-// Сброс HWID
-const btnResetHwid = $('#btn-reset-hwid-kimiko');
-if (btnResetHwid) {
-  btnResetHwid.onclick = async () => {
-    if (!currentUser || !currentUser.key) return;
-    if (!currentUser.hwid) {
-      toast('Ключ еще не привязан к ПК. Сброс не требуется.');
-      return;
-    }
-    if (!confirm('Вы действительно хотите сбросить аппаратную привязку?')) return;
-
-    btnResetHwid.disabled = true;
-    btnResetHwid.textContent = 'Сброс...';
-    try {
-      const res = await api('reset-hwid', {
-        key: currentUser.key,
-        sessionToken: currentUser.sessionToken
-      });
-      currentUser.hwid = null;
-      populateProfile(currentUser);
-      toast(res.message || 'Привязка HWID успешно сброшена!');
-    } catch (err) {
-      toast(err.message || 'Ошибка сброса HWID');
-    } finally {
-      btnResetHwid.disabled = false;
-      btnResetHwid.textContent = 'Сбросить HWID';
-    }
-  };
-}
-
-// Активация ключа
-const fActKey = $('#f-activate-key');
-if (fActKey) {
-  fActKey.onsubmit = async (e) => {
+// Активация промокода / ключа
+const fKey = $('#f-dash-activate-key');
+if (fKey) {
+  fKey.onsubmit = async (e) => {
     e.preventDefault();
-    const key = $('#act-key').value.trim();
+    const key = $('#dash-act-key-input').value.trim();
     if (!key) return;
+
+    const btn = $('#btn-dash-apply-key');
+    btn.disabled = true;
+    btn.textContent = '...';
+
     try {
       const res = await api('activate-key', {
         sessionToken: currentUser.sessionToken,
@@ -531,24 +526,28 @@ if (fActKey) {
       });
       if (res.expires) currentUser.expires = res.expires;
       if (res.coins !== undefined) currentUser.coins = res.coins;
-      populateProfile(currentUser);
+      populateDashboard(currentUser);
       toast(res.message || 'Ключ успешно активирован!');
-      $('#act-key').value = '';
+      $('#dash-act-key-input').value = '';
     } catch (err) {
       toast(err.message || 'Ошибка активации ключа');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Применить';
     }
   };
 }
 
-// Выход из профиля
-function doLogout() {
-  localStorage.removeItem(KEY);
-  localStorage.removeItem(SESSION_KEY);
-  currentUser = null;
-  window.location.href = '/';
+// Выход
+const btnLogout = $('#btn-sun-logout');
+if (btnLogout) {
+  btnLogout.onclick = () => {
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(SESSION_KEY);
+    currentUser = null;
+    window.location.href = '/';
+  };
 }
-const logoutBtn = $('#btn-kimiko-logout');
-if (logoutBtn) logoutBtn.onclick = doLogout;
 </script>
 </body>
 </html>

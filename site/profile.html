@@ -90,7 +90,7 @@
           </div>
           <div class="kimiko-banner-meta">
             <div class="kimiko-banner-name" id="banner-username">Загрузка...</div>
-            <div class="kimiko-banner-email" id="banner-email">user@gmail.com</div>
+            <div class="kimiko-banner-email" id="banner-email" style="display:none;"></div>
           </div>
         </div>
       </div>
@@ -336,7 +336,14 @@ function populateProfile(u) {
   }
 
   if ($('#banner-username')) $('#banner-username').textContent = username;
-  if ($('#banner-email')) $('#banner-email').textContent = u.email || 'Не привязан';
+  if ($('#banner-email')) {
+    if (u.email) {
+      $('#banner-email').textContent = u.email;
+      $('#banner-email').style.display = '';
+    } else {
+      $('#banner-email').style.display = 'none';
+    }
+  }
 
   if ($('#k-uid')) $('#k-uid').textContent = u.key || 'SUN-XXXX-XXXX';
   if ($('#k-login')) $('#k-login').textContent = username;

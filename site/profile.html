@@ -4,302 +4,172 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Личный кабинет — SUN Visuals</title>
-<meta name="description" content="Личный кабинет SUN Visuals: данные аккаунта, статус лицензии, привязка HWID, баланс Sparks и загрузка клиента.">
+<meta name="description" content="Личный кабинет SUN Visuals: данные аккаунта, подписка, привязка HWID и настройки.">
 <link rel="icon" type="image/svg+xml" href="assets/logo.svg?v=white2">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 <script>document.documentElement.classList.add('js')</script>
 </head>
-<body class="sun-dash-body">
+<body class="sun-profile-body">
 <div class="bg"></div>
 
-<!-- Верхняя командная панель (Command Header) -->
-<header class="sun-dash-topbar">
-  <div class="sun-dash-topbar-inner">
-    <div style="display:flex;align-items:center;gap:12px;">
-      <a href="/" class="sun-dash-brand">
-        <img src="assets/logo.svg" alt="" width="26" height="26">
-        <span>SUN VISUALS</span>
-      </a>
-      <span class="sun-dash-version">1.21.4 Fabric</span>
+<!-- Верхняя строка навигации -->
+<header class="sun-profile-topbar">
+  <div class="sun-profile-topbar-inner">
+    <a href="/" class="sun-profile-back">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      <span>Вернуться на главную</span>
+    </a>
+
+    <div class="sun-profile-brand">
+      <img src="assets/logo.svg" alt="" width="20" height="20">
+      <span>Личный кабинет</span>
     </div>
 
-    <!-- Сегментированная навигация по разделам -->
-    <nav class="sun-dash-nav" role="tablist">
-      <button type="button" class="sun-dash-pill active" data-dash-tab="all">Все разделы</button>
-      <button type="button" class="sun-dash-pill" data-dash-tab="overview">Обзор</button>
-      <button type="button" class="sun-dash-pill" data-dash-tab="security">Безопасность</button>
-      <button type="button" class="sun-dash-pill" data-dash-tab="cosmetics">Косметика</button>
-      <button type="button" class="sun-dash-pill" data-dash-tab="download">Загрузка</button>
-    </nav>
-
-    <!-- Правый блок: Баланс Sparks, Пользователь и Выход -->
-    <div class="sun-dash-actions">
-      <div class="sun-sparks-pill" title="Наградные Sparks">
-        <img src="assets/sparks.svg" alt="" width="16" height="16" class="sparks-mark" style="filter:none;">
-        <span id="top-sparks-val">0</span> Sparks
-      </div>
-
-      <div class="sun-user-pill">
-        <div class="sun-user-avatar-mini" id="top-user-avatar">U</div>
-        <span id="top-user-name">Steve</span>
-      </div>
-
-      <a href="/" class="sun-action-link" title="Вернуться на сайт">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        <span>На сайт</span>
-      </a>
-
-      <button type="button" class="sun-btn-logout-icon" id="btn-sun-logout" title="Выйти из аккаунта">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-      </button>
-    </div>
+    <button type="button" class="sun-profile-logout" id="btn-logout" title="Выйти из аккаунта">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      <span>Выход</span>
+    </button>
   </div>
 </header>
 
-<!-- Основная рабочая область Bento Grid -->
-<main class="sun-dash-main">
-  <div class="sun-bento-grid">
+<main class="sun-profile-main">
+  <div class="sun-profile-grid">
 
-    <!-- Блок 1: Паспорт SUN ID (Карта идентичности игрока) -->
-    <section class="sun-card col-4 sun-tab-view" data-view="overview">
-      <div class="sun-card-header">
-        <div class="sun-card-title-group">
-          <div class="sun-card-icon">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-          </div>
-          <div>
-            <h2 class="sun-card-title">Паспорт SUN ID</h2>
-            <p class="sun-card-sub">Профиль и идентификатор игрока</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="sun-passport-profile">
-        <div class="sun-passport-avatar" id="dash-avatar">U</div>
+    <!-- Левая колонка: Профиль и Статус аккаунта -->
+    <aside class="sun-user-card">
+      <div class="sun-user-head">
+        <div class="sun-user-avatar" id="u-avatar">U</div>
         <div>
-          <div class="sun-passport-name">
-            <span id="dash-username">Загрузка...</span>
-            <span class="sun-passport-role" id="dash-role">BETA</span>
-          </div>
-          <div class="sun-passport-email" id="dash-email">user@gmail.com</div>
+          <div class="sun-user-name" id="u-username">Steve</div>
+          <span class="sun-user-role" id="u-role">Бета-тестер</span>
+          <div class="sun-user-email" id="u-email">user@gmail.com</div>
         </div>
       </div>
 
-      <div class="sun-key-box">
-        <div class="sun-key-label">
-          <span>Лицензионный ключ (UID)</span>
-          <span style="color:#64748b;font-weight:500;">Для лаунчера и API</span>
+      <!-- Блок ключа UID -->
+      <div class="sun-uid-slot">
+        <span class="sun-uid-code" id="u-key">SUN-XXXX-XXXX</span>
+        <button type="button" class="sun-uid-copy" id="btn-copy-key">Копировать</button>
+      </div>
+
+      <!-- Список характеристик -->
+      <div class="sun-stats-list">
+        <div class="sun-stat-line">
+          <span class="sun-stat-k">Подписка</span>
+          <span class="sun-stat-v" id="u-sub-status" style="color:#10b981;">Активна</span>
         </div>
-        <div class="sun-key-row">
-          <span class="sun-key-value" id="dash-uid">SUN-XXXX-XXXX</span>
-          <button type="button" class="sun-btn-copy" id="btn-dash-copy-key">Копировать</button>
+
+        <div class="sun-stat-line">
+          <span class="sun-stat-k">Действует до</span>
+          <span class="sun-stat-v" id="u-sub-exp">2026-12-04</span>
+        </div>
+
+        <div class="sun-stat-line">
+          <span class="sun-stat-k">HWID</span>
+          <span class="sun-stat-v">
+            <span class="sun-dot amber" id="u-hwid-dot"></span>
+            <span id="u-hwid-val">Ожидает входа</span>
+          </span>
+        </div>
+
+        <div class="sun-stat-line">
+          <span class="sun-stat-k">Баланс Sparks</span>
+          <span class="sun-stat-v">
+            <span id="u-sparks-val" style="color:#f59e0b;font-weight:700;">0</span> Sparks
+          </span>
+        </div>
+
+        <div class="sun-stat-line">
+          <span class="sun-stat-k">Регистрация</span>
+          <span class="sun-stat-v" id="u-created">5 октября 2026 г.</span>
+        </div>
+
+        <div class="sun-stat-line">
+          <span class="sun-stat-k">Последний заход</span>
+          <span class="sun-stat-v" id="u-last-seen">Сегодня</span>
         </div>
       </div>
 
-      <div class="sun-passport-meta">
-        <div class="sun-meta-item">
-          <span class="sun-meta-label">Дата регистрации</span>
-          <span class="sun-meta-val" id="dash-created">5 октября 2026 г.</span>
-        </div>
-        <div class="sun-meta-item">
-          <span class="sun-meta-label">Последняя активность</span>
-          <span class="sun-meta-val" id="dash-last-seen">Сегодня</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Блок 2: Лицензия и Аппаратная защита HWID -->
-    <section class="sun-card col-4 sun-tab-view" data-view="overview security">
-      <div class="sun-card-header">
-        <div class="sun-card-title-group">
-          <div class="sun-card-icon">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-          </div>
-          <div>
-            <h2 class="sun-card-title">Лицензия & HWID Guard</h2>
-            <p class="sun-card-sub">Статус доступа и аппаратный замок</p>
-          </div>
-        </div>
-        <div class="sun-status-badge active" id="badge-sub-status">
-          <span class="sun-badge-dot"></span>
-          <span id="txt-sub-status">Активна</span>
-        </div>
-      </div>
-
-      <div style="font-size:0.85rem;color:#cbd5e1;line-height:1.5;">
-        Действует до: <strong id="dash-exp-date" style="color:#fff;">2026-12-04</strong>
-        <div style="font-size:0.75rem;color:#71717a;margin-top:2px;">Тариф: Открытый бета-тест SUN 2.0</div>
-      </div>
-
-      <div class="sun-hwid-module">
-        <div class="sun-hwid-status-row">
-          <div class="sun-hwid-tag">
-            <span class="sun-hwid-indicator unlocked" id="hwid-status-dot"></span>
-            <span id="hwid-status-text">Ожидает входа в игру</span>
-          </div>
-          <button type="button" class="sun-btn-action" id="btn-dash-reset-hwid" style="padding:3px 8px;font-size:0.72rem;">Сбросить HWID</button>
-        </div>
-        <p class="sun-hwid-note" id="hwid-status-desc">Ключ автоматически привяжется к вашему компьютеру при первом запуске клиента.</p>
-      </div>
-
-      <div style="font-size:0.75rem;color:#64748b;display:flex;align-items:center;gap:6px;">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-        <span>Аппаратный сброс разрешен 1 раз в 3 дня.</span>
-      </div>
-    </section>
-
-    <!-- Блок 3: Хранилище Sparks (Sparks Vault) -->
-    <section class="sun-card col-4 sun-tab-view" data-view="overview">
-      <div class="sun-card-header">
-        <div class="sun-card-title-group">
-          <div class="sun-card-icon" style="background:rgba(245,158,11,0.15);color:#fbbf24;">
-            <img src="assets/sparks.svg" alt="" width="18" height="18" class="sparks-mark" style="filter:none;">
-          </div>
-          <div>
-            <h2 class="sun-card-title">Хранилище Sparks</h2>
-            <p class="sun-card-sub">Внутренняя наградная валюта</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="sun-sparks-hero">
-        <img src="assets/sparks.svg" alt="" class="sun-sparks-emblem">
-        <div>
-          <div class="sun-sparks-counter"><span id="dash-sparks-val">0</span> Sparks</div>
-          <div class="sun-sparks-label">Накопительный баланс</div>
-        </div>
-      </div>
-
-      <p class="sun-sparks-desc">
-        Sparks начисляются за поиск багов, предложения улучшений и активность. На релизе баланс откроет редкую косметику.
-      </p>
-
-      <a href="https://t.me/SUN_Visual" target="_blank" rel="noopener" class="sun-btn-action" style="width:100%;justify-content:center;">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        <span>Сообщить о баге в Telegram</span>
+      <!-- Кнопка скачивания клиента -->
+      <a href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar" class="sun-btn-download">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+        <span>Скачать клиент (.jar)</span>
       </a>
-    </section>
+    </aside>
 
-    <!-- Блок 4: Центр загрузки клиента SUN 1.21.4 (Hero Card) -->
-    <section class="sun-card col-8 sun-tab-view" data-view="overview download">
-      <div class="sun-download-hero">
-        <div>
-          <h2 class="sun-card-title" style="font-size:1.25rem;">Официальный клиент SUN 1.21.4</h2>
-          <p class="sun-card-sub" style="font-size:0.85rem;margin-top:4px;">Пакет максимальной оптимизации и кастомизации на Fabric Loader</p>
-          
-          <div class="sun-dl-meta-tags">
-            <span class="sun-meta-pill">Minecraft 1.21.4</span>
-            <span class="sun-meta-pill">Fabric API</span>
-            <span class="sun-meta-pill">Java 21</span>
-            <span class="sun-meta-pill">Sodium 0.6 Ready</span>
-            <span class="sun-meta-pill">10 MB</span>
+    <!-- Правая колонка: Настройки, Управление и Косметика -->
+    <div class="sun-settings-col">
+
+      <!-- Раздел 1: Смена пароля -->
+      <section class="sun-panel">
+        <h2 class="sun-panel-title">Изменить пароль</h2>
+        <p class="sun-panel-sub">Введите текущий и новый пароль (от 8 символов)</p>
+
+        <form id="f-change-pass" class="sun-input-row">
+          <input type="password" id="cp-cur" class="sun-input-field" placeholder="Текущий пароль" required autocomplete="current-password">
+          <input type="password" id="cp-new" class="sun-input-field" placeholder="Новый пароль" minlength="8" required autocomplete="new-password">
+          <input type="password" id="cp-rep" class="sun-input-field" placeholder="Повторите пароль" minlength="8" required autocomplete="new-password">
+          <button type="submit" class="sun-btn-save" id="btn-save-pass">Сохранить</button>
+        </form>
+      </section>
+
+      <!-- Раздел 2: Привязка HWID -->
+      <section class="sun-panel">
+        <h2 class="sun-panel-title">Привязка к устройству (HWID)</h2>
+        <p class="sun-panel-sub" id="hwid-desc">Аппаратная привязка защищает аккаунт. Сброс доступен 1 раз в 3 дня.</p>
+
+        <button type="button" class="sun-btn-subtle" id="btn-reset-hwid">Сбросить HWID</button>
+      </section>
+
+      <!-- Раздел 3: Активация ключа -->
+      <section class="sun-panel">
+        <h2 class="sun-panel-title">Активировать ключ</h2>
+        <p class="sun-panel-sub">Подписка, роли или начисление Sparks</p>
+
+        <form id="f-act-key" class="sun-key-inline">
+          <input type="text" id="act-input" class="sun-input-field" placeholder="SUN_xxxxxxxx" required autocomplete="off">
+          <button type="submit" class="sun-btn-save">Применить</button>
+        </form>
+      </section>
+
+      <!-- Раздел 4: Косметика -->
+      <section class="sun-panel">
+        <h2 class="sun-panel-title">Косметика</h2>
+        <p class="sun-panel-sub">Разблокированные 3D модели и эффекты</p>
+
+        <div class="sun-cosmetics-list">
+          <div class="sun-cosmetic-pill">
+            <span class="sun-cosm-tag">Разблокировано</span>
+            <div class="sun-cosm-name">Огненные крылья</div>
+            <div class="sun-cosm-desc">Анимированная 3D модель крыльев феникса.</div>
+          </div>
+
+          <div class="sun-cosmetic-pill">
+            <span class="sun-cosm-tag">Разблокировано</span>
+            <div class="sun-cosm-name">Золотая корона</div>
+            <div class="sun-cosm-desc">Вращающаяся золотая корона над головой.</div>
+          </div>
+
+          <div class="sun-cosmetic-pill">
+            <span class="sun-cosm-tag">Разблокировано</span>
+            <div class="sun-cosm-name">Плащ SUN</div>
+            <div class="sun-cosm-desc">Фирменный темный плащ с физикой ткани.</div>
           </div>
         </div>
+      </section>
 
-        <a href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar" class="sun-btn-download-hero">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-          <span>Скачать .jar файл</span>
+      <!-- Раздел 5: Поддержка -->
+      <section class="sun-panel">
+        <h2 class="sun-panel-title">Помощь и сообщество</h2>
+        <p class="sun-panel-sub">Официальный канал новостей, обновлений и обратной связи</p>
+
+        <a href="https://t.me/SUN_Visual" target="_blank" rel="noopener" class="sun-btn-subtle">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
+          <span>Перейти в Telegram</span>
         </a>
-      </div>
+      </section>
 
-      <div class="sun-steps-grid">
-        <div class="sun-step-box">
-          <div class="sun-step-num">Шаг 1</div>
-          <div class="sun-step-txt">Установите профиль Fabric 1.21.4 в любом лаунчере.</div>
-        </div>
-        <div class="sun-step-box">
-          <div class="sun-step-num">Шаг 2</div>
-          <div class="sun-step-txt">Поместите <code>sun-client-1.21.4.jar</code> в папку <code>.minecraft/mods</code>.</div>
-        </div>
-        <div class="sun-step-box">
-          <div class="sun-step-num">Шаг 3</div>
-          <div class="sun-step-txt">Запустите игру. Меню открывается на <strong>Правый Shift</strong>.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Блок 5: Активация ключей и промокодов -->
-    <section class="sun-card col-4 sun-tab-view" data-view="overview security">
-      <div class="sun-card-header">
-        <div class="sun-card-title-group">
-          <div class="sun-card-icon">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2.5 19h19v2h-19zm19.57-9.36c-.21-.8-1.04-1.28-1.84-1.06L14.92 10l-6.9-6.43-1.39.86 4.31 7.12-4.99 1.34-2.46-1.95-1.03.62 1.81 3.14 17.21-4.62z"/></svg>
-          </div>
-          <div>
-            <h2 class="sun-card-title">Активация промокода</h2>
-            <p class="sun-card-sub">Продление подписки или начисление Sparks</p>
-          </div>
-        </div>
-      </div>
-
-      <form id="f-dash-activate-key" class="sun-form-col">
-        <div class="sun-input-group">
-          <input type="text" id="dash-act-key-input" class="sun-input" placeholder="SUN_xxxxxxxx" required autocomplete="off">
-          <button type="submit" class="sun-btn-submit" id="btn-dash-apply-key">Применить</button>
-        </div>
-        <span style="font-size:0.75rem;color:#71717a;">Ключи можно получить в официальном Telegram-канале или в конкурсах.</span>
-      </form>
-    </section>
-
-    <!-- Блок 6: Безопасность и смена пароля -->
-    <section class="sun-card col-6 sun-tab-view" data-view="security">
-      <div class="sun-card-header">
-        <div class="sun-card-title-group">
-          <div class="sun-card-icon">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-          </div>
-          <div>
-            <h2 class="sun-card-title">Безопасность аккаунта</h2>
-            <p class="sun-card-sub">Изменение пароля учетной записи</p>
-          </div>
-        </div>
-      </div>
-
-      <form id="f-dash-change-pass" class="sun-form-col">
-        <input type="password" id="dash-cp-current" class="sun-input" placeholder="Текущий пароль" required autocomplete="current-password">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <input type="password" id="dash-cp-new" class="sun-input" placeholder="Новый пароль (от 8 знаков)" minlength="8" required autocomplete="new-password">
-          <input type="password" id="dash-cp-confirm" class="sun-input" placeholder="Подтвердите пароль" minlength="8" required autocomplete="new-password">
-        </div>
-        <button type="submit" class="sun-btn-submit" id="btn-dash-save-pass" style="align-self:flex-start;">Обновить пароль</button>
-      </form>
-    </section>
-
-    <!-- Блок 7: Разблокированная косметика -->
-    <section class="sun-card col-6 sun-tab-view" data-view="cosmetics">
-      <div class="sun-card-header">
-        <div class="sun-card-title-group">
-          <div class="sun-card-icon">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          </div>
-          <div>
-            <h2 class="sun-card-title">Гардероб и косметика</h2>
-            <p class="sun-card-sub">3D модели и спецэффекты бета-тестера</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="sun-cosmetics-row">
-        <div class="sun-cosm-item">
-          <span class="sun-cosm-badge">Разблокировано</span>
-          <h3 class="sun-cosm-title">Огненные крылья</h3>
-          <p class="sun-cosm-sub">Анимированная 3D модель пламенных крыльев феникса.</p>
-        </div>
-
-        <div class="sun-cosm-item">
-          <span class="sun-cosm-badge">Разблокировано</span>
-          <h3 class="sun-cosm-title">Золотая корона</h3>
-          <p class="sun-cosm-sub">Вращающаяся золотая корона над головой персонажа.</p>
-        </div>
-
-        <div class="sun-cosm-item">
-          <span class="sun-cosm-badge">Разблокировано</span>
-          <h3 class="sun-cosm-title">Плащ SUN</h3>
-          <p class="sun-cosm-sub">Черно-золотой плащ с кастомной физикой колебаний.</p>
-        </div>
-      </div>
-    </section>
-
+    </div>
   </div>
 </main>
 
@@ -344,50 +214,38 @@ async function api(path, body) {
   return d;
 }
 
-function populateDashboard(u) {
+function renderUser(u) {
   currentUser = u;
-  const username = u.username || 'Пользователь';
-  const firstChar = username.charAt(0).toUpperCase();
+  const username = u.username || 'Steve';
+  const initial = username.charAt(0).toUpperCase();
 
-  $('#dash-avatar').textContent = firstChar;
-  $('#top-user-avatar').textContent = firstChar;
-  $('#dash-username').textContent = username;
-  $('#top-user-name').textContent = username;
-  $('#dash-email').textContent = u.email || 'Не привязан';
-  $('#dash-uid').textContent = u.key || 'SUN-XXXX-XXXX';
-  $('#dash-created').textContent = u.created || '5 октября 2026 г.';
-  $('#top-sparks-val').textContent = u.coins || 0;
-  $('#dash-sparks-val').textContent = u.coins || 0;
-  $('#dash-exp-date').textContent = u.expires || '2026-12-04';
+  $('#u-avatar').textContent = initial;
+  $('#u-username').textContent = username;
+  $('#u-email').textContent = u.email || 'Не привязан';
+  $('#u-key').textContent = u.key || 'SUN-XXXX-XXXX';
+  $('#u-sub-status').textContent = u.active ? 'Активна' : 'Истекла';
+  $('#u-sub-status').style.color = u.active ? '#10b981' : '#ef4444';
+  $('#u-sub-exp').textContent = u.expires || '2026-12-04';
+  $('#u-sparks-val').textContent = u.coins || 0;
+  $('#u-created').textContent = u.created || '5 октября 2026 г.';
 
-  const badgeStatus = $('#badge-sub-status');
-  const txtStatus = $('#txt-sub-status');
-  if (u.active) {
-    if (badgeStatus) badgeStatus.className = 'sun-status-badge active';
-    if (txtStatus) txtStatus.textContent = 'Активна';
-  } else {
-    if (badgeStatus) badgeStatus.className = 'sun-status-badge inactive';
-    if (txtStatus) txtStatus.textContent = 'Истекла';
-  }
-
-  // HWID блок
-  const hwidDot = $('#hwid-status-dot');
-  const hwidText = $('#hwid-status-text');
-  const hwidDesc = $('#hwid-status-desc');
+  const dot = $('#u-hwid-dot');
+  const hwidVal = $('#u-hwid-val');
+  const hwidDesc = $('#hwid-desc');
 
   if (u.hwid) {
-    if (hwidDot) hwidDot.className = 'sun-hwid-indicator locked';
-    if (hwidText) hwidText.textContent = 'Привязан к ПК (' + u.hwid.substring(0, 10) + '...)';
-    if (hwidDesc) hwidDesc.textContent = 'Ключ жестко привязан к текущей рабочей станции. Сброс доступен 1 раз в 3 дня.';
+    if (dot) dot.className = 'sun-dot green';
+    if (hwidVal) hwidVal.textContent = 'Привязан к ПК';
+    if (hwidDesc) hwidDesc.textContent = 'Привязан: ' + u.hwid.substring(0, 12) + '... Сброс доступен 1 раз в 3 дня.';
   } else {
-    if (hwidDot) hwidDot.className = 'sun-hwid-indicator unlocked';
-    if (hwidText) hwidText.textContent = 'Ожидает входа в игру';
-    if (hwidDesc) hwidDesc.textContent = 'Ключ автоматически привяжется к вашему компьютеру при первом запуске клиента.';
+    if (dot) dot.className = 'sun-dot amber';
+    if (hwidVal) hwidVal.textContent = 'Не привязан';
+    if (hwidDesc) hwidDesc.textContent = 'Ключ привяжется автоматически при первом запуске клиента.';
   }
 }
 
-// Сессионная инициализация
-(async function initDashboard() {
+// Сессионный запуск
+(async function init() {
   const token = localStorage.getItem(SESSION_KEY);
   if (!token) {
     window.location.replace('/?openAuth=1');
@@ -395,36 +253,18 @@ function populateDashboard(u) {
   }
   try {
     const res = await api('login', { sessionToken: token });
-    populateDashboard(res);
+    renderUser(res);
   } catch (e) {
     localStorage.removeItem(SESSION_KEY);
     window.location.replace('/?openAuth=1');
   }
 })();
 
-// Переключение табов навигации
-$$('.sun-dash-pill[data-dash-tab]').forEach(btn => {
-  btn.onclick = () => {
-    $$('.sun-dash-pill').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    const tab = btn.dataset.dashTab;
-    $$('.sun-tab-view').forEach(card => {
-      const views = (card.dataset.view || '').split(' ');
-      if (tab === 'all' || views.includes(tab)) {
-        card.classList.remove('hidden');
-      } else {
-        card.classList.add('hidden');
-      }
-    });
-  };
-});
-
 // Копирование UID ключа
-const btnCopy = $('#btn-dash-copy-key');
+const btnCopy = $('#btn-copy-key');
 if (btnCopy) {
   btnCopy.onclick = () => {
-    const key = $('#dash-uid').textContent;
+    const key = $('#u-key').textContent;
     if (!key || key.includes('XXXX')) return;
     const orig = btnCopy.textContent;
     btnCopy.textContent = 'Скопировано';
@@ -438,46 +278,16 @@ if (btnCopy) {
   };
 }
 
-// Сброс HWID
-const btnReset = $('#btn-dash-reset-hwid');
-if (btnReset) {
-  btnReset.onclick = async () => {
-    if (!currentUser || !currentUser.key) return;
-    if (!currentUser.hwid) {
-      toast('Ключ еще не привязан к ПК. Сброс не требуется.');
-      return;
-    }
-    if (!confirm('Вы действительно хотите сбросить аппаратную привязку HWID?')) return;
-
-    btnReset.disabled = true;
-    btnReset.textContent = 'Сброс...';
-    try {
-      const res = await api('reset-hwid', {
-        key: currentUser.key,
-        sessionToken: currentUser.sessionToken
-      });
-      currentUser.hwid = null;
-      populateDashboard(currentUser);
-      toast(res.message || 'Привязка HWID успешно сброшена!');
-    } catch (err) {
-      toast(err.message || 'Ошибка сброса HWID');
-    } finally {
-      btnReset.disabled = false;
-      btnReset.textContent = 'Сбросить HWID';
-    }
-  };
-}
-
-// Форма изменения пароля
-const fPass = $('#f-dash-change-pass');
+// Смена пароля
+const fPass = $('#f-change-pass');
 if (fPass) {
   fPass.onsubmit = async (e) => {
     e.preventDefault();
-    const cur = $('#dash-cp-current').value;
-    const pNew = $('#dash-cp-new').value;
-    const pConf = $('#dash-cp-confirm').value;
+    const cur = $('#cp-cur').value;
+    const pNew = $('#cp-new').value;
+    const pRep = $('#cp-rep').value;
 
-    if (pNew !== pConf) {
+    if (pNew !== pRep) {
       toast('Новые пароли не совпадают!');
       return;
     }
@@ -486,9 +296,9 @@ if (fPass) {
       return;
     }
 
-    const btn = $('#btn-dash-save-pass');
+    const btn = $('#btn-save-pass');
     btn.disabled = true;
-    btn.textContent = 'Обновление...';
+    btn.textContent = 'Сохранение...';
 
     try {
       const res = await api('change-password', {
@@ -502,22 +312,48 @@ if (fPass) {
       toast(err.message || 'Ошибка смены пароля');
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Обновить пароль';
+      btn.textContent = 'Сохранить';
     }
   };
 }
 
-// Активация промокода / ключа
-const fKey = $('#f-dash-activate-key');
-if (fKey) {
-  fKey.onsubmit = async (e) => {
-    e.preventDefault();
-    const key = $('#dash-act-key-input').value.trim();
-    if (!key) return;
+// Сброс HWID
+const btnHwid = $('#btn-reset-hwid');
+if (btnHwid) {
+  btnHwid.onclick = async () => {
+    if (!currentUser || !currentUser.key) return;
+    if (!currentUser.hwid) {
+      toast('Ключ еще не привязан к ПК. Сброс не требуется.');
+      return;
+    }
+    if (!confirm('Вы действительно хотите сбросить привязку HWID?')) return;
 
-    const btn = $('#btn-dash-apply-key');
-    btn.disabled = true;
-    btn.textContent = '...';
+    btnHwid.disabled = true;
+    btnHwid.textContent = 'Сброс...';
+    try {
+      const res = await api('reset-hwid', {
+        key: currentUser.key,
+        sessionToken: currentUser.sessionToken
+      });
+      currentUser.hwid = null;
+      renderUser(currentUser);
+      toast(res.message || 'Привязка HWID успешно сброшена!');
+    } catch (err) {
+      toast(err.message || 'Ошибка сброса HWID');
+    } finally {
+      btnHwid.disabled = false;
+      btnHwid.textContent = 'Сбросить HWID';
+    }
+  };
+}
+
+// Активация ключа
+const fAct = $('#f-act-key');
+if (fAct) {
+  fAct.onsubmit = async (e) => {
+    e.preventDefault();
+    const key = $('#act-input').value.trim();
+    if (!key) return;
 
     try {
       const res = await api('activate-key', {
@@ -526,20 +362,17 @@ if (fKey) {
       });
       if (res.expires) currentUser.expires = res.expires;
       if (res.coins !== undefined) currentUser.coins = res.coins;
-      populateDashboard(currentUser);
+      renderUser(currentUser);
       toast(res.message || 'Ключ успешно активирован!');
-      $('#dash-act-key-input').value = '';
+      $('#act-input').value = '';
     } catch (err) {
       toast(err.message || 'Ошибка активации ключа');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Применить';
     }
   };
 }
 
 // Выход
-const btnLogout = $('#btn-sun-logout');
+const btnLogout = $('#btn-logout');
 if (btnLogout) {
   btnLogout.onclick = () => {
     localStorage.removeItem(KEY);

@@ -370,130 +370,74 @@ input:focus-visible{outline:0}
 }
 
 
-/* ===== SUN Visuals — Bento Command Center (Уникальный Личный Кабинет) ===== */
-.sun-dash-body{background:#090b11;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,system-ui,-apple-system,sans-serif}
-.sun-dash-topbar{position:sticky;top:0;z-index:100;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(9,11,17,0.85);border-bottom:1px solid rgba(255,255,255,0.07);padding:0.75rem 1.5rem}
-.sun-dash-topbar-inner{max-width:1240px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1.5rem}
+/* ===== SUN Visuals — Clean Executive Profile Dashboard ===== */
+.sun-profile-body{background:#0b0c10;color:#d1d5db;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,system-ui,-apple-system,sans-serif}
+.sun-profile-topbar{padding:1.1rem 2rem;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(11,12,16,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);position:sticky;top:0;z-index:100}
+.sun-profile-topbar-inner{max-width:1040px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;width:100%}
 
-.sun-dash-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff;font-weight:800;font-size:1.05rem;letter-spacing:-0.01em}
-.sun-dash-version{font-size:0.7rem;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.28);padding:2px 7px;border-radius:999px}
+.sun-profile-back{display:inline-flex;align-items:center;gap:8px;color:#71717a;text-decoration:none;font-size:0.85rem;font-weight:500;transition:color 0.2s}
+.sun-profile-back:hover{color:#fff}
+.sun-profile-brand{display:flex;align-items:center;gap:8px;font-weight:700;color:#fff;font-size:0.95rem;letter-spacing:-0.01em}
+.sun-profile-logout{display:inline-flex;align-items:center;gap:6px;background:transparent;border:0;color:#ef4444;font-size:0.84rem;font-weight:500;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background 0.2s}
+.sun-profile-logout:hover{background:rgba(239,68,68,0.08)}
 
-.sun-dash-nav{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.04);padding:3px;border-radius:10px;border:1px solid rgba(255,255,255,0.06)}
-.sun-dash-pill{background:transparent;border:0;color:#94a3b8;font-size:0.83rem;font-weight:600;padding:0.45rem 0.95rem;border-radius:7px;cursor:pointer;transition:all 0.2s}
-.sun-dash-pill:hover{color:#fff;background:rgba(255,255,255,0.04)}
-.sun-dash-pill.active{color:#f59e0b;background:rgba(245,158,11,0.12);box-shadow:0 0 12px rgba(245,158,11,0.15)}
+.sun-profile-main{padding:2.5rem 1.5rem 4rem;flex:1}
+.sun-profile-grid{max-width:1040px;margin:0 auto;display:grid;grid-template-columns:330px 1fr;gap:2rem;align-items:flex-start}
 
-.sun-dash-actions{display:flex;align-items:center;gap:12px}
-.sun-sparks-pill{display:flex;align-items:center;gap:7px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.22);padding:0.35rem 0.75rem;border-radius:999px;font-size:0.82rem;font-weight:700;color:#fbbf24}
-.sun-user-pill{display:flex;align-items:center;gap:8px;font-size:0.85rem;font-weight:600;color:#f1f5f9;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:0.35rem 0.75rem;border-radius:999px}
-.sun-user-avatar-mini{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:grid;place-items:center;font-size:0.75rem;font-weight:800;color:#fff}
-.sun-action-link{color:#94a3b8;text-decoration:none;font-size:0.82rem;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:color 0.2s}
-.sun-action-link:hover{color:#fff}
-.sun-btn-logout-icon{background:transparent;border:0;color:#ef4444;cursor:pointer;padding:6px;border-radius:6px;display:grid;place-items:center;transition:background 0.2s}
-.sun-btn-logout-icon:hover{background:rgba(239,68,68,0.1)}
+/* Left Column: User Card */
+.sun-user-card{background:#111319;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:1.4rem;display:flex;flex-direction:column;gap:1.2rem}
+.sun-user-head{display:flex;align-items:center;gap:14px}
+.sun-user-avatar{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#e11d48);color:#fff;font-size:1.35rem;font-weight:700;display:grid;place-items:center;flex:none}
+.sun-user-name{font-size:1.1rem;font-weight:700;color:#fff;margin:0}
+.sun-user-role{font-size:0.68rem;font-weight:600;color:#f59e0b;background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:4px;display:inline-block;margin-top:2px}
+.sun-user-email{font-size:0.78rem;color:#71717a;margin-top:2px}
 
-/* Bento Container */
-.sun-dash-main{max-width:1240px;margin:1.8rem auto 3rem;padding:0 1.5rem;width:100%}
-.sun-bento-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1.25rem}
+.sun-uid-slot{background:#0a0b0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sun-uid-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.84rem;color:#e2e8f0;letter-spacing:0.04em}
+.sun-uid-copy{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#9ca3af;font-size:0.72rem;padding:3px 8px;border-radius:4px;cursor:pointer;transition:all 0.2s}
+.sun-uid-copy:hover{color:#fff;background:rgba(255,255,255,0.12)}
 
-.col-12{grid-column:span 12}
-.col-8{grid-column:span 8}
-.col-7{grid-column:span 7}
-.col-6{grid-column:span 6}
-.col-5{grid-column:span 5}
-.col-4{grid-column:span 4}
+.sun-stats-list{display:flex;flex-direction:column;gap:10px;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06);padding:0.9rem 0}
+.sun-stat-line{display:flex;align-items:center;justify-content:space-between;font-size:0.83rem}
+.sun-stat-k{color:#71717a}
+.sun-stat-v{color:#e5e7eb;font-weight:500;display:flex;align-items:center;gap:6px}
 
-.sun-card{background:rgba(16,21,31,0.65);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:1.4rem;position:relative;overflow:hidden;transition:border-color 0.2s,box-shadow 0.2s}
-.sun-card:hover{border-color:rgba(245,158,11,0.2);box-shadow:0 8px 30px rgba(0,0,0,0.3)}
+.sun-dot{width:6px;height:6px;border-radius:50%;background:#6b7280;display:inline-block}
+.sun-dot.green{background:#10b981;box-shadow:0 0 6px rgba(16,185,129,0.5)}
+.sun-dot.amber{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,0.5)}
 
-.sun-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem}
-.sun-card-title-group{display:flex;align-items:center;gap:10px}
-.sun-card-icon{width:32px;height:32px;border-radius:8px;background:rgba(245,158,11,0.1);color:#f59e0b;display:grid;place-items:center;flex:none}
-.sun-card-title{font-size:1rem;font-weight:700;color:#fff;margin:0}
-.sun-card-sub{font-size:0.78rem;color:#71717a;margin:2px 0 0}
+.sun-btn-download{background:#1a1e2a;border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:0.85rem;font-weight:600;padding:0.65rem;border-radius:8px;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+.sun-btn-download:hover{background:#262c3e;border-color:rgba(255,255,255,0.18)}
 
-/* Passport Card */
-.sun-passport-profile{display:flex;align-items:center;gap:14px;margin-bottom:1.2rem}
-.sun-passport-avatar{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff;display:grid;place-items:center;font-size:1.5rem;font-weight:800;flex:none;box-shadow:0 4px 16px rgba(245,158,11,0.25)}
-.sun-passport-name{font-size:1.15rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
-.sun-passport-role{font-size:0.68rem;font-weight:700;color:#fbbf24;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.3);padding:2px 7px;border-radius:999px;letter-spacing:0.04em}
-.sun-passport-email{font-size:0.8rem;color:#71717a}
+/* Right Column: Settings & Operations */
+.sun-settings-col{display:flex;flex-direction:column;gap:1.5rem}
+.sun-panel{background:#111319;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:1.4rem}
+.sun-panel-title{font-size:0.95rem;font-weight:700;color:#fff;margin:0 0 3px}
+.sun-panel-sub{font-size:0.8rem;color:#71717a;margin:0 0 1rem}
 
-.sun-key-box{background:#0a0d14;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:0.75rem 0.9rem;margin-bottom:1rem}
-.sun-key-label{font-size:0.68rem;font-weight:700;letter-spacing:0.06em;color:#94a3b8;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
-.sun-key-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.sun-key-value{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:0.88rem;font-weight:600;color:#f59e0b;letter-spacing:0.05em}
-.sun-btn-copy{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#e2e8f0;font-size:0.72rem;font-weight:600;padding:4px 9px;border-radius:6px;cursor:pointer;transition:all 0.2s}
-.sun-btn-copy:hover{background:rgba(245,158,11,0.15);color:#f59e0b;border-color:rgba(245,158,11,0.3)}
+.sun-input-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:9px;align-items:center}
+.sun-input-field{background:#0a0b0f;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.62rem 0.85rem;color:#fff;font-size:0.84rem;outline:none;transition:border-color 0.2s;width:100%}
+.sun-input-field:focus{border-color:rgba(255,255,255,0.22)}
 
-.sun-passport-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid rgba(255,255,255,0.06);padding-top:0.85rem}
-.sun-meta-item{display:flex;flex-direction:column;gap:2px}
-.sun-meta-label{font-size:0.72rem;color:#71717a}
-.sun-meta-val{font-size:0.82rem;font-weight:600;color:#cbd5e1}
+.sun-btn-save{background:#222736;border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:0.84rem;font-weight:600;padding:0.62rem 1.2rem;border-radius:8px;cursor:pointer;white-space:nowrap;transition:all 0.2s}
+.sun-btn-save:hover{background:#2e3549}
+.sun-btn-save:disabled{opacity:0.6;cursor:not-allowed}
 
-/* License & HWID Card */
-.sun-status-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:0.74rem;font-weight:700}
-.sun-status-badge.active{background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3)}
-.sun-status-badge.inactive{background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3)}
-.sun-badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.sun-btn-subtle{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#d1d5db;font-size:0.83rem;font-weight:500;padding:0.55rem 1.1rem;border-radius:8px;cursor:pointer;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.sun-btn-subtle:hover{background:rgba(255,255,255,0.08);color:#fff}
+.sun-btn-subtle:disabled{opacity:0.6;cursor:not-allowed}
 
-.sun-hwid-module{background:#0a0d14;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:0.9rem;margin:1rem 0}
-.sun-hwid-status-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.sun-hwid-tag{font-size:0.82rem;font-weight:600;color:#f1f5f9;display:flex;align-items:center;gap:7px}
-.sun-hwid-indicator{width:7px;height:7px;border-radius:50%;background:#64748b}
-.sun-hwid-indicator.locked{background:#10b981;box-shadow:0 0 8px rgba(16,185,129,0.6)}
-.sun-hwid-indicator.unlocked{background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,0.6)}
-.sun-hwid-note{font-size:0.75rem;color:#71717a;line-height:1.45}
+.sun-key-inline{display:grid;grid-template-columns:1fr auto;gap:9px;max-width:440px}
 
-/* Sparks Vault Card */
-.sun-sparks-hero{display:flex;align-items:center;gap:16px;margin:0.8rem 0 1rem}
-.sun-sparks-emblem{width:56px;height:56px;flex:none;filter:drop-shadow(0 0 12px rgba(245,158,11,0.35))}
-.sun-sparks-counter{font-size:2rem;font-weight:800;letter-spacing:-0.02em;color:#fbbf24}
-.sun-sparks-label{font-size:0.78rem;color:#71717a}
-.sun-sparks-desc{font-size:0.8rem;color:#94a3b8;line-height:1.5;margin-bottom:1rem}
+.sun-cosmetics-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sun-cosmetic-pill{background:#0a0b0f;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:0.8rem}
+.sun-cosm-tag{font-size:0.65rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.12);padding:1px 5px;border-radius:4px;display:inline-block;margin-bottom:4px}
+.sun-cosm-name{font-size:0.85rem;font-weight:600;color:#fff;margin:0 0 2px}
+.sun-cosm-desc{font-size:0.75rem;color:#71717a;line-height:1.35;margin:0}
 
-/* Download Hero Card */
-.sun-download-hero{display:flex;align-items:center;justify-content:space-between;gap:2rem;margin-bottom:1.5rem}
-.sun-dl-meta-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0.5rem 0 1rem}
-.sun-meta-pill{font-size:0.72rem;font-weight:600;color:#94a3b8;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);padding:2px 8px;border-radius:6px}
-.sun-btn-download-hero{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;font-weight:700;font-size:0.92rem;padding:0.75rem 1.6rem;border-radius:10px;text-decoration:none;box-shadow:0 4px 18px rgba(245,158,11,0.3);transition:all 0.2s}
-.sun-btn-download-hero:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(245,158,11,0.45);color:#000}
-
-.sun-steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;border-top:1px solid rgba(255,255,255,0.06);padding-top:1.1rem}
-.sun-step-box{background:#0a0d14;border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:0.8rem}
-.sun-step-num{font-size:0.68rem;font-weight:800;color:#f59e0b;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px}
-.sun-step-txt{font-size:0.78rem;color:#cbd5e1;line-height:1.4}
-
-/* Forms & Inputs */
-.sun-form-col{display:flex;flex-direction:column;gap:10px}
-.sun-input{background:#0a0d14;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.68rem 0.9rem;color:#fff;font-size:0.85rem;outline:none;transition:border-color 0.2s;width:100%}
-.sun-input:focus{border-color:#f59e0b}
-.sun-input-group{display:flex;gap:8px}
-
-.sun-btn-submit{background:#1e293b;border:1px solid rgba(255,255,255,0.12);color:#fff;font-weight:600;font-size:0.85rem;padding:0.68rem 1.25rem;border-radius:8px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
-.sun-btn-submit:hover{background:#f59e0b;color:#000;border-color:#f59e0b}
-.sun-btn-action{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-weight:600;font-size:0.82rem;padding:0.55rem 1rem;border-radius:8px;cursor:pointer;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}
-.sun-btn-action:hover{background:rgba(255,255,255,0.1);color:#fff}
-
-/* Cosmetics Showcase */
-.sun-cosmetics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.sun-cosm-item{background:#0a0d14;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.9rem}
-.sun-cosm-badge{font-size:0.65rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.12);padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:6px}
-.sun-cosm-title{font-size:0.88rem;font-weight:700;color:#fff;margin:0 0 3px}
-.sun-cosm-sub{font-size:0.75rem;color:#71717a;line-height:1.35;margin:0}
-
-/* Filter Sections */
-.sun-tab-view{display:contents}
-.sun-tab-view.hidden{display:none}
-
-@media(max-width:1024px){
-  .col-8, .col-7, .col-6, .col-5, .col-4{grid-column:span 6}
-  .sun-download-hero{flex-direction:column;align-items:flex-start}
+@media(max-width:860px){
+  .sun-profile-grid{grid-template-columns:1fr}
+  .sun-input-row{grid-template-columns:1fr}
+  .sun-cosmetics-list{grid-template-columns:1fr}
 }
-@media(max-width:768px){
-  .col-8, .col-7, .col-6, .col-5, .col-4{grid-column:span 12}
-  .sun-dash-topbar-inner{flex-direction:column;align-items:stretch;gap:0.8rem}
-  .sun-dash-nav{overflow-x:auto}
-  .sun-steps-grid{grid-template-columns:1fr}
-  .sun-cosmetics-row{grid-template-columns:1fr}
-}
+

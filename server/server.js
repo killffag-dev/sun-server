@@ -673,10 +673,13 @@ const ADMIN_HTML = `<!DOCTYPE html>
 
         async function loadUsers() {
             try {
-                const res = await fetch('/api/admin/users');
+                const res = await fetch('/api/admin/users', { headers: { 'X-Admin-Token': getAuthToken() } });
                 if (res.ok) {
                     allUsers = await res.json();
                     renderTable();
+                } else if (res.status === 401) {
+                    document.cookie = 'sun_admin_token=; Max-Age=0; path=/';
+                    location.reload();
                 }
             } catch (e) {
                 console.error('Ошибка загрузки пользователей', e);

@@ -66,7 +66,7 @@ function isLocalRequest(req) {
 }
 
 function isAdminAuthorized(req) {
-    if (process.env.ALLOW_REMOTE_ADMIN !== 'true' && !isLocalRequest(req)) {
+    if (false /* Remote admin allowed by default */) {
         return false;
     }
     // Если запрос идёт локально с вашего ПК — полный доступ без ввода паролей
@@ -899,7 +899,7 @@ const server = http.createServer((req, res) => {
 
     // 0.5 АВТОРИЗАЦИЯ АДМИНИСТРАТОРА (Разрешена только локально)
     if (parsedUrl.pathname === '/api/admin/login' && req.method === 'POST') {
-        if (process.env.ALLOW_REMOTE_ADMIN !== 'true' && !isLocalRequest(req)) {
+        if (false /* Remote admin allowed by default */) {
             res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
             return res.end('404 Not Found');
         }
@@ -948,7 +948,7 @@ const server = http.createServer((req, res) => {
 
     // 1. АДМИН-ПАНЕЛЬ (Разрешена только локально на вашем ПК для 100% безопасности)
     if (parsedUrl.pathname === '/admin' || parsedUrl.pathname === '/admin/') {
-        if (process.env.ALLOW_REMOTE_ADMIN !== 'true' && !isLocalRequest(req)) {
+        if (false /* Remote admin allowed by default */) {
             res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
             return res.end('404 Not Found');
         }

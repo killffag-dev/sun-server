@@ -303,7 +303,7 @@ function updateUserUI(u) {
   if (headerBtn) {
     const avatarHtml = u.avatarUrl 
       ? `<img src="${u.avatarUrl}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;margin-right:6px;vertical-align:middle;" alt="">`
-      : `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;line-height:18px;text-align:center;font-weight:700;margin-right:6px;">${(u.username || 'U')[0].toUpperCase()}</span>`;
+      : `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#27272a;border:1px solid #3f3f46;color:#fff;font-size:11px;line-height:16px;text-align:center;font-weight:700;margin-right:6px;">${(u.username || 'U')[0].toUpperCase()}</span>`;
     headerBtn.innerHTML = `
       ${avatarHtml}
       <span>${u.username}</span>
@@ -478,12 +478,20 @@ try {
   }
 } catch (e) {}
 
-// Проверка query параметра ?openAuth=1
+// Проверка query параметров ?openAuth=1, ?reg=1, ?auth=1
 try {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('openAuth')) {
+  const isRegParam = params.get('reg') === '1' || params.get('mode') === 'reg';
+  const isOpenAuth = params.get('openAuth') === '1' || params.get('auth') === '1' || isRegParam;
+  const targetTab = params.get('tab') || '';
+
+  if (isOpenAuth) {
     setTimeout(() => {
-      openAuthModal('log', 'Пожалуйста, войдите в SUN ID для доступа к личному кабинету');
+      if (currentUser) {
+        window.location.href = targetTab ? `profile.html?tab=${encodeURIComponent(targetTab)}` : 'profile.html';
+        return;
+      }
+      openAuthModal(isRegParam ? 'reg' : 'log', isRegParam ? 'Создайте профиль SUN ID для доступа к личному кабинету и Sparks' : 'Пожалуйста, войдите в SUN ID для доступа к личному кабинету');
     }, 200);
   }
 } catch {}

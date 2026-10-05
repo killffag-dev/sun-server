@@ -6,7 +6,7 @@
 <title>Личный кабинет — SUN Visuals</title>
 <meta name="description" content="Личный кабинет SUN Visuals: данные аккаунта, подписка, привязка HWID и баланс Sparks.">
 <link rel="icon" type="image/svg+xml" href="assets/logo.svg?v=white2">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=7">
 <script>document.documentElement.classList.add('js')</script>
 </head>
 <body class="kimiko-body">
@@ -30,10 +30,9 @@
 
     <nav class="kimiko-nav" role="tablist">
       <button type="button" class="kimiko-nav-item active" data-tab="account">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 1.79 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         <span>Аккаунт</span>
       </button>
-
 
       <button type="button" class="kimiko-nav-item" data-tab="cosmetics">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -41,16 +40,19 @@
       </button>
 
       <button type="button" class="kimiko-nav-item" data-tab="sparks">
-        <img src="assets/sparks.svg" alt="" width="18" height="18" class="sparks-mark" style="filter:none;">
+        <img src="assets/sparks.svg" alt="" width="18" height="18" class="sparks-mark">
         <span>Баланс Sparks</span>
       </button>
 
+      <button type="button" class="kimiko-nav-item" data-tab="promocodes">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
+        <span>Промокоды</span>
+      </button>
 
       <button type="button" class="kimiko-nav-item" data-tab="configs">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
         <span>Конфиги</span>
       </button>
-
 
       <button type="button" class="kimiko-nav-item kimiko-logout" id="btn-kimiko-logout">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
@@ -62,11 +64,10 @@
   <!-- Правая колонка: Основной контент -->
   <main class="kimiko-content">
 
-    <!-- Вкладка 1: Аккаунт (Основной экран по образцу со скриншота) -->
+    <!-- Вкладка 1: Аккаунт -->
     <div class="kimiko-tab-pane active" id="pane-account">
       <div class="kimiko-pane-head">
         <h1 class="kimiko-page-title">Аккаунт</h1>
-        <p class="kimiko-page-sub">Ваш профиль, активность и данные аккаунта</p>
       </div>
 
       <!-- Баннер пользователя с обложкой -->
@@ -90,96 +91,28 @@
           </div>
           <div class="kimiko-banner-meta">
             <div class="kimiko-banner-name" id="banner-username">Загрузка...</div>
-            <div class="kimiko-banner-email" id="banner-email" style="display:none;"></div>
           </div>
         </div>
       </div>
 
-      <!-- Верхний блок аккаунта: Слева данные профиля столбиком, Справа блок активации ключа -->
-      <div class="kimiko-account-dashboard-row">
-        <!-- Левая колонка: Все параметры профиля строго столбиком -->
-        <div class="kimiko-stats-column">
-          <!-- 1. UID -->
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-              <span>UID</span>
-            </div>
-            <div class="kimiko-stat-val">
-              <span id="k-uid" class="kimiko-mono kimiko-highlight">#10</span>
-            </div>
+      <!-- Отдельно наверх: Блок «Подключить игру (SUN Connect)» (исчезает при сопряжении) -->
+      <div class="kimiko-activate-card kimiko-pair-standalone" id="card-pair-game">
+        <div class="kimiko-activate-header">
+          <div class="kimiko-activate-badge">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14zm-4.2-5.78v1.75l3.2-2.97-3.2-2.97v1.75c-3.15 0-4.8 1.63-4.8 4.72.93-1.3 2.1-2.28 4.8-2.28z"/></svg>
           </div>
-
-          <!-- 2. Токен / Ключ -->
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31.83 2.42 2 2.83V21c0 .55.45 1 1 1s1-.45 1-1v-1.17c1.17-.41 2-1.52 2-2.83 0-1.66-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm14-11.83V4c0-.55-.45-1-1-1h-2.17c-.41-1.17-1.52-2-2.83-2-1.66 0-3 1.34-3 3 0 1.31.83 2.42 2 2.83V9H10c-.55 0-1 .45-1 1s.45 1 1 1h4v2h-2c-.55 0-1 .45-1 1s.45 1 1 1h2v1.17c-.41 1.17-1.52 2-2.83 2-1.66 0-3 1.34-3 3 0 1.31.83 2.42 2 2.83V24c0 .55.45 1 1 1s1-.45 1-1v-1.17c1.17-.41 2-1.52 2-2.83 0-1.31-.83-2.42-2-2.83V16h3c.55 0 1-.45 1-1v-4h2c1.66 0 3-1.34 3-3 0-1.31-.83-2.42-2-2.83z"/></svg>
-              <span>SUN ID</span>
-            </div>
-            <div class="kimiko-stat-val">
-              <span id="k-key" class="kimiko-mono">SUN-XXXX-XXXX</span>
-              <button type="button" class="kimiko-mini-copy" id="btn-copy-key" title="Скопировать идентификатор">Копировать</button>
-            </div>
-          </div>
-
-          <!-- 3. Логин -->
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-              <span>Логин</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-login">Steve</div>
-          </div>
-
-          <!-- 4. Статус игры -->
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M4 6h16v12H4z"/></svg>
-              <span>Клиент игры</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-hwid-display">
-              <span class="kimiko-dot" id="k-hwid-dot"></span>
-              <span id="k-hwid-text">Синхронизирован</span>
-            </div>
-          </div>
-
-          <!-- 5. Роль -->
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              <span>Роль</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-role">Бета-тестер</div>
+          <div>
+            <h3 class="kimiko-block-title">Подключить игру (SUN Connect)</h3>
+            <p class="kimiko-block-sub">Введите 6-значный код из экрана игры</p>
           </div>
         </div>
-
-        <!-- Правая колонка: Блок «Привязать клиент» (SUN Connect) и Промокоды -->
-        <div class="kimiko-activate-card">
-          <div class="kimiko-activate-header">
-            <div class="kimiko-activate-badge">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14zm-4.2-5.78v1.75l3.2-2.97-3.2-2.97v1.75c-3.15 0-4.8 1.63-4.8 4.72.93-1.3 2.1-2.28 4.8-2.28z"/></svg>
-            </div>
-            <div>
-              <h3 class="kimiko-block-title">Подключить игру (SUN Connect)</h3>
-              <p class="kimiko-block-sub">Введите 6-значный код из экрана игры</p>
-            </div>
-          </div>
-          <form id="f-pair-client" class="kimiko-activate-form" style="margin-bottom: 0.8rem;">
-            <input type="text" id="pair-code" placeholder="000-000" maxlength="7" required autocomplete="off" style="letter-spacing: 2px; font-weight: 700; text-align: center;">
-            <button type="submit" class="kimiko-btn-primary">Привязать</button>
-          </form>
-
-          <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.75rem;">
-            <div style="font-size: 0.76rem; color: #8b93a7; margin-bottom: 0.4rem;">Активация промокода или Sparks:</div>
-            <form id="f-activate-key" class="kimiko-activate-form">
-              <input type="text" id="act-key" placeholder="SUN_xxxxxxxx" autocomplete="off" style="font-size: 0.8rem; padding: 0.5rem 0.8rem;">
-              <button type="submit" class="kimiko-btn-primary" style="padding: 0.5rem 0.9rem; font-size: 0.8rem;">Применить</button>
-            </form>
-          </div>
-        </div>
+        <form id="f-pair-client" class="kimiko-activate-form">
+          <input type="text" id="pair-code" placeholder="000-000" maxlength="7" required autocomplete="off" style="letter-spacing: 2px; font-weight: 700; text-align: center;">
+          <button type="submit" class="kimiko-btn-primary">Привязать</button>
+        </form>
       </div>
 
-      <!-- Под ними: Кнопка скачать сам мод и понятная инструкция -->
+      <!-- Кнопка скачать сам мод и понятная инструкция -->
       <div class="kimiko-client-download-box">
         <div class="kimiko-download-bar">
           <div class="kimiko-dl-info">
@@ -214,6 +147,50 @@
               <p>Введите код сопряжения в поле выше. Баланс Sparks и вся косметика мгновенно появятся в игре без ключей и HWID!</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Бокс данных профиля в самом низу ("перемести до конца") -->
+      <div class="kimiko-stats-box-bottom">
+        <!-- 1. UID -->
+        <div class="kimiko-stat-item">
+          <div class="kimiko-stat-label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <span>UID</span>
+          </div>
+          <div class="kimiko-stat-val">
+            <span id="k-uid" class="kimiko-mono kimiko-highlight">#10</span>
+          </div>
+        </div>
+
+        <!-- 2. Логин -->
+        <div class="kimiko-stat-item">
+          <div class="kimiko-stat-label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <span>Логин</span>
+          </div>
+          <div class="kimiko-stat-val" id="k-login">Steve</div>
+        </div>
+
+        <!-- 3. Клиент игры -->
+        <div class="kimiko-stat-item">
+          <div class="kimiko-stat-label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M4 6h16v12H4z"/></svg>
+            <span>Клиент игры</span>
+          </div>
+          <div class="kimiko-stat-val" id="k-hwid-display">
+            <span class="kimiko-dot" id="k-hwid-dot"></span>
+            <span id="k-hwid-text">Не привязан</span>
+          </div>
+        </div>
+
+        <!-- 4. Роль -->
+        <div class="kimiko-stat-item">
+          <div class="kimiko-stat-label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>Роль</span>
+          </div>
+          <div class="kimiko-stat-val" id="k-role">Бета-тестер</div>
         </div>
       </div>
     </div>
@@ -268,6 +245,29 @@
       </div>
     </div>
 
+    <!-- Вкладка 5: Промокоды -->
+    <div class="kimiko-tab-pane" id="pane-promocodes">
+      <div class="kimiko-pane-head">
+        <h1 class="kimiko-page-title">Промокоды</h1>
+        <p class="kimiko-page-sub">Активация промокодов, бонусных ключей и Sparks</p>
+      </div>
+
+      <div class="kimiko-activate-card" style="max-width: 520px;">
+        <div class="kimiko-activate-header">
+          <div class="kimiko-activate-badge">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
+          </div>
+          <div>
+            <h3 class="kimiko-block-title">Активация промокода или Sparks</h3>
+            <p class="kimiko-block-sub">Введите промокод в поле ниже для применения к аккаунту</p>
+          </div>
+        </div>
+        <form id="f-activate-key" class="kimiko-activate-form">
+          <input type="text" id="act-key" placeholder="SUN_xxxxxxxx" autocomplete="off" style="font-size: 0.88rem; padding: 0.75rem 1rem;">
+          <button type="submit" class="kimiko-btn-primary">Применить</button>
+        </form>
+      </div>
+    </div>
 
     <!-- Вкладка 6: Конфиги -->
     <div class="kimiko-tab-pane" id="pane-configs">
@@ -409,36 +409,34 @@ function populateProfile(u) {
   }
 
   const bannerCover = $('#banner-cover');
-  if (bannerCover && u.bannerUrl) {
-    bannerCover.style.background = `linear-gradient(180deg,rgba(14,16,23,0.3),rgba(14,16,23,0.95)),url('${u.bannerUrl}') center 30%/cover`;
-  }
-
-  if ($('#banner-username')) $('#banner-username').textContent = username;
-  if ($('#banner-email')) {
-    if (u.email) {
-      $('#banner-email').textContent = u.email;
-      $('#banner-email').style.display = '';
+  if (bannerCover) {
+    if (u.bannerUrl) {
+      bannerCover.style.background = `linear-gradient(180deg,rgba(14,16,23,0.2),rgba(14,16,23,0.95)),url('${u.bannerUrl}') center 30%/cover no-repeat`;
     } else {
-      $('#banner-email').style.display = 'none';
+      bannerCover.style.background = `linear-gradient(180deg,rgba(14,16,23,0.2),rgba(14,16,23,0.95)),url('assets/Gemini_Generated_Image_8jqlde8jqlde8jql.jfif') center 30%/cover no-repeat`;
     }
   }
 
+  if ($('#banner-username')) $('#banner-username').textContent = username;
+
   if ($('#k-uid')) $('#k-uid').textContent = u.uid !== undefined ? '#' + u.uid : (u.key ? '#10' : '#10');
-  if ($('#k-key')) $('#k-key').textContent = u.key || 'SUN-XXXX-XXXX';
   if ($('#k-login')) $('#k-login').textContent = username;
   if ($('#k-role')) $('#k-role').textContent = 'Бета-тестер';
   if ($('#sparks-pane-val')) $('#sparks-pane-val').textContent = u.coins || 0;
 
-  // HWID статус
+  // HWID статус и сопряжение с игрой
   const dot = $('#k-hwid-dot');
   const hwidText = $('#k-hwid-text');
+  const pairCard = $('#card-pair-game');
 
   if (u.hwid) {
     if (dot) dot.className = 'kimiko-dot active';
-    if (hwidText) hwidText.textContent = 'Привязан (' + u.hwid.substring(0, 10) + '...)';
+    if (hwidText) hwidText.textContent = 'Привязан';
+    if (pairCard) pairCard.style.display = 'none';
   } else {
     if (dot) dot.className = 'kimiko-dot warning';
     if (hwidText) hwidText.textContent = 'Не привязан';
+    if (pairCard) pairCard.style.display = '';
   }
 }
 
@@ -480,17 +478,28 @@ function populateProfile(u) {
 })();
 
 // Переключение табов в сайдбаре
-$$('.kimiko-nav-item[data-tab]').forEach(btn => {
-  btn.onclick = () => {
+function selectProfileTab(tabName) {
+  if (!tabName) return;
+  const btn = $(`.kimiko-nav-item[data-tab="${tabName}"]`);
+  const targetPane = $('#pane-' + tabName);
+  if (btn && targetPane) {
     $$('.kimiko-nav-item').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-
-    const tab = btn.dataset.tab;
     $$('.kimiko-tab-pane').forEach(p => p.classList.remove('active'));
-    const targetPane = $('#pane-' + tab);
-    if (targetPane) targetPane.classList.add('active');
+    targetPane.classList.add('active');
+  }
+}
+
+$$('.kimiko-nav-item[data-tab]').forEach(btn => {
+  btn.onclick = () => {
+    selectProfileTab(btn.dataset.tab);
   };
 });
+
+try {
+  const pTab = new URLSearchParams(window.location.search).get('tab');
+  if (pTab) selectProfileTab(pTab);
+} catch {}
 
 // Копирование UID / ключа
 // Копирование ключа активации
@@ -657,8 +666,14 @@ if (fPairClient) {
         code: code
       });
       toast(res.message || 'Игра успешно привязана к аккаунту SUN!');
-      if ($('#k-hwid-text')) $('#k-hwid-text').textContent = 'В сети (Синхронизирован)';
+      if ($('#k-hwid-text')) $('#k-hwid-text').textContent = 'Привязан';
       if ($('#k-hwid-dot')) $('#k-hwid-dot').className = 'kimiko-dot active';
+      const pairCard = $('#card-pair-game');
+      if (pairCard) pairCard.style.display = 'none';
+      if (currentUser) {
+        currentUser.hwid = 'paired';
+        saveSession(currentUser.sessionToken, currentUser.key, currentUser);
+      }
       if (pairCodeInput) pairCodeInput.value = '';
     } catch (err) {
       toast(err.message || 'Ошибка сопряжения игры');

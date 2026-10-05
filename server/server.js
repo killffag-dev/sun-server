@@ -57,7 +57,22 @@ function cleanupAdminSessions() {
     }
 }
 
+function isLocalRequest(req) {
+    const rawForwarded = req.headers['x-forwarded-for'];
+    const ip = (rawForwarded ? rawForwarded.split(',')[0].trim() : null) || 
+               req.headers['cf-connecting-ip'] || 
+               req.socket.remoteAddress || '';
+    return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip === 'localhost';
+}
+
 function isAdminAuthorized(req) {
+    if (process.env.ALLOW_REMOTE_ADMIN !== 'true' && !isLocalRequest(req)) {
+        return false;
+    }
+    // Если запрос идёт локально с вашего ПК — полный доступ без ввода паролей
+    if (isLocalRequest(req)) {
+        return true;
+    }
     cleanupAdminSessions();
     const now = Date.now();
     const authHeader = req.headers['authorization'] || '';
@@ -583,9 +598,8 @@ const ADMIN_HTML = `<!DOCTYPE html>
             <div style="display: flex; align-items: center; gap: 14px;">
                 <div>
                     <span style="font-size: 13px; color: var(--text-muted);">Статус:</span>
-                    <span style="color: var(--green); font-weight: 600; font-size: 13px;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;"></span>Онлайн</span>
+                    <span style="color: var(--green); font-weight: 600; font-size: 13px;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;"></span>Локальный доступ</span>
                 </div>
-                <button class="action-btn" onclick="logoutAdmin()" title="Выйти из админки" style="padding: 6px 12px; border-color: rgba(239, 68, 68, 0.4); color: var(--red);">Выйти</button>
             </div>
         </header>
 
@@ -657,81 +671,18 @@ const ADMIN_HTML = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- AUTH MODAL -->
-    <div class="modal-overlay" id="authModal" style="display: flex; z-index: 9999; backdrop-filter: blur(10px); background: rgba(8, 10, 15, 0.88);">
-        <div class="modal" style="text-align: center; max-width: 380px; border-color: rgba(255, 152, 0, 0.3); box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
-            <div style="display: inline-block; background: linear-gradient(135deg, #ff9800, #ff5722); color: #fff; font-weight: 800; font-size: 18px; padding: 8px 16px; border-radius: 10px; margin-bottom: 16px; box-shadow: 0 4px 16px var(--accent-glow);">SUN ADMIN</div>
-            <h3 style="margin-bottom: 8px; font-size: 18px;">Вход в Панель Управления</h3>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Введите пароль администратора для доступа к управлению клиентом и лицензиями.</p>
-            
-            <form onsubmit="handleAuthSubmit(event)">
-                <input type="password" id="authPassword" placeholder="Пароль администратора" style="text-align: center; font-size: 15px; margin-bottom: 12px;" autofocus required>
-                <div id="authError" style="color: var(--red); font-size: 13px; margin-bottom: 12px; display: none;"></div>
-                <button type="submit" class="btn-add" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px;">Войти</button>
-            </form>
-        </div>
-    </div>
+
 
     <script>
         let allUsers = {};
 
-        function getAuthToken() {
-            return localStorage.getItem('sun_admin_token') || '';
-        }
-
-        async function handleAuthSubmit(e) {
-            e.preventDefault();
-            const password = document.getElementById('authPassword').value;
-            const errorEl = document.getElementById('authError');
-            errorEl.style.display = 'none';
-
-            try {
-                const res = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
-                });
-                const data = await res.json();
-                if (data.success && data.token) {
-                    localStorage.setItem('sun_admin_token', data.token);
-                    document.getElementById('authModal').style.display = 'none';
-                    loadUsers();
-                } else {
-                    errorEl.innerText = data.error || 'Неверный пароль администратора';
-                    errorEl.style.display = 'block';
-                }
-            } catch (err) {
-                errorEl.innerText = 'Ошибка соединения с сервером';
-                errorEl.style.display = 'block';
-            }
-        }
-
-        async function logoutAdmin() {
-            try {
-                await fetch('/api/admin/logout', { method: 'POST' });
-            } catch (e) {}
-            localStorage.removeItem('sun_admin_token');
-            document.getElementById('authModal').style.display = 'flex';
-            document.getElementById('authPassword').value = '';
-            allUsers = {};
-            renderTable();
-        }
-
         async function loadUsers() {
-            const token = getAuthToken();
             try {
-                const res = await fetch('/api/admin/users', {
-                    headers: token ? { 'X-Admin-Token': token } : {}
-                });
-                if (res.status === 401) {
-                    document.getElementById('authModal').style.display = 'flex';
-                    allUsers = {};
+                const res = await fetch('/api/admin/users');
+                if (res.ok) {
+                    allUsers = await res.json();
                     renderTable();
-                    return;
                 }
-                document.getElementById('authModal').style.display = 'none';
-                allUsers = await res.json();
-                renderTable();
             } catch (e) {
                 console.error('Ошибка загрузки пользователей', e);
             }
@@ -948,8 +899,12 @@ const server = http.createServer((req, res) => {
 
     const parsedUrl = url.parse(req.url, true);
 
-    // 0.5 АВТОРИЗАЦИЯ АДМИНИСТРАТОРА
+    // 0.5 АВТОРИЗАЦИЯ АДМИНИСТРАТОРА (Разрешена только локально)
     if (parsedUrl.pathname === '/api/admin/login' && req.method === 'POST') {
+        if (process.env.ALLOW_REMOTE_ADMIN !== 'true' && !isLocalRequest(req)) {
+            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+            return res.end('404 Not Found');
+        }
         let body = '';
         req.on('data', chunk => {
             body += chunk;
@@ -993,8 +948,12 @@ const server = http.createServer((req, res) => {
         return res.end(JSON.stringify({ success: true }));
     }
 
-    // 1. АДМИН-ПАНЕЛЬ (Красивая HTML-страница)
+    // 1. АДМИН-ПАНЕЛЬ (Разрешена только локально на вашем ПК для 100% безопасности)
     if (parsedUrl.pathname === '/admin' || parsedUrl.pathname === '/admin/') {
+        if (process.env.ALLOW_REMOTE_ADMIN !== 'true' && !isLocalRequest(req)) {
+            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+            return res.end('404 Not Found');
+        }
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         return res.end(ADMIN_HTML);
     }
@@ -2022,6 +1981,7 @@ const server = http.createServer((req, res) => {
             '.png': 'image/png',
             '.jpg': 'image/jpeg',
             '.jpeg': 'image/jpeg',
+            '.jfif': 'image/jpeg',
             '.webp': 'image/webp',
             '.gif': 'image/gif',
             '.svg': 'image/svg+xml',

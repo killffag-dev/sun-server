@@ -265,7 +265,7 @@ function loadDatabase() {
                 coins: 0,
                 hwid: null,
                 hwid_last_reset: null,
-                cosmetics: ["wings_fire", "crown_gold", "cape_sun"],
+                cosmetics: [],
                 lastSeen: "2026-10-05 16:42"
             }
         };
@@ -664,6 +664,11 @@ const ADMIN_HTML = `<!DOCTYPE html>
 
 
     <script>
+        function getAuthToken() {
+            const match = document.cookie.match(/sun_admin_token=([^;]+)/);
+            return match ? match[1] : '';
+        }
+
         let allUsers = {};
 
         async function loadUsers() {
@@ -709,7 +714,24 @@ const ADMIN_HTML = `<!DOCTYPE html>
                     return;
                 }
 
-                let statusBadge = '<span class="status-badge status-active"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:5px;"></span>Активен</span>';
+                
+                let isOnline = false;
+                if (user.lastSeen) {
+                    const lastSeenTime = new Date(user.lastSeen).getTime();
+                    const nowTime = Date.now();
+                    // Just simple logic or checking lastSeen string
+                    if (nowTime - lastSeenTime < 15 * 60 * 1000) {
+                        isOnline = true;
+                    }
+                }
+                // Also default to online if clientLinked and recent? Let's just use lastSeen
+                // If it fails parsing we can just show "Не в сети"
+                
+                let statusBadge = '<span class="status-badge status-active"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:5px;"></span>В сети</span>';
+                if (!isActive || !isOnline) {
+                    statusBadge = '<span class="status-badge" style="background: rgba(139, 147, 167, 0.15); color: var(--text-muted); border: 1px solid rgba(139, 147, 167, 0.3);"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--text-muted);margin-right:5px;"></span>Не в сети</span>';
+                }
+
                 if (isBanned) {
                     statusBadge = '<span class="status-badge status-banned"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:5px;"></span>Забанен</span>';
                 }
@@ -980,10 +1002,10 @@ const server = http.createServer((req, res) => {
                     saveDatabase(database);
                 } else if (action === 'toggle_cosmetics' && targetKey && database[targetKey]) {
                     const list = database[targetKey].cosmetics || [];
-                    if (list.includes("wings_fire")) {
+                    if (list.length > 0) {
                         database[targetKey].cosmetics = [];
                     } else {
-                        database[targetKey].cosmetics = ["wings_fire", "crown_gold", "cape_sun"];
+                        database[targetKey].cosmetics = [];
                     }
                     saveDatabase(database);
                 } else if (action === 'delete' && targetKey) {
@@ -1012,7 +1034,7 @@ const server = http.createServer((req, res) => {
                         coins: 0,
                         hwid: null,
                         hwid_last_reset: null,
-                        cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
+                        cosmetics: []
                     };
                     saveDatabase(database);
                 }
@@ -1091,7 +1113,7 @@ const server = http.createServer((req, res) => {
                     hwid: null,
                     clientLinked: false,
                     hwid_last_reset: null,
-                    cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
+                    cosmetics: []
                 };
                 saveDatabase(database);
 
@@ -1114,7 +1136,7 @@ const server = http.createServer((req, res) => {
                     hwid_last_reset: null,
                     expires: exp.toISOString().split('T')[0],
                     plan: "Бессрочно",
-                    cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
+                    cosmetics: []
                 }));
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1196,7 +1218,7 @@ const server = http.createServer((req, res) => {
                         coins: 0,
                         hwid: null,
                         hwid_last_reset: null,
-                        cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
+                        cosmetics: []
                     };
                     database[userKey] = user;
                 }
@@ -1220,8 +1242,9 @@ const server = http.createServer((req, res) => {
                     hwid_last_reset: user.hwid_last_reset || null,
                     expires: user.expires,
                     active: user.active && !user.banned,
-                    cosmetics: user.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
-                }));
+                    cosmetics: user.cosmetics || [],
+            clientLinked: !!user.hwid || !!user.clientLinked
+        }));
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
                 return res.end(JSON.stringify({ error: "Ошибка обработки Google-авторизации" }));
@@ -1278,7 +1301,7 @@ const server = http.createServer((req, res) => {
                             hwid_last_reset: u.hwid_last_reset || null,
                             expires: u.expires,
                             active: u.active && !u.banned,
-                            cosmetics: u.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
+                            cosmetics: u.cosmetics || []
                         }));
                     }
                     if (!data.query && !data.username && !data.email) {
@@ -1344,7 +1367,7 @@ const server = http.createServer((req, res) => {
                     hwid_last_reset: u.hwid_last_reset || null,
                     expires: u.expires,
                     active: u.active && !u.banned,
-                    cosmetics: u.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
+                    cosmetics: u.cosmetics || []
                 }));
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1449,7 +1472,7 @@ const server = http.createServer((req, res) => {
                     uid: u.uid || 10,
                     username: u.username,
                     coins: u.coins || 0,
-                    cosmetics: u.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
+                    cosmetics: u.cosmetics || []
                 };
 
                 console.log(`[SUN-CONNECT] Игрок ${u.username} успешно связал клиент через код ${foundPair.code}!`);
@@ -1920,7 +1943,8 @@ const server = http.createServer((req, res) => {
             key: key ? userKey : undefined, // Не раскрываем лицензионный ключ, если запрос был только по HWID
             coins: user.coins || 0,
             expires: user.expires,
-            cosmetics: user.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
+            cosmetics: user.cosmetics || [],
+            clientLinked: !!user.hwid || !!user.clientLinked
         }));
     }
 

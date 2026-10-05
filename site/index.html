@@ -236,6 +236,16 @@
     </div>
 
     <div class="sun-modal-body">
+      <div id="auth-notice" class="auth-notice-banner" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="flex:none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        <span id="auth-notice-text">Для скачивания клиента необходимо зарегистрироваться или войти</span>
+      </div>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" id="tab-auth-log">Вход в аккаунт</button>
+        <button type="button" class="auth-tab" id="tab-auth-reg">Регистрация</button>
+      </div>
+
       <div class="sun-modal-header">
         <h2 id="auth-title">Вход в аккаунт</h2>
         <p class="muted" id="auth-desc">Единый аккаунт для клиента и настроек</p>
@@ -261,13 +271,12 @@
           <label>Пароль
             <input id="log-pass" name="password" type="password" required autocomplete="current-password" placeholder="••••••••">
           </label>
-          <div class="turnstile-box"><div id="turnstile-log" class="cf-turnstile-wrapper"></div></div>
           <button class="btn primary block">Войти в аккаунт</button>
         </form>
 
         <form id="f-reg" hidden>
           <label>Никнейм
-            <input id="reg-user" name="username" required autocomplete="username" placeholder="Steve">
+            <input id="reg-user" name="username" required autocomplete="username" placeholder="Steve" minlength="3" maxlength="24">
           </label>
           <label>E-mail
             <div class="input-with-action">
@@ -278,14 +287,15 @@
           <label>
             <div class="label-row">
               <span>Пароль</span>
-              <button type="button" class="gen-pass-btn" id="btn-gen-pass">Сгенерировать надежный</button>
+              <button type="button" class="gen-pass-btn" id="btn-gen-pass">Сгенерировать пароль</button>
             </div>
             <div class="input-with-action">
-              <input id="reg-pass" name="new-password" type="password" required minlength="8" autocomplete="new-password" placeholder="Пароль">
-              <button type="button" class="field-quick-btn" id="btn-toggle-eye" title="Скрыть/Показать">👁</button>
+              <input id="reg-pass" name="new-password" type="password" required minlength="8" autocomplete="new-password" placeholder="Пароль от 8 символов">
+              <button type="button" class="field-quick-btn" id="btn-toggle-eye" title="Скрыть/Показать">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" id="eye-icon-svg"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+              </button>
             </div>
           </label>
-          <div class="turnstile-box"><div id="turnstile-reg" class="cf-turnstile-wrapper"></div></div>
           <button class="btn primary block">Создать аккаунт (60 дней)</button>
         </form>
 
@@ -297,63 +307,16 @@
         <div id="alert" class="alert" hidden></div>
       </div>
 
-      <div id="profile" hidden>
-        <div class="sun-profile-head">
-          <div>
-            <h3 id="p-name" class="profile-username">User</h3>
-            <span class="user-role-badge">Бета-тестер</span>
-          </div>
-          <span id="p-status-badge" class="profile-status-badge">Активен</span>
-        </div>
-
-        <!-- Ключ активации -->
-        <div class="cabinet-section">
-          <div class="section-title-sm">Лицензионный ключ (SUN Key)</div>
-          <div class="cabinet-key-box">
-            <span id="p-key" class="cabinet-key-text">SUN-XXXX-XXXX</span>
-            <button type="button" class="cabinet-btn-copy" id="btn-copy-key" title="Скопировать ключ">Скопировать</button>
-          </div>
-          <p class="cabinet-hint">Используйте этот ключ для авторизации в клиенте при первом входе.</p>
-        </div>
-
-        <!-- Привязка к ПК (HWID) -->
-        <div class="cabinet-section">
-          <div class="section-title-sm">Привязка к устройству (HWID)</div>
-          <div class="cabinet-hwid-box">
-            <div class="hwid-status-line">
-              <span id="p-hwid-badge" class="hwid-badge-indicator">🟡 Не привязан</span>
-              <span id="p-hwid-text" class="hwid-code-masked">—</span>
-            </div>
-            <button type="button" class="btn glass sm" id="btn-reset-hwid">Сбросить HWID</button>
-          </div>
-          <p class="cabinet-hint" id="hwid-hint-text">Привязывается автоматически при первом запуске на ПК. Сброс доступен раз в 3 дня.</p>
-        </div>
-
-        <!-- Баланс очков тестера -->
-        <div class="cabinet-sparks-card">
-          <div class="sparks-header">
-            <span class="sparks-title">Баланс баг-тестера</span>
-            <span class="sparks-val">⚡ <span id="p-coins">0</span> Sparks</span>
-          </div>
-          <p class="sparks-desc">Находите баги и отправляйте в Telegram-группу для получения эксклюзивных наград и косметики на релизе!</p>
-        </div>
-
-        <!-- Детали лицензии -->
-        <dl class="profile-details">
-          <dt>Действует до</dt><dd id="p-exp"></dd>
-          <dt>Косметика беты</dt><dd id="p-cosmetics">Крылья, Корона, Плащ</dd>
-        </dl>
-
-        <a class="btn primary block download-main-btn" href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="margin-right:6px"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-          Скачать клиент (.jar)
-        </a>
-        <button type="button" class="btn glass block" id="logout">Выйти из аккаунта</button>
+      <!-- Если пользователь уже авторизован -->
+      <div id="auth-logged-in-box" hidden>
+        <p style="text-align:center;margin-bottom:1.2rem;color:var(--tx2);">Вы авторизованы как <strong id="logged-user-name" style="color:#fff;"></strong></p>
+        <a href="profile.html" class="btn primary block" style="margin-bottom:.7rem;">Перейти в Личный кабинет</a>
+        <button type="button" class="btn glass block" id="btn-modal-logout">Выйти из аккаунта</button>
       </div>
     </div>
   </div>
 </dialog>
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

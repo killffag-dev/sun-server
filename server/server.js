@@ -422,9 +422,9 @@ const ADMIN_HTML = `<!DOCTYPE html>
             <div style="display: flex; align-items: center; gap: 14px;">
                 <div>
                     <span style="font-size: 13px; color: var(--text-muted);">Статус:</span>
-                    <span style="color: var(--green); font-weight: 600; font-size: 13px;">● Онлайн</span>
+                    <span style="color: var(--green); font-weight: 600; font-size: 13px;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;"></span>Онлайн</span>
                 </div>
-                <button class="action-btn" onclick="logoutAdmin()" title="Выйти из админки" style="padding: 6px 12px; border-color: rgba(239, 68, 68, 0.4); color: var(--red);">Выйти 🚪</button>
+                <button class="action-btn" onclick="logoutAdmin()" title="Выйти из админки" style="padding: 6px 12px; border-color: rgba(239, 68, 68, 0.4); color: var(--red);">Выйти</button>
             </div>
         </header>
 
@@ -457,7 +457,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
                         <th>Пользователь</th>
                         <th>Ключ (SUN ID)</th>
                         <th>Привязка HWID</th>
-                        <th>Искры (⚡)</th>
+                        <th>Искры (Sparks)</th>
                         <th>Статус</th>
                         <th>Истекает</th>
                         <th>Косметика</th>
@@ -608,11 +608,11 @@ const ADMIN_HTML = `<!DOCTYPE html>
                     return;
                 }
 
-                let statusBadge = '<span class="status-badge status-active">● Активна</span>';
+                let statusBadge = '<span class="status-badge status-active"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:5px;"></span>Активна</span>';
                 if (isBanned) {
-                    statusBadge = '<span class="status-badge status-banned">⛔ Забанен</span>';
+                    statusBadge = '<span class="status-badge status-banned"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:5px;"></span>Забанен</span>';
                 } else if (isExpired) {
-                    statusBadge = '<span class="status-badge status-expired">● Истекла</span>';
+                    statusBadge = '<span class="status-badge status-expired"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--yellow);margin-right:5px;"></span>Истекла</span>';
                 }
 
                 const safeUsername = esc(user.username || 'User');
@@ -622,11 +622,11 @@ const ADMIN_HTML = `<!DOCTYPE html>
                 const safeCoins = Number(user.coins) || 0;
 
                 let hwidBadge = user.hwid 
-                    ? ('<span style="color:#10b981;font-size:12px;font-family:monospace;" title="' + esc(user.hwid) + '">🟢 ' + esc(user.hwid.substring(0, 14)) + '...</span>')
-                    : '<span style="color:#8b93a7;font-size:12px;">🟡 Не привязан</span>';
+                    ? ('<span style="color:#10b981;font-size:12px;font-family:monospace;" title="' + esc(user.hwid) + '"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;margin-right:5px;"></span>' + esc(user.hwid.substring(0, 14)) + '...</span>')
+                    : '<span style="color:#8b93a7;font-size:12px;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-right:5px;"></span>Не привязан</span>';
 
                 const cosmeticsHtml = (Array.isArray(user.cosmetics) ? user.cosmetics : []).map(c => '<span class="tag">' + esc(c) + '</span>').join('') || '<span style="color:#555">нет</span>';
-                const resetHwidBtn = user.hwid ? ('<button class="action-btn" title="Сбросить привязку HWID" onclick="resetHwid(\'' + safeKey + '\')">🔄 HWID</button>') : '';
+                const resetHwidBtn = user.hwid ? ('<button class="action-btn" title="Сбросить привязку HWID" onclick="resetHwid(\'' + safeKey + '\')">Сброс HWID</button>') : '';
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = \`
@@ -636,18 +636,18 @@ const ADMIN_HTML = `<!DOCTYPE html>
                     </td>
                     <td><span class="hwid-badge">\${safeKey}</span></td>
                     <td>\${hwidBadge}</td>
-                    <td><strong style="color:var(--accent);">⚡ \${safeCoins}</strong></td>
+                    <td><strong style="color:var(--accent);">\${safeCoins} Sparks</strong></td>
                     <td>\${statusBadge}</td>
                     <td>\${safeExpires}</td>
                     <td>\${cosmeticsHtml}</td>
                     <td>
                         <div class="actions-cell">
-                            <button class="action-btn" title="Начислить 50 Искр" onclick="addCoins('\${safeKey}', 50)">+⚡50</button>
+                            <button class="action-btn" title="Начислить 50 Sparks" onclick="addCoins('\${safeKey}', 50)">+50 Sparks</button>
                             \${resetHwidBtn}
                             <button class="action-btn" title="Продлить на 30 дней" onclick="extendDays('\${safeKey}', 30)">+30д</button>
-                            <button class="action-btn" title="Выдать/забрать косметику" onclick="toggleCosmetic('\${safeKey}')">👑 Косм.</button>
+                            <button class="action-btn" title="Выдать/забрать косметику" onclick="toggleCosmetic('\${safeKey}')">Косметика</button>
                             <button class="action-btn ban" onclick="toggleBan('\${safeKey}', \${!isBanned})">\${isBanned ? 'Разбан' : 'Бан'}</button>
-                            <button class="action-btn" title="Удалить пользователя" onclick="deleteUser('\${safeKey}')">🗑️</button>
+                            <button class="action-btn" title="Удалить пользователя" onclick="deleteUser('\${safeKey}')">Удалить</button>
                         </div>
                     </td>
                 \`;
@@ -1008,51 +1008,103 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // 3.55 API САЙТА: Быстрый вход через Google
+    // 3.55 API САЙТА: Вход через Google (GIS Token)
     if (parsedUrl.pathname === '/api/google-auth' && req.method === 'POST') {
-        try {
-            const randomSuffix = crypto.randomInt(1000, 9999);
-            const googleUsername = "Player_" + randomSuffix;
-            const accountId = generateLicenseKey();
-            const sessionToken = crypto.randomBytes(32).toString('hex');
-            const exp = new Date();
-            exp.setDate(exp.getDate() + 60);
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk;
+            if (body.length > 1024 * 64) req.destroy();
+        });
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const credential = (data.credential || '').trim();
 
-            database[accountId] = {
-                username: googleUsername,
-                email: "google." + randomSuffix + "@gmail.com",
-                key: accountId,
-                sessionToken: sessionToken,
-                provider: "google",
-                active: true,
-                banned: false,
-                created: new Date().toISOString().split('T')[0],
-                expires: exp.toISOString().split('T')[0],
-                coins: 0,
-                hwid: null,
-                hwid_last_reset: null,
-                cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
-            };
-            saveDatabase(database);
+                if (!credential) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ 
+                        error: "Авторизация через Google находится на модерации Google Cloud. Пожалуйста, используйте стандартный вход или регистрацию." 
+                    }));
+                }
 
-            res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-            return res.end(JSON.stringify({
-                success: true,
-                username: googleUsername,
-                email: "google." + randomSuffix + "@gmail.com",
-                key: accountId,
-                sessionToken: sessionToken,
-                coins: 0,
-                hwid: null,
-                hwid_last_reset: null,
-                expires: exp.toISOString().split('T')[0],
-                active: true,
-                cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
-            }));
-        } catch (e) {
-            res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
-            return res.end(JSON.stringify({ error: "Ошибка создания Google-сессии" }));
-        }
+                // Декодируем JWT токен Google Identity Services
+                const parts = credential.split('.');
+                if (parts.length !== 3) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Некорректный формат токена Google" }));
+                }
+
+                const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+                if (!payload || !payload.email) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Не удалось получить профиль из токена Google" }));
+                }
+
+                const googleEmail = payload.email.trim().toLowerCase();
+                const googleSub = String(payload.sub || '');
+                const googleName = (payload.name || payload.given_name || googleEmail.split('@')[0]).replace(/[^a-zA-Z0-9_\u0400-\u04FF]/g, '_').substring(0, 20);
+
+                let foundKey = Object.keys(database).find(k => 
+                    (googleSub && database[k].googleSub && database[k].googleSub === googleSub) ||
+                    (database[k].email && database[k].email.toLowerCase() === googleEmail)
+                );
+
+                let user;
+                let userKey;
+
+                if (foundKey) {
+                    userKey = foundKey;
+                    user = database[foundKey];
+                    if (googleSub) user.googleSub = googleSub;
+                    if (!user.sessionToken) {
+                        user.sessionToken = crypto.randomBytes(32).toString('hex');
+                    }
+                } else {
+                    userKey = generateLicenseKey();
+                    const sessionToken = crypto.randomBytes(32).toString('hex');
+                    const exp = new Date();
+                    exp.setDate(exp.getDate() + 60);
+
+                    user = {
+                        username: googleName || ("User_" + userKey.substring(4, 8)),
+                        email: googleEmail,
+                        key: userKey,
+                        googleSub: googleSub,
+                        sessionToken: sessionToken,
+                        provider: "google",
+                        active: true,
+                        banned: false,
+                        created: new Date().toISOString().split('T')[0],
+                        expires: exp.toISOString().split('T')[0],
+                        coins: 0,
+                        hwid: null,
+                        hwid_last_reset: null,
+                        cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
+                    };
+                    database[userKey] = user;
+                }
+                saveDatabase(database);
+
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({
+                    success: true,
+                    username: user.username,
+                    email: user.email,
+                    key: userKey,
+                    sessionToken: user.sessionToken,
+                    coins: user.coins || 0,
+                    hwid: user.hwid || null,
+                    hwid_last_reset: user.hwid_last_reset || null,
+                    expires: user.expires,
+                    active: user.active && !user.banned,
+                    cosmetics: user.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
+                }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ error: "Ошибка обработки Google-авторизации" }));
+            }
+        });
+        return;
     }
 
     // 3.6 API САЙТА: Вход в личный кабинет
@@ -1203,7 +1255,7 @@ const server = http.createServer((req, res) => {
                 user.hwid = null;
                 user.hwid_last_reset = new Date().toISOString();
                 saveDatabase(database);
-                console.log(`[SUN-API] 🔄 Сброс HWID для пользователя ${user.username} (${foundKey})`);
+                console.log(`[SUN-API] [RESET-HWID] Сброс HWID для пользователя ${user.username} (${foundKey})`);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
                 return res.end(JSON.stringify({
@@ -1250,7 +1302,7 @@ const server = http.createServer((req, res) => {
         }
 
         if (!user) {
-            console.log(`[SUN-API] ❌ Неизвестное устройство или ключ: ${key || hwid}`);
+            console.log(`[SUN-API] [ERR] Неизвестное устройство или ключ: ${key || hwid}`);
             res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
             return res.end(JSON.stringify({ 
                 valid: false, 
@@ -1262,13 +1314,13 @@ const server = http.createServer((req, res) => {
         const isExpired = new Date(user.expires) < new Date();
 
         if (isBanned) {
-            console.log(`[SUN-API] ⛔ Заблокированный пользователь: ${user.username}`);
+            console.log(`[SUN-API] [BAN] Заблокированный пользователь: ${user.username}`);
             res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
             return res.end(JSON.stringify({ valid: false, message: "Ваш аккаунт заблокирован!" }));
         }
 
         if (isExpired) {
-            console.log(`[SUN-API] ⏳ Истекшая подписка: ${user.username}`);
+            console.log(`[SUN-API] [EXP] Истекшая подписка: ${user.username}`);
             res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
             return res.end(JSON.stringify({ valid: false, message: "Срок действия бета-теста истек!" }));
         }
@@ -1279,9 +1331,9 @@ const server = http.createServer((req, res) => {
                 user.hwid = hwid;
                 user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
                 saveDatabase(database);
-                console.log(`[SUN-API] 🔒 Ключ ${userKey} (${user.username}) успешно ПРИВЯЗАН к ПК HWID: ${hwid}`);
+                console.log(`[SUN-API] [HWID] Ключ ${userKey} (${user.username}) успешно ПРИВЯЗАН к ПК HWID: ${hwid}`);
             } else if (user.hwid.toUpperCase() !== hwid.toUpperCase()) {
-                console.log(`[SUN-API] ⛔ Несовпадение HWID для ${user.username}! База: ${user.hwid}, Клиент: ${hwid}`);
+                console.log(`[SUN-API] [HWID-MISMATCH] Несовпадение HWID для ${user.username}! База: ${user.hwid}, Клиент: ${hwid}`);
                 res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
                 return res.end(JSON.stringify({ 
                     valid: false, 
@@ -1293,7 +1345,7 @@ const server = http.createServer((req, res) => {
             }
         }
 
-        console.log(`[SUN-API] ✅ Доступ разрешен: ${user.username} (HWID: ${user.hwid || 'проверен'})`);
+        console.log(`[SUN-API] [OK] Доступ разрешен: ${user.username} (HWID: ${user.hwid || 'проверен'})`);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         return res.end(JSON.stringify({
             valid: true,
@@ -1336,6 +1388,9 @@ const server = http.createServer((req, res) => {
     const SITE_DIR = path.resolve(path.join(__dirname, '..', 'site'));
     const safeBaseDir = SITE_DIR.endsWith(path.sep) ? SITE_DIR : SITE_DIR + path.sep;
     let reqPath = parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname;
+    if (parsedUrl.pathname === '/profile') {
+        reqPath = '/profile.html';
+    }
     
     // Защита от Path Traversal
     const filePath = path.resolve(path.join(SITE_DIR, reqPath));
@@ -1372,12 +1427,13 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
     console.log(`\n=============================================================`);
-    console.log(`☀️  SUN CLIENT — СЕРВЕР АВТОРИЗАЦИИ, САЙТ И АДМИН-ПАНЕЛЬ`);
+    console.log(`[SUN CLIENT] СЕРВЕР АВТОРИЗАЦИИ, САЙТ И АДМИН-ПАНЕЛЬ`);
     console.log(`=============================================================`);
-    console.log(`🚀 Сайт-визитка (открой в браузере): http://localhost:${PORT}/`);
-    console.log(`👑 Админ-панель:                     http://localhost:${PORT}/admin`);
-    console.log(`⚡ API для Майнкрафта:              http://localhost:${PORT}/api/check`);
-    console.log(`💾 Данные сохраняются в:             server/database.json`);
+    console.log(`Сайт-визитка:         http://localhost:${PORT}/`);
+    console.log(`Личный кабинет:       http://localhost:${PORT}/profile`);
+    console.log(`Админ-панель:         http://localhost:${PORT}/admin`);
+    console.log(`API для Майнкрафта:   http://localhost:${PORT}/api/check`);
+    console.log(`База данных:          ${DB_FILE}`);
     console.log(`=============================================================\n`);
 
     // Автоматический Keep-Alive пингер против засыпания хостинга (Render / Railway / Glitch)

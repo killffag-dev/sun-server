@@ -136,254 +136,285 @@ $$('.social-icon.is-stub').forEach(icon=>{
   icon.onclick=()=>toast(icon.dataset.stub+' скоро откроется');
 });
 
-// ---------- Модальное окно SUN ID (кнопка входа сейчас скрыта) ----------
-const auth=$('#auth'),alertBox=$('#alert');
-const note=(m,ok=false)=>{
-  alertBox.textContent=m;
-  alertBox.classList.toggle('ok',ok&&!!m);
-  alertBox.hidden=!m;
+// ---------- Модальное окно SUN ID (Вход / Регистрация) ----------
+const auth = $('#auth'), alertBox = $('#alert'), authNotice = $('#auth-notice'), authNoticeText = $('#auth-notice-text');
+const note = (m, ok = false) => {
+  if (!alertBox) return;
+  alertBox.textContent = m;
+  alertBox.classList.toggle('ok', ok && !!m);
+  alertBox.hidden = !m;
 };
-$$('[data-open-auth]').forEach(b=>b.onclick=()=>{
-  note('');
-  auth.showModal();
-  loadTurnstile();
-});
-$('[data-close]').onclick=()=>auth.close();
-auth.addEventListener('click',e=>{if(e.target===auth)auth.close()});
 
-// Cloudflare Turnstile грузится только при первом открытии окна.
-// Тестовый Always-Pass ключ: перед запуском входа замени на боевой.
-const CF_SITEKEY='1x00000000000000000000AA';
-let turnstileLogId=null,turnstileRegId=null,turnstileLoading=false;
-
-function loadTurnstile(){
-  if(window.turnstile){initTurnstile();return}
-  if(turnstileLoading)return;
-  turnstileLoading=true;
-  const s=document.createElement('script');
-  s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-  s.async=true;
-  s.onload=initTurnstile;
-  document.head.appendChild(s);
-}
-function initTurnstile(){
-  if(typeof turnstile==='undefined')return;
-  try{
-    if(turnstileLogId===null&&$('#turnstile-log'))turnstileLogId=turnstile.render('#turnstile-log',{sitekey:CF_SITEKEY,theme:'dark'});
-    if(turnstileRegId===null&&$('#turnstile-reg'))turnstileRegId=turnstile.render('#turnstile-reg',{sitekey:CF_SITEKEY,theme:'dark'});
-  }catch(e){console.log('[Turnstile] Init status:',e)}
-}
-
-let isRegMode=false;
-function setAuthMode(reg){
-  isRegMode=reg;
-  $('#f-log').hidden=reg;
-  $('#f-reg').hidden=!reg;
-  $('#auth-title').textContent=reg?'Создать аккаунт':'Вход в аккаунт';
-  $('#auth-desc').textContent=reg?'Один профиль SUN ID для доступа к клиенту и обновлениям.':'Управляй доступом и настройками клиента из единого профиля.';
-  $('#auth-switch-text').textContent=reg?'Уже есть аккаунт?':'Нет аккаунта?';
-  $('#btn-switch-auth').textContent=reg?'Войти':'Создать';
-  note('');
-  setTimeout(initTurnstile,50);
-}
-$('#btn-switch-auth').onclick=()=>setAuthMode(!isRegMode);
-
-// API. Ожидаемый ответ: {success, key, username, expires, active, error}
-async function api(path,body){
-  const r=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const d=await r.json().catch(()=>null);
-  if(!r.ok||!d||!d.success)throw new Error(d&&d.error||'Ошибка запроса');
-  return d;
-}
 let currentUser = null;
+let isRegMode = false;
 
-function show(u){
-  currentUser = u;
-  $('#p-name').textContent = u.username;
-  $('#p-key').textContent = u.key;
-  if ($('#p-coins')) $('#p-coins').textContent = u.coins || 0;
-  if ($('#p-status-badge')) $('#p-status-badge').textContent = u.active ? 'Активен' : 'Истекла';
-  if ($('#p-exp')) $('#p-exp').textContent = u.expires;
-
-  // HWID отображение
-  const hwidBadge = $('#p-hwid-badge');
-  const hwidText = $('#p-hwid-text');
-  const hwidHint = $('#hwid-hint-text');
-  if (hwidBadge && hwidText) {
-    if (u.hwid) {
-      hwidBadge.textContent = '🟢 Привязан к вашему ПК';
-      hwidBadge.style.color = 'var(--ok)';
-      hwidText.textContent = u.hwid.substring(0, 12) + '...';
-      if (hwidHint) hwidHint.textContent = 'Ключ заблокирован за вашим компьютером. Передать ключ другому невозможно.';
+function openAuthModal(mode = 'log', notice = '') {
+  note('');
+  if (authNotice) {
+    if (notice) {
+      if (authNoticeText) authNoticeText.textContent = notice;
+      authNotice.hidden = false;
     } else {
-      hwidBadge.textContent = '🟡 Ожидает первого запуска';
-      hwidBadge.style.color = '#ff9800';
-      hwidText.textContent = 'Не привязан';
-      if (hwidHint) hwidHint.textContent = 'Привязка произойдет автоматически при первом входе в игру через клиент.';
+      authNotice.hidden = true;
     }
   }
 
-  // Безопасное обновление кнопки в шапке сайта (без innerHTML для защиты от XSS)
-  const headerBtn = $('#btn-header-auth');
-  if (headerBtn) {
-    headerBtn.textContent = `👤 ${u.username} `;
-    const span = document.createElement('span');
-    span.style.cssText = 'color:#ff9800;margin-left:5px;font-weight:700;';
-    span.textContent = `⚡ ${u.coins || 0}`;
-    headerBtn.appendChild(span);
+  if (currentUser) {
+    $('#auth-box').hidden = true;
+    const loggedBox = $('#auth-logged-in-box');
+    if (loggedBox) {
+      loggedBox.hidden = false;
+      const nameEl = $('#logged-user-name');
+      if (nameEl) nameEl.textContent = currentUser.username;
+    }
+  } else {
+    $('#auth-box').hidden = false;
+    const loggedBox = $('#auth-logged-in-box');
+    if (loggedBox) loggedBox.hidden = true;
+    setAuthMode(mode === 'reg');
   }
 
-  $('#auth-box').hidden = true;
-  $('#profile').hidden = false;
+  if (auth && !auth.open) auth.showModal();
+}
+
+$$('[data-open-auth]').forEach(b => {
+  b.onclick = () => {
+    if (currentUser) {
+      window.location.href = 'profile.html';
+      return;
+    }
+    openAuthModal('log');
+  };
+});
+
+const closeBtn = $('[data-close]');
+if (closeBtn) closeBtn.onclick = () => auth.close();
+
+if (auth) {
+  auth.addEventListener('click', e => {
+    if (e.target === auth) auth.close();
+  });
+}
+
+function setAuthMode(reg) {
+  isRegMode = reg;
+  const fLog = $('#f-log'), fReg = $('#f-reg');
+  const tabLog = $('#tab-auth-log'), tabReg = $('#tab-auth-reg');
+
+  if (fLog) fLog.hidden = reg;
+  if (fReg) fReg.hidden = !reg;
+
+  if (tabLog) tabLog.classList.toggle('active', !reg);
+  if (tabReg) tabReg.classList.toggle('active', reg);
+
+  const titleEl = $('#auth-title');
+  const descEl = $('#auth-desc');
+  const switchTextEl = $('#auth-switch-text');
+  const switchBtn = $('#btn-switch-auth');
+
+  if (titleEl) titleEl.textContent = reg ? 'Создать аккаунт' : 'Вход в аккаунт';
+  if (descEl) descEl.textContent = reg ? 'Один профиль SUN ID для доступа к клиенту и обновлениям.' : 'Управляйте доступом и настройками клиента из единого профиля.';
+  if (switchTextEl) switchTextEl.textContent = reg ? 'Уже есть аккаунт?' : 'Нет аккаунта?';
+  if (switchBtn) switchBtn.textContent = reg ? 'Войти' : 'Зарегистрироваться';
+  note('');
+}
+
+const tabLogBtn = $('#tab-auth-log');
+if (tabLogBtn) tabLogBtn.onclick = () => setAuthMode(false);
+const tabRegBtn = $('#tab-auth-reg');
+if (tabRegBtn) tabRegBtn.onclick = () => setAuthMode(true);
+const switchBtn = $('#btn-switch-auth');
+if (switchBtn) switchBtn.onclick = () => setAuthMode(!isRegMode);
+
+// API
+async function api(path, body) {
+  const r = await fetch('/api/' + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const d = await r.json().catch(() => null);
+  if (!r.ok || !d || !d.success) throw new Error(d && d.error || 'Ошибка запроса');
+  return d;
+}
+
+function updateUserUI(u) {
+  currentUser = u;
   try {
     if (u.sessionToken) localStorage.setItem(SESSION_KEY, u.sessionToken);
     localStorage.setItem(KEY, u.key);
   } catch {}
+
+  const headerBtn = $('#btn-header-auth');
+  if (headerBtn) {
+    headerBtn.innerHTML = `
+      <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;line-height:18px;text-align:center;font-weight:700;margin-right:6px;">${(u.username || 'U')[0].toUpperCase()}</span>
+      <span>${u.username}</span>
+      <span style="display:inline-flex;align-items:center;gap:3px;color:#ffc107;margin-left:7px;font-weight:700;">
+        <img src="assets/sparks.svg" width="13" height="13" class="sparks-mark" alt="">
+        ${u.coins || 0}
+      </span>
+    `;
+    headerBtn.title = 'Перейти в Личный кабинет';
+    headerBtn.onclick = () => { window.location.href = 'profile.html'; };
+  }
 }
 
-// Копирование лицензионного ключа
-const btnCopyKey = $('#btn-copy-key');
-if (btnCopyKey) {
-  btnCopyKey.onclick = () => {
-    const key = $('#p-key').textContent;
-    if (!key) return;
-    const onSuccess = () => {
-      const orig = btnCopyKey.textContent;
-      btnCopyKey.textContent = 'Скопировано!';
-      setTimeout(() => btnCopyKey.textContent = orig, 2000);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(key).then(onSuccess).catch(() => fallbackCopy(key, onSuccess));
-    } else {
-      fallbackCopy(key, onSuccess);
+// Защита скачивания (Пункт 4: скачивание только после регистрации/входа)
+$$('.download-main-btn, [data-download-btn]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    if (!currentUser || !currentUser.key) {
+      e.preventDefault();
+      openAuthModal('reg', 'Для скачивания SUN Client необходимо зарегистрироваться или войти в SUN ID');
+      return false;
     }
-  };
-}
+  });
+});
 
-// Сброс привязки HWID
-const btnResetHwid = $('#btn-reset-hwid');
-if (btnResetHwid) {
-  btnResetHwid.onclick = async () => {
-    if (!currentUser || !currentUser.key) return;
-    if (!confirm('Вы действительно хотите сбросить привязку к этому компьютеру?')) return;
-    btnResetHwid.disabled = true;
-    btnResetHwid.textContent = 'Сброс...';
-    try {
-      const res = await api('reset-hwid', { 
-        key: currentUser.key, 
-        sessionToken: currentUser.sessionToken 
-      });
-      currentUser.hwid = null;
-      show(currentUser);
-      toast(res.message || 'Привязка HWID успешно сброшена!');
-    } catch (err) {
-      toast(err.message || 'Ошибка сброса HWID');
-    } finally {
-      btnResetHwid.disabled = false;
-      btnResetHwid.textContent = 'Сбросить HWID';
-    }
-  };
-}
-
-async function submit(e,path,body){
+async function submit(e, path, body) {
   e.preventDefault();
   note('');
-  const b=$('button:not([type=button])',e.target);
-  b.disabled=true;
-  try{
-    show(await api(path,body()));
-  }catch(err){
-    note(err instanceof TypeError?'Сервер недоступен, попробуйте позже.':err.message);
-  }finally{
-    b.disabled=false;
+  const b = $('button:not([type=button])', e.target);
+  if (b) b.disabled = true;
+  try {
+    const res = await api(path, body());
+    updateUserUI(res);
+    toast(path === 'register' ? 'Аккаунт успешно создан! Переходим в личный кабинет...' : 'Вход выполнен! Переходим в личный кабинет...');
+    setTimeout(() => {
+      window.location.href = 'profile.html';
+    }, 450);
+  } catch (err) {
+    note(err instanceof TypeError ? 'Сервер недоступен, попробуйте позже.' : err.message);
+  } finally {
+    if (b) b.disabled = false;
   }
 }
 
-$('#f-log').onsubmit=e=>submit(e,'login',()=>({
-  query:$('#log-login').value.trim(),
-  password:$('#log-pass').value.trim()
-}));
-$('#f-reg').onsubmit=e=>submit(e,'register',()=>({
-  username:$('#reg-user').value.trim(),
-  email:$('#reg-email').value.trim(),
-  password:$('#reg-pass').value.trim()
-}));
-
-// Генератор паролей (crypto, не Math.random)
-function generateSecurePassword(length=14){
-  const chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%^&*';
-  const buf=new Uint32Array(length);
-  crypto.getRandomValues(buf);
-  return[...buf].map(n=>chars[n%chars.length]).join('');
+const fLog = $('#f-log');
+if (fLog) {
+  fLog.onsubmit = e => submit(e, 'login', () => ({
+    query: $('#log-login').value.trim(),
+    password: $('#log-pass').value.trim()
+  }));
 }
-$('#btn-gen-pass').onclick=()=>{
-  const passInput=$('#reg-pass');
-  passInput.value=generateSecurePassword(14);
-  passInput.type='text';
-  $('#btn-toggle-eye').textContent='🙈';
-  note('Сгенерирован надежный пароль! Сохраните его.',true);
-};
 
-// Показать / скрыть пароль
-$('#btn-toggle-eye').onclick=()=>{
-  const passInput=$('#reg-pass');
-  const isText=passInput.type==='text';
-  passInput.type=isText?'password':'text';
-  $('#btn-toggle-eye').textContent=isText?'👁':'🙈';
-};
+const fReg = $('#f-reg');
+if (fReg) {
+  fReg.onsubmit = e => submit(e, 'register', () => ({
+    username: $('#reg-user').value.trim(),
+    email: $('#reg-email').value.trim(),
+    password: $('#reg-pass').value.trim()
+  }));
+}
+
+// Генератор надежных паролей
+function generateSecurePassword(length = 14) {
+  const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%^&*';
+  const buf = new Uint32Array(length);
+  crypto.getRandomValues(buf);
+  return [...buf].map(n => chars[n % chars.length]).join('');
+}
+const genPassBtn = $('#btn-gen-pass');
+if (genPassBtn) {
+  genPassBtn.onclick = () => {
+    const passInput = $('#reg-pass');
+    if (!passInput) return;
+    passInput.value = generateSecurePassword(14);
+    passInput.type = 'text';
+    updateEyeIcon(true);
+    note('Сгенерирован надежный пароль! Сохраните его.', true);
+  };
+}
+
+// Переключение видимости пароля (SVG иконки вместо эмодзи)
+function updateEyeIcon(isText) {
+  const eyeBtn = $('#btn-toggle-eye');
+  if (!eyeBtn) return;
+  if (isText) {
+    eyeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.61-1.57l3.15 3.15.02-.38c0-1.66-1.34-3-3-3l-.17.23z"/></svg>';
+  } else {
+    eyeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>';
+  }
+}
+const toggleEyeBtn = $('#btn-toggle-eye');
+if (toggleEyeBtn) {
+  toggleEyeBtn.onclick = () => {
+    const passInput = $('#reg-pass');
+    if (!passInput) return;
+    const isText = passInput.type === 'text';
+    passInput.type = isText ? 'password' : 'text';
+    updateEyeIcon(!isText);
+  };
+}
 
 // Быстрое автодополнение @gmail.com
-$('#btn-fill-gmail').onclick=()=>{
-  const emailInput=$('#reg-email');
-  const val=emailInput.value.trim();
-  if(!val){
-    emailInput.value='user@gmail.com';
-    emailInput.focus();
-    emailInput.setSelectionRange(0,4);
-    return;
-  }
-  emailInput.value=(val.includes('@')?val.split('@')[0]:val)+'@gmail.com';
-};
+const fillGmailBtn = $('#btn-fill-gmail');
+if (fillGmailBtn) {
+  fillGmailBtn.onclick = () => {
+    const emailInput = $('#reg-email');
+    if (!emailInput) return;
+    const val = emailInput.value.trim();
+    if (!val) {
+      emailInput.value = 'user@gmail.com';
+      emailInput.focus();
+      emailInput.setSelectionRange(0, 4);
+      return;
+    }
+    emailInput.value = (val.includes('@') ? val.split('@')[0] : val) + '@gmail.com';
+  };
+}
 
 // Вход через Google
-$('#btn-google-auth').onclick=async()=>{
-  note('');
-  const googleBtn=$('#btn-google-auth');
-  googleBtn.disabled=true;
-  $('#google-btn-text').textContent='Подключение к Google...';
-  try{
-    show(await api('google-auth',{}));
-  }catch(err){
-    note('Ошибка авторизации через Google: '+err.message);
-  }finally{
-    googleBtn.disabled=false;
-    $('#google-btn-text').textContent='Продолжить с Google';
-  }
-};
+const googleAuthBtn = $('#btn-google-auth');
+if (googleAuthBtn) {
+  googleAuthBtn.onclick = async () => {
+    note('Авторизация через Google временно находится на модерации Google Cloud. Пожалуйста, используйте форму входа и регистрации по логину и паролю.');
+  };
+}
 
-// Выход из аккаунта
-$('#logout').onclick=()=>{
-  try{
-    localStorage.removeItem(KEY);
-    localStorage.removeItem(SESSION_KEY);
-  }catch{}
-  currentUser = null;
-  const headerBtn = $('#btn-header-auth');
-  if (headerBtn) headerBtn.textContent = 'Войти / SUN ID';
-  $('#profile').hidden=true;
-  $('#auth-box').hidden=false;
-  note('');
-};
+// Выход из аккаунта из модального окна
+const modalLogoutBtn = $('#btn-modal-logout');
+if (modalLogoutBtn) {
+  modalLogoutBtn.onclick = () => {
+    try {
+      localStorage.removeItem(KEY);
+      localStorage.removeItem(SESSION_KEY);
+    } catch {}
+    currentUser = null;
+    const headerBtn = $('#btn-header-auth');
+    if (headerBtn) {
+      headerBtn.textContent = 'Войти / SUN ID';
+      headerBtn.onclick = () => openAuthModal('log');
+    }
+    const loggedBox = $('#auth-logged-in-box');
+    if (loggedBox) loggedBox.hidden = true;
+    $('#auth-box').hidden = false;
+    setAuthMode(false);
+    toast('Вы вышли из профиля');
+  };
+}
 
-// Сохранённая сессия проверяется на сервере по sessionToken
-try{
-  const sessionTok=localStorage.getItem(SESSION_KEY);
-  if(sessionTok){
-    api('login',{sessionToken:sessionTok}).then(show).catch(()=>{
+// Проверка сессии при загрузке страницы
+try {
+  const sessionTok = localStorage.getItem(SESSION_KEY);
+  if (sessionTok) {
+    api('login', { sessionToken: sessionTok }).then(u => {
+      updateUserUI(u);
+    }).catch(() => {
       localStorage.removeItem(SESSION_KEY);
     });
   }
-}catch{}
+} catch {}
+
+// Проверка query параметра ?openAuth=1
+try {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('openAuth')) {
+    setTimeout(() => {
+      openAuthModal('log', 'Пожалуйста, войдите в SUN ID для доступа к личному кабинету');
+    }, 200);
+  }
+} catch {}
 
 // ---------- 3D Tilt эффект: карточки разворачиваются лицом к мышке с плавной физикой ----------
 (function initCardTilt(){

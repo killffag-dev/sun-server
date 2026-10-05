@@ -1,0 +1,99 @@
+{
+  "SUN-WALU-DPNK": {
+    "uid": 10,
+    "username": "12345678",
+    "email": "killffag@gmail.com",
+    "key": "SUN-WALU-DPNK",
+    "password": "pbkdf2$sun2026salt$180a17a523aa664f1ad2115249b47b0d6266102347a51c4e408745894b30d0a4",
+    "active": true,
+    "banned": false,
+    "created": "2026-10-05",
+    "expires": "2026-12-31",
+    "coins": 0,
+    "hwid": "SUN-CONNECTED",
+    "clientLinked": true,
+    "hwid_last_reset": null,
+    "cosmetics": [
+      "wings_fire",
+      "crown_gold",
+      "cape_sun"
+    ],
+    "lastSeen": "2026-10-05 16:42",
+    "sessionToken": "sun_s1.eyJrIjoiU1VOLVdBTFUtRFBOSyIsInUiOiIxMjM0NTY3OCIsImlhdCI6MTc5MTE5ODExMiwiZXhwIjoxODIyNzM0MTEyfQ.HFFaTUmDlWRDewJ9yoABmEgZXP7vkn390SjYK4w9x8k"
+  },
+  "SUN-F6QF-T4F7": {
+    "uid": 11,
+    "username": "Player_7626",
+    "email": "google.7626@gmail.com",
+    "key": "SUN-F6QF-T4F7",
+    "provider": "google",
+    "active": true,
+    "banned": false,
+    "created": "2026-10-05",
+    "expires": "2026-12-04",
+    "coins": 0,
+    "hwid": "SUN-PC-BETA-5678",
+    "hwid_last_reset": "2026-10-05T05:19:33.128Z",
+    "cosmetics": [
+      "wings_fire",
+      "crown_gold",
+      "cape_sun"
+    ],
+    "lastSeen": "2026-10-05 05:19"
+  },
+  "SUN-73JEOZ": {
+    "uid": 12,
+    "username": "himer0778@gmail.com",
+    "email": "himer0778@gmail.com",
+    "password": "df757d33cb4b9b669ba9123b47d8c92f3b4eabc46c9203dcc7aad3b94663bb92",
+    "active": true,
+    "banned": false,
+    "created": "2026-10-02",
+    "expires": "2026-12-01",
+    "cosmetics": [
+      "wings_fire",
+      "crown_gold",
+      "cape_sun"
+    ]
+  },
+  "SUN-0FTQHZ": {
+    "uid": 13,
+    "username": "Alex_Player",
+    "telegram": "@alex_mc",
+    "active": true,
+    "banned": false,
+    "created": "2026-10-01",
+    "expires": "2026-11-30",
+    "cosmetics": [
+      "wings_fire",
+      "crown_gold",
+      "cape_sun"
+    ]
+  },
+  "SUN-21BC293F-7BD8B7D2": {
+    "uid": 14,
+    "username": "Player_21BC",
+    "active": true,
+    "banned": false,
+    "created": "2026-09-27",
+    "expires": "2026-11-26",
+    "cosmetics": [
+      "wings_fire",
+      "crown_gold",
+      "cape_sun"
+    ]
+  },
+  "TEST-PC-DEMO": {
+    "uid": 15,
+    "username": "Tester",
+    "active": true,
+    "banned": true,
+    "created": "2026-09-27",
+    "expires": "2026-12-31",
+    "lastSeen": "2026-09-27 20:00",
+    "cosmetics": [
+      "wings_fire",
+      "crown_gold"
+    ]
+  }
+}

@@ -424,7 +424,7 @@ function populateProfile(u) {
   const hwidText = $('#k-hwid-text');
   const pairCard = $('#card-pair-game');
 
-  if (u.hwid) {
+  if (u.hwid || u.clientLinked) {
     if (dot) dot.className = 'kimiko-dot active';
     if (hwidText) hwidText.textContent = 'Привязан';
     if (pairCard) pairCard.style.display = 'none';
@@ -666,7 +666,8 @@ if (fPairClient) {
       const pairCard = $('#card-pair-game');
       if (pairCard) pairCard.style.display = 'none';
       if (currentUser) {
-        currentUser.hwid = 'paired';
+        currentUser.hwid = 'SUN-CONNECTED';
+        currentUser.clientLinked = true;
         saveSession(currentUser.sessionToken, currentUser.key, currentUser);
       }
       if (pairCodeInput) pairCodeInput.value = '';

@@ -986,33 +986,40 @@ const server = http.createServer((req, res) => {
                 const data = JSON.parse(body);
                 const { action, hwid } = data;
 
-                if (action === 'extend' && database[hwid]) {
-                    const currentExp = new Date(database[hwid].expires);
+                const targetKey = hwid ? (database[hwid] ? hwid : Object.keys(database).find(k => 
+                    k.toUpperCase() === String(hwid).toUpperCase() || 
+                    (database[k].key && database[k].key.toUpperCase() === String(hwid).toUpperCase()) ||
+                    (database[k].username && database[k].username.toLowerCase() === String(hwid).toLowerCase())
+                )) : null;
+
+                if (action === 'extend' && targetKey && database[targetKey]) {
+                    const currentExp = new Date(database[targetKey].expires);
                     const baseDate = currentExp > new Date() ? currentExp : new Date();
                     baseDate.setDate(baseDate.getDate() + (data.days || 30));
-                    database[hwid].expires = baseDate.toISOString().split('T')[0];
-                    database[hwid].active = true;
+                    database[targetKey].expires = baseDate.toISOString().split('T')[0];
+                    database[targetKey].active = true;
                     saveDatabase(database);
-                } else if (action === 'ban' && database[hwid]) {
-                    database[hwid].banned = !!data.banned;
+                } else if (action === 'ban' && targetKey && database[targetKey]) {
+                    database[targetKey].banned = !!data.banned;
                     saveDatabase(database);
-                } else if (action === 'toggle_cosmetics' && database[hwid]) {
-                    const list = database[hwid].cosmetics || [];
+                } else if (action === 'toggle_cosmetics' && targetKey && database[targetKey]) {
+                    const list = database[targetKey].cosmetics || [];
                     if (list.includes("wings_fire")) {
-                        database[hwid].cosmetics = [];
+                        database[targetKey].cosmetics = [];
                     } else {
-                        database[hwid].cosmetics = ["wings_fire", "crown_gold", "cape_sun"];
+                        database[targetKey].cosmetics = ["wings_fire", "crown_gold", "cape_sun"];
                     }
                     saveDatabase(database);
-                } else if (action === 'delete') {
-                    delete database[hwid];
+                } else if (action === 'delete' && targetKey) {
+                    delete database[targetKey];
                     saveDatabase(database);
-                } else if (action === 'reset_hwid' && database[hwid]) {
-                    database[hwid].hwid = null;
-                    database[hwid].hwid_last_reset = null;
+                } else if (action === 'reset_hwid' && targetKey && database[targetKey]) {
+                    database[targetKey].hwid = null;
+                    database[targetKey].clientLinked = false;
+                    database[targetKey].hwid_last_reset = null;
                     saveDatabase(database);
-                } else if (action === 'add_coins' && database[hwid]) {
-                    database[hwid].coins = (database[hwid].coins || 0) + (parseInt(data.amount) || 50);
+                } else if (action === 'add_coins' && targetKey && database[targetKey]) {
+                    database[targetKey].coins = (database[targetKey].coins || 0) + (parseInt(data.amount) || 50);
                     saveDatabase(database);
                 } else if (action === 'create') {
                     const key = (data.hwid && data.hwid.trim()) ? data.hwid.trim() : generateLicenseKey();
@@ -1106,6 +1113,7 @@ const server = http.createServer((req, res) => {
                     expires: exp.toISOString().split('T')[0],
                     coins: 0,
                     hwid: null,
+                    clientLinked: false,
                     hwid_last_reset: null,
                     cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
                 };
@@ -1126,6 +1134,7 @@ const server = http.createServer((req, res) => {
                     bannerUrl: null,
                     coins: 0,
                     hwid: null,
+                    clientLinked: false,
                     hwid_last_reset: null,
                     expires: exp.toISOString().split('T')[0],
                     plan: "Бета-тест (60 дней)",
@@ -1289,6 +1298,7 @@ const server = http.createServer((req, res) => {
                             bannerUrl: u.bannerUrl || null,
                             coins: u.coins || 0,
                             hwid: u.hwid || null,
+                            clientLinked: !!u.clientLinked || !!u.hwid,
                             hwid_last_reset: u.hwid_last_reset || null,
                             expires: u.expires,
                             active: u.active && !u.banned,
@@ -1354,6 +1364,7 @@ const server = http.createServer((req, res) => {
                     bannerUrl: u.bannerUrl || null,
                     coins: u.coins || 0,
                     hwid: u.hwid || null,
+                    clientLinked: !!u.clientLinked || !!u.hwid,
                     hwid_last_reset: u.hwid_last_reset || null,
                     expires: u.expires,
                     active: u.active && !u.banned,
@@ -1448,6 +1459,12 @@ const server = http.createServer((req, res) => {
                 const u = auth.user;
                 const foundKey = auth.key;
                 const newClientToken = createSessionToken(foundKey, u.username);
+
+                // Фиксируем статус привязки клиента в базе данных навсегда
+                u.hwid = u.hwid || 'SUN-CONNECTED';
+                u.clientLinked = true;
+                u.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
+                saveDatabase(database);
 
                 foundPair.status = 'linked';
                 foundPair.token = newClientToken;

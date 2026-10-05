@@ -1,5 +1,3 @@
-database.json
-database.backup.json
 uploads/
 site/uploads/
 *.log

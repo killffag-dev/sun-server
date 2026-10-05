@@ -13,41 +13,78 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 8080;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'database.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sun2026admin';
-const activeAdminSessions = new Set();
+// Map of active admin session tokens -> expiration timestamp (ms)
+const activeAdminSessions = new Map();
+
+function timingSafeCompare(a, b) {
+    if (typeof a !== 'string' || typeof b !== 'string') return false;
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function cleanupAdminSessions() {
+    const now = Date.now();
+    for (const [tok, exp] of activeAdminSessions.entries()) {
+        if (now > exp) activeAdminSessions.delete(tok);
+    }
+}
 
 function isAdminAuthorized(req) {
+    cleanupAdminSessions();
+    const now = Date.now();
     const authHeader = req.headers['authorization'] || '';
     const adminToken = req.headers['x-admin-token'] || '';
     const cookies = req.headers['cookie'] || '';
 
-    if (adminToken === ADMIN_PASSWORD || activeAdminSessions.has(adminToken)) {
-        return true;
-    }
+    const checkToken = (tok) => {
+        if (!tok) return false;
+        if (timingSafeCompare(tok, ADMIN_PASSWORD)) return true;
+        const exp = activeAdminSessions.get(tok);
+        return typeof exp === 'number' && now < exp;
+    };
+
+    if (checkToken(adminToken)) return true;
     if (authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7).trim();
-        if (token === ADMIN_PASSWORD || activeAdminSessions.has(token)) {
-            return true;
-        }
+        if (checkToken(token)) return true;
     }
     const match = cookies.match(/sun_admin_token=([^;]+)/);
-    if (match && (match[1] === ADMIN_PASSWORD || activeAdminSessions.has(match[1]))) {
-        return true;
-    }
+    if (match && checkToken(match[1])) return true;
     return false;
 }
 
-// Password hashing utility
-function hashPassword(password) {
-    return crypto.createHash('sha256').update(password + 'SUN_SECURE_SALT_2026').digest('hex');
+// Password hashing utility with PBKDF2 + per-user salt and backward compatibility
+function hashPassword(password, salt) {
+    const userSalt = salt || crypto.randomBytes(16).toString('hex');
+    const hash = crypto.pbkdf2Sync(password, userSalt, 25000, 32, 'sha256').toString('hex');
+    return `pbkdf2$${userSalt}$${hash}`;
 }
 
-// Генератор уникального лицензионного ключа (SUN-XXXX-XXXX)
+function verifyPassword(password, storedHash) {
+    if (!password || !storedHash) return false;
+    if (typeof storedHash === 'string' && storedHash.startsWith('pbkdf2$')) {
+        const parts = storedHash.split('$');
+        if (parts.length === 3) {
+            const salt = parts[1];
+            const expectedHash = parts[2];
+            const computed = crypto.pbkdf2Sync(password, salt, 25000, 32, 'sha256').toString('hex');
+            return timingSafeCompare(computed, expectedHash);
+        }
+    }
+    // Backward compatibility with legacy SHA256 hashes
+    const legacyHash = crypto.createHash('sha256').update(password + 'SUN_SECURE_SALT_2026').digest('hex');
+    return timingSafeCompare(legacyHash, storedHash);
+}
+
+// Генератор криптографически стойкого лицензионного ключа (SUN-XXXX-XXXX)
 function generateLicenseKey() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let p1 = '', p2 = '';
     for (let i = 0; i < 4; i++) {
-        p1 += chars.charAt(Math.floor(Math.random() * chars.length));
-        p2 += chars.charAt(Math.floor(Math.random() * chars.length));
+        p1 += chars[crypto.randomInt(0, chars.length)];
+        p2 += chars[crypto.randomInt(0, chars.length)];
     }
     return `SUN-${p1}-${p2}`;
 }
@@ -75,9 +112,12 @@ function loadDatabase() {
     };
 }
 
+// Атомарное сохранение базы данных для предотвращения повреждения при падениях
 function saveDatabase(db) {
     try {
-        fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
+        const tempFile = `${DB_FILE}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+        fs.writeFileSync(tempFile, JSON.stringify(db, null, 2), 'utf-8');
+        fs.renameSync(tempFile, DB_FILE);
     } catch (e) {
         console.error('[SUN-DB] Ошибка сохранения базы данных:', e);
     }
@@ -536,6 +576,13 @@ const ADMIN_HTML = `<!DOCTYPE html>
             }
         }
 
+        function esc(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+
         function renderTable() {
             const tbody = document.getElementById('usersTableBody');
             const search = document.getElementById('searchInput').value.toLowerCase();
@@ -549,7 +596,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
 
             Object.entries(allUsers).forEach(([key, user]) => {
                 total++;
-                const isBanned = user.banned;
+                const isBanned = !!user.banned;
                 const isExpired = new Date(user.expires) < now;
                 const isActive = user.active && !isBanned && !isExpired;
 
@@ -557,7 +604,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
                 if (isBanned) bannedCount++;
 
                 // Фильтр поиска
-                if (search && !user.username.toLowerCase().includes(search) && !key.toLowerCase().includes(search) && !(user.hwid && user.hwid.toLowerCase().includes(search))) {
+                if (search && !(user.username || '').toLowerCase().includes(search) && !key.toLowerCase().includes(search) && !(user.hwid && user.hwid.toLowerCase().includes(search))) {
                     return;
                 }
 
@@ -568,33 +615,39 @@ const ADMIN_HTML = `<!DOCTYPE html>
                     statusBadge = '<span class="status-badge status-expired">● Истекла</span>';
                 }
 
+                const safeUsername = esc(user.username || 'User');
+                const safeEmail = user.email ? '<div style="font-size:11px;color:var(--text-muted);">' + esc(user.email) + '</div>' : '';
+                const safeKey = esc(key);
+                const safeExpires = esc(user.expires || '');
+                const safeCoins = Number(user.coins) || 0;
+
                 let hwidBadge = user.hwid 
-                    ? ('<span style="color:#10b981;font-size:12px;font-family:monospace;" title="' + user.hwid + '">🟢 ' + user.hwid.substring(0, 14) + '...</span>')
+                    ? ('<span style="color:#10b981;font-size:12px;font-family:monospace;" title="' + esc(user.hwid) + '">🟢 ' + esc(user.hwid.substring(0, 14)) + '...</span>')
                     : '<span style="color:#8b93a7;font-size:12px;">🟡 Не привязан</span>';
 
-                const cosmeticsHtml = (user.cosmetics || []).map(c => '<span class="tag">' + c + '</span>').join('') || '<span style="color:#555">нет</span>';
-                const resetHwidBtn = user.hwid ? ('<button class="action-btn" title="Сбросить привязку HWID" onclick="resetHwid(\'' + key + '\')">🔄 HWID</button>') : '';
+                const cosmeticsHtml = (Array.isArray(user.cosmetics) ? user.cosmetics : []).map(c => '<span class="tag">' + esc(c) + '</span>').join('') || '<span style="color:#555">нет</span>';
+                const resetHwidBtn = user.hwid ? ('<button class="action-btn" title="Сбросить привязку HWID" onclick="resetHwid(\'' + safeKey + '\')">🔄 HWID</button>') : '';
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = \`
                     <td>
-                        <strong>\${user.username}</strong>
-                        \${user.email ? '<div style="font-size:11px;color:var(--text-muted);">' + user.email + '</div>' : ''}
+                        <strong>\${safeUsername}</strong>
+                        \${safeEmail}
                     </td>
-                    <td><span class="hwid-badge">\${key}</span></td>
+                    <td><span class="hwid-badge">\${safeKey}</span></td>
                     <td>\${hwidBadge}</td>
-                    <td><strong style="color:var(--accent);">⚡ \${user.coins || 0}</strong></td>
+                    <td><strong style="color:var(--accent);">⚡ \${safeCoins}</strong></td>
                     <td>\${statusBadge}</td>
-                    <td>\${user.expires}</td>
+                    <td>\${safeExpires}</td>
                     <td>\${cosmeticsHtml}</td>
                     <td>
                         <div class="actions-cell">
-                            <button class="action-btn" title="Начислить 50 Искр" onclick="addCoins('\${key}', 50)">+⚡50</button>
+                            <button class="action-btn" title="Начислить 50 Искр" onclick="addCoins('\${safeKey}', 50)">+⚡50</button>
                             \${resetHwidBtn}
-                            <button class="action-btn" title="Продлить на 30 дней" onclick="extendDays('\${key}', 30)">+30д</button>
-                            <button class="action-btn" title="Выдать/забрать косметику" onclick="toggleCosmetic('\${key}')">👑 Косм.</button>
-                            <button class="action-btn ban" onclick="toggleBan('\${key}', \${!isBanned})">\${isBanned ? 'Разбан' : 'Бан'}</button>
-                            <button class="action-btn" title="Удалить пользователя" onclick="deleteUser('\${key}')">🗑️</button>
+                            <button class="action-btn" title="Продлить на 30 дней" onclick="extendDays('\${safeKey}', 30)">+30д</button>
+                            <button class="action-btn" title="Выдать/забрать косметику" onclick="toggleCosmetic('\${safeKey}')">👑 Косм.</button>
+                            <button class="action-btn ban" onclick="toggleBan('\${safeKey}', \${!isBanned})">\${isBanned ? 'Разбан' : 'Бан'}</button>
+                            <button class="action-btn" title="Удалить пользователя" onclick="deleteUser('\${safeKey}')">🗑️</button>
                         </div>
                     </td>
                 \`;
@@ -689,16 +742,19 @@ const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     // === SECURITY MODULE (Anti-DDoS & Headers) ===
-    const clientIp = req.socket.remoteAddress || 'unknown';
+    const rawForwarded = req.headers['x-forwarded-for'];
+    const clientIp = (req.headers['cf-connecting-ip'] || 
+                      (rawForwarded ? rawForwarded.split(',')[0].trim() : null) || 
+                      req.socket.remoteAddress || 'unknown');
     
     // 1. Security Headers (Helmet equivalent)
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: https:;");
+    res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://challenges.cloudflare.com; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; img-src 'self' data: https:;");
     
-    // 2. IP Rate Limiting
+    // 2. IP Rate Limiting (per real client IP)
     if (!global.rateLimits) global.rateLimits = new Map();
     const now = Date.now();
     const windowMs = 60000; // 1 min window
@@ -741,12 +797,13 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const data = JSON.parse(body);
-                if (data.password && data.password === ADMIN_PASSWORD) {
-                    const token = crypto.randomBytes(24).toString('hex');
-                    activeAdminSessions.add(token);
+                if (data.password && timingSafeCompare(data.password, ADMIN_PASSWORD)) {
+                    const token = crypto.randomBytes(32).toString('hex');
+                    activeAdminSessions.set(token, Date.now() + 86400000); // 24 часа
+                    const isHttps = req.headers['x-forwarded-proto'] === 'https' || (req.connection && req.connection.encrypted);
                     res.writeHead(200, {
                         'Content-Type': 'application/json; charset=utf-8',
-                        'Set-Cookie': `sun_admin_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`
+                        'Set-Cookie': `sun_admin_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${isHttps ? '; Secure' : ''}`
                     });
                     return res.end(JSON.stringify({ success: true, token }));
                 } else {
@@ -765,9 +822,12 @@ const server = http.createServer((req, res) => {
         const cookies = req.headers['cookie'] || '';
         const match = cookies.match(/sun_admin_token=([^;]+)/);
         if (match) activeAdminSessions.delete(match[1]);
+        const adminToken = req.headers['x-admin-token'] || '';
+        if (adminToken) activeAdminSessions.delete(adminToken);
+        const isHttps = req.headers['x-forwarded-proto'] === 'https' || (req.connection && req.connection.encrypted);
         res.writeHead(200, {
             'Content-Type': 'application/json; charset=utf-8',
-            'Set-Cookie': `sun_admin_token=; Path=/; HttpOnly; Max-Age=0`
+            'Set-Cookie': `sun_admin_token=; Path=/; HttpOnly; Max-Age=0${isHttps ? '; Secure' : ''}`
         });
         return res.end(JSON.stringify({ success: true }));
     }
@@ -868,7 +928,7 @@ const server = http.createServer((req, res) => {
         let body = '';
         req.on('data', chunk => {
             body += chunk;
-            if (body.length > 1024 * 512) { // 512KB payload limit
+            if (body.length > 1024 * 64) { // 64KB payload limit
                 req.destroy();
             }
         });
@@ -879,19 +939,24 @@ const server = http.createServer((req, res) => {
                 const email = (data.email || '').trim().toLowerCase();
                 const password = (data.password || '').trim();
 
-                if (!username) {
+                // Строгая валидация формата и длины
+                if (!username || username.length < 3 || username.length > 24 || !/^[a-zA-Z0-9_\u0400-\u04FF]+$/.test(username)) {
                     res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: "Пожалуйста, введите никнейм" }));
+                    return res.end(JSON.stringify({ error: "Никнейм должен содержать от 3 до 24 символов (буквы, цифры, _)" }));
                 }
-                if (!password || password.length < 6) {
+                if (email && (email.length > 64 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
                     res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: "Пароль должен содержать минимум 6 символов" }));
+                    return res.end(JSON.stringify({ error: "Введите корректный E-mail адрес" }));
+                }
+                if (!password || password.length < 8 || password.length > 128) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Пароль должен содержать от 8 до 128 символов" }));
                 }
 
                 // Проверяем, существует ли уже пользователь с таким ником или email
                 let existingHwid = Object.keys(database).find(k => 
-                    database[k].username && database[k].username.toLowerCase() === username.toLowerCase() ||
-                    email && database[k].email && database[k].email.toLowerCase() === email
+                    (database[k].username && database[k].username.toLowerCase() === username.toLowerCase()) ||
+                    (email && database[k].email && database[k].email.toLowerCase() === email)
                 );
 
                 if (existingHwid) {
@@ -900,6 +965,7 @@ const server = http.createServer((req, res) => {
                 }
 
                 const accountId = generateLicenseKey();
+                const sessionToken = crypto.randomBytes(32).toString('hex');
                 const exp = new Date();
                 exp.setDate(exp.getDate() + 60); // 60 дней бета-теста
 
@@ -908,6 +974,7 @@ const server = http.createServer((req, res) => {
                     email: email,
                     key: accountId,
                     password: hashPassword(password),
+                    sessionToken: sessionToken,
                     active: true,
                     banned: false,
                     created: new Date().toISOString().split('T')[0],
@@ -925,6 +992,7 @@ const server = http.createServer((req, res) => {
                     username: username,
                     email: email,
                     key: accountId,
+                    sessionToken: sessionToken,
                     coins: 0,
                     hwid: null,
                     hwid_last_reset: null,
@@ -934,7 +1002,7 @@ const server = http.createServer((req, res) => {
                 }));
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-                return res.end(JSON.stringify({ error: e.message }));
+                return res.end(JSON.stringify({ error: "Некорректные данные запроса" }));
             }
         });
         return;
@@ -943,9 +1011,10 @@ const server = http.createServer((req, res) => {
     // 3.55 API САЙТА: Быстрый вход через Google
     if (parsedUrl.pathname === '/api/google-auth' && req.method === 'POST') {
         try {
-            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+            const randomSuffix = crypto.randomInt(1000, 9999);
             const googleUsername = "Player_" + randomSuffix;
             const accountId = generateLicenseKey();
+            const sessionToken = crypto.randomBytes(32).toString('hex');
             const exp = new Date();
             exp.setDate(exp.getDate() + 60);
 
@@ -953,6 +1022,7 @@ const server = http.createServer((req, res) => {
                 username: googleUsername,
                 email: "google." + randomSuffix + "@gmail.com",
                 key: accountId,
+                sessionToken: sessionToken,
                 provider: "google",
                 active: true,
                 banned: false,
@@ -971,6 +1041,7 @@ const server = http.createServer((req, res) => {
                 username: googleUsername,
                 email: "google." + randomSuffix + "@gmail.com",
                 key: accountId,
+                sessionToken: sessionToken,
                 coins: 0,
                 hwid: null,
                 hwid_last_reset: null,
@@ -984,19 +1055,45 @@ const server = http.createServer((req, res) => {
         }
     }
 
-    // 3.6 API САЙТА: Вход в личный кабинет (Никнейм/Email + Пароль или Ключ)
+    // 3.6 API САЙТА: Вход в личный кабинет
     if (parsedUrl.pathname === '/api/login' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => {
             body += chunk;
-            if (body.length > 1024 * 512) { // 512KB payload limit
-                req.destroy();
-            }
+            if (body.length > 1024 * 64) req.destroy();
         });
         req.on('end', () => {
             try {
                 const data = JSON.parse(body);
-                const query = (data.query || data.username || data.key || '').trim();
+
+                // А. Вход по сохраненному токену сессии
+                if (data.sessionToken) {
+                    const foundKey = Object.keys(database).find(k => 
+                        database[k].sessionToken && timingSafeCompare(database[k].sessionToken, data.sessionToken)
+                    );
+                    if (foundKey) {
+                        const u = database[foundKey];
+                        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                        return res.end(JSON.stringify({
+                            success: true,
+                            username: u.username,
+                            email: u.email,
+                            key: foundKey,
+                            sessionToken: u.sessionToken,
+                            coins: u.coins || 0,
+                            hwid: u.hwid || null,
+                            hwid_last_reset: u.hwid_last_reset || null,
+                            expires: u.expires,
+                            active: u.active && !u.banned,
+                            cosmetics: u.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
+                        }));
+                    }
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Сессия истекла, войдите заново" }));
+                }
+
+                // Б. Обычный вход по логину/почте + обязательному паролю
+                const query = (data.query || data.username || data.email || '').trim();
                 const password = (data.password || '').trim();
 
                 if (!query) {
@@ -1016,13 +1113,21 @@ const server = http.createServer((req, res) => {
                 }
 
                 const u = database[foundKey];
-                
-                // Если у аккаунта есть пароль, проверяем его (если вход не по точному ключу сессии)
-                if (u.password && query.toLowerCase() !== foundKey.toLowerCase()) {
-                    if (!password || u.password !== hashPassword(password)) {
-                        res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
-                        return res.end(JSON.stringify({ error: "Неверный пароль" }));
-                    }
+
+                if (!u.password) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Для этого аккаунта не установлен пароль. Войдите через Google." }));
+                }
+
+                if (!password || !verifyPassword(password, u.password)) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Неверный пароль" }));
+                }
+
+                // Выдаем сессионный токен при успешном логине
+                if (!u.sessionToken) {
+                    u.sessionToken = crypto.randomBytes(32).toString('hex');
+                    saveDatabase(database);
                 }
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1031,6 +1136,7 @@ const server = http.createServer((req, res) => {
                     username: u.username,
                     email: u.email,
                     key: foundKey,
+                    sessionToken: u.sessionToken,
                     coins: u.coins || 0,
                     hwid: u.hwid || null,
                     hwid_last_reset: u.hwid_last_reset || null,
@@ -1040,13 +1146,13 @@ const server = http.createServer((req, res) => {
                 }));
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-                return res.end(JSON.stringify({ error: e.message }));
+                return res.end(JSON.stringify({ error: "Некорректные данные запроса" }));
             }
         });
         return;
     }
 
-    // 3.7 API САЙТА: Сброс привязки HWID пользователем (с кулдауном 3 дня)
+    // 3.7 API САЙТА: Сброс привязки HWID пользователем (с кулдауном 3 дня и защитой авторизацией)
     if (parsedUrl.pathname === '/api/reset-hwid' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => {
@@ -1057,6 +1163,9 @@ const server = http.createServer((req, res) => {
             try {
                 const data = JSON.parse(body);
                 const key = (data.key || '').trim();
+                const sessionToken = (data.sessionToken || '').trim();
+                const password = (data.password || '').trim();
+
                 let foundKey = Object.keys(database).find(k => 
                     k.toUpperCase() === key.toUpperCase() || 
                     (database[k].key && database[k].key.toUpperCase() === key.toUpperCase())
@@ -1068,6 +1177,16 @@ const server = http.createServer((req, res) => {
                 }
 
                 const user = database[foundKey];
+
+                // Проверка авторизации: валидный sessionToken или пароль
+                const isTokenValid = sessionToken && user.sessionToken && timingSafeCompare(sessionToken, user.sessionToken);
+                const isPasswordValid = password && user.password && verifyPassword(password, user.password);
+
+                if (!isTokenValid && !isPasswordValid) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Требуется авторизация для сброса привязки" }));
+                }
+
                 if (user.hwid_last_reset) {
                     const lastReset = new Date(user.hwid_last_reset).getTime();
                     const cooldownMs = 3 * 24 * 60 * 60 * 1000; // 3 дня
@@ -1157,7 +1276,6 @@ const server = http.createServer((req, res) => {
         // Проверка и аппаратная привязка (HWID Lock)
         if (hwid) {
             if (!user.hwid) {
-                // Первая активация на ПК -> жесткая привязка к этому железу!
                 user.hwid = hwid;
                 user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
                 saveDatabase(database);
@@ -1180,7 +1298,7 @@ const server = http.createServer((req, res) => {
         return res.end(JSON.stringify({
             valid: true,
             username: user.username,
-            key: userKey,
+            key: key ? userKey : undefined, // Не раскрываем лицензионный ключ, если запрос был только по HWID
             coins: user.coins || 0,
             expires: user.expires,
             cosmetics: user.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
@@ -1216,11 +1334,12 @@ const server = http.createServer((req, res) => {
 
     // 6. СТАТИЧЕСКИЙ САЙТ-ВИЗИТКА (site/)
     const SITE_DIR = path.resolve(path.join(__dirname, '..', 'site'));
+    const safeBaseDir = SITE_DIR.endsWith(path.sep) ? SITE_DIR : SITE_DIR + path.sep;
     let reqPath = parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname;
     
-    // Prevent Path Traversal
+    // Защита от Path Traversal
     const filePath = path.resolve(path.join(SITE_DIR, reqPath));
-    if (!filePath.startsWith(SITE_DIR)) {
+    if (!filePath.startsWith(safeBaseDir) && filePath !== SITE_DIR) {
         res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
         return res.end('403 Forbidden');
     }
@@ -1234,10 +1353,13 @@ const server = http.createServer((req, res) => {
             '.png': 'image/png',
             '.jpg': 'image/jpeg',
             '.jpeg': 'image/jpeg',
+            '.webp': 'image/webp',
             '.svg': 'image/svg+xml',
             '.json': 'application/json; charset=utf-8',
             '.ico': 'image/x-icon',
-            '.woff2': 'font/woff2'
+            '.woff': 'font/woff',
+            '.woff2': 'font/woff2',
+            '.jar': 'application/java-archive'
         };
         const contentType = mimeTypes[ext] || 'application/octet-stream';
         res.writeHead(200, { 'Content-Type': contentType });

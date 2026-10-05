@@ -1,5 +1,6 @@
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const KEY='sun_key';
+const SESSION_KEY='sun_session';
 
 // ---------- Появление блоков при скролле (stagger для вложенных .st) ----------
 $$('.stagger').forEach(g=>$$('.st',g).forEach((el,i)=>el.style.setProperty('--i',i)));
@@ -222,15 +223,22 @@ function show(u){
     }
   }
 
-  // Обновление кнопки в шапке сайта
+  // Безопасное обновление кнопки в шапке сайта (без innerHTML для защиты от XSS)
   const headerBtn = $('#btn-header-auth');
   if (headerBtn) {
-    headerBtn.innerHTML = `👤 ${u.username} <span style="color:#ff9800;margin-left:5px;font-weight:700;">⚡ ${u.coins || 0}</span>`;
+    headerBtn.textContent = `👤 ${u.username} `;
+    const span = document.createElement('span');
+    span.style.cssText = 'color:#ff9800;margin-left:5px;font-weight:700;';
+    span.textContent = `⚡ ${u.coins || 0}`;
+    headerBtn.appendChild(span);
   }
 
   $('#auth-box').hidden = true;
   $('#profile').hidden = false;
-  try{localStorage.setItem(KEY, u.key)}catch{}
+  try {
+    if (u.sessionToken) localStorage.setItem(SESSION_KEY, u.sessionToken);
+    localStorage.setItem(KEY, u.key);
+  } catch {}
 }
 
 // Копирование лицензионного ключа
@@ -261,7 +269,10 @@ if (btnResetHwid) {
     btnResetHwid.disabled = true;
     btnResetHwid.textContent = 'Сброс...';
     try {
-      const res = await api('reset-hwid', { key: currentUser.key });
+      const res = await api('reset-hwid', { 
+        key: currentUser.key, 
+        sessionToken: currentUser.sessionToken 
+      });
       currentUser.hwid = null;
       show(currentUser);
       toast(res.message || 'Привязка HWID успешно сброшена!');
@@ -352,7 +363,10 @@ $('#btn-google-auth').onclick=async()=>{
 
 // Выход из аккаунта
 $('#logout').onclick=()=>{
-  try{localStorage.removeItem(KEY)}catch{}
+  try{
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(SESSION_KEY);
+  }catch{}
   currentUser = null;
   const headerBtn = $('#btn-header-auth');
   if (headerBtn) headerBtn.textContent = 'Войти / SUN ID';
@@ -361,10 +375,14 @@ $('#logout').onclick=()=>{
   note('');
 };
 
-// Сохранённая сессия проверяется на сервере
+// Сохранённая сессия проверяется на сервере по sessionToken
 try{
-  const k=localStorage.getItem(KEY);
-  if(k)api('login',{key:k}).then(show).catch(()=>localStorage.removeItem(KEY));
+  const sessionTok=localStorage.getItem(SESSION_KEY);
+  if(sessionTok){
+    api('login',{sessionToken:sessionTok}).then(show).catch(()=>{
+      localStorage.removeItem(SESSION_KEY);
+    });
+  }
 }catch{}
 
 // ---------- 3D Tilt эффект: карточки разворачиваются лицом к мышке с плавной физикой ----------

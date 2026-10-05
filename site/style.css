@@ -2,7 +2,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;color-scheme:dark}
 body{background:var(--bg);color:var(--tx);font:16px/1.55 var(--f);-webkit-font-smoothing:antialiased;min-height:100vh}
-.bg{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(14,16,23,0.45) 0%,rgba(14,16,23,0.85) 100%),url(assets/Gemini_Generated_Image_8jqlde8jqlde8jql.jfif) center center/cover no-repeat;opacity:1}
+.bg{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(10,13,20,.7),var(--bg) 85%),url(assets/bg.webp) center 20%/cover;opacity:.55}
 section{max-width:960px;margin:0 auto;padding:4rem 1.25rem;scroll-margin-top:1.5rem}
 .section-head{text-align:center;margin-bottom:2rem}
 h2{font-size:clamp(1.7rem,4vw,2.2rem);text-align:center;margin-bottom:.35rem;letter-spacing:-.02em;background:linear-gradient(180deg,#fff 40%,#94a3b8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
@@ -672,7 +672,7 @@ input:focus-visible{outline:0}
   gap: 1rem;
 }
 
-/* Profile Details Box (Moved to the bottom of the page) */
+/* Profile Details Box (Placed directly below profile banner) */
 .kimiko-stats-box-bottom {
   display: flex;
   flex-direction: column;
@@ -680,7 +680,7 @@ input:focus-visible{outline:0}
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   overflow: hidden;
-  margin-top: 1.8rem;
+  margin-top: 0;
   margin-bottom: 2rem;
 }
 

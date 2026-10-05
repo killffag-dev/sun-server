@@ -6,7 +6,7 @@
 <title>Личный кабинет — SUN Visuals</title>
 <meta name="description" content="Личный кабинет SUN Visuals: данные аккаунта, подписка, привязка HWID и баланс Sparks.">
 <link rel="icon" type="image/svg+xml" href="assets/logo.svg?v=white2">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 <script>document.documentElement.classList.add('js')</script>
 </head>
 <body class="kimiko-body">
@@ -53,11 +53,6 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
         <span>Конфиги</span>
       </button>
-
-      <button type="button" class="kimiko-nav-item kimiko-logout" id="btn-kimiko-logout">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-        <span>Выход</span>
-      </button>
     </nav>
   </aside>
 
@@ -92,6 +87,50 @@
           <div class="kimiko-banner-meta">
             <div class="kimiko-banner-name" id="banner-username">Загрузка...</div>
           </div>
+        </div>
+      </div>
+
+      <!-- Бокс данных профиля (прямо под профилем) -->
+      <div class="kimiko-stats-box-bottom">
+        <!-- 1. UID -->
+        <div class="kimiko-stat-item">
+          <div class="kimiko-stat-label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <span>UID</span>
+          </div>
+          <div class="kimiko-stat-val">
+            <span id="k-uid" class="kimiko-mono kimiko-highlight">#10</span>
+          </div>
+        </div>
+
+        <!-- 2. Логин -->
+        <div class="kimiko-stat-item">
+          <div class="kimiko-stat-label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <span>Логин</span>
+          </div>
+          <div class="kimiko-stat-val" id="k-login">Steve</div>
+        </div>
+
+        <!-- 3. Клиент игры -->
+        <div class="kimiko-stat-item">
+          <div class="kimiko-stat-label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M4 6h16v12H4z"/></svg>
+            <span>Клиент игры</span>
+          </div>
+          <div class="kimiko-stat-val" id="k-hwid-display">
+            <span class="kimiko-dot" id="k-hwid-dot"></span>
+            <span id="k-hwid-text">Не привязан</span>
+          </div>
+        </div>
+
+        <!-- 4. Роль -->
+        <div class="kimiko-stat-item">
+          <div class="kimiko-stat-label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>Роль</span>
+          </div>
+          <div class="kimiko-stat-val" id="k-role">Бета-тестер</div>
         </div>
       </div>
 
@@ -147,50 +186,6 @@
               <p>Введите код сопряжения в поле выше. Баланс Sparks и вся косметика мгновенно появятся в игре без ключей и HWID!</p>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Бокс данных профиля в самом низу ("перемести до конца") -->
-      <div class="kimiko-stats-box-bottom">
-        <!-- 1. UID -->
-        <div class="kimiko-stat-item">
-          <div class="kimiko-stat-label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-            <span>UID</span>
-          </div>
-          <div class="kimiko-stat-val">
-            <span id="k-uid" class="kimiko-mono kimiko-highlight">#10</span>
-          </div>
-        </div>
-
-        <!-- 2. Логин -->
-        <div class="kimiko-stat-item">
-          <div class="kimiko-stat-label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            <span>Логин</span>
-          </div>
-          <div class="kimiko-stat-val" id="k-login">Steve</div>
-        </div>
-
-        <!-- 3. Клиент игры -->
-        <div class="kimiko-stat-item">
-          <div class="kimiko-stat-label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M4 6h16v12H4z"/></svg>
-            <span>Клиент игры</span>
-          </div>
-          <div class="kimiko-stat-val" id="k-hwid-display">
-            <span class="kimiko-dot" id="k-hwid-dot"></span>
-            <span id="k-hwid-text">Не привязан</span>
-          </div>
-        </div>
-
-        <!-- 4. Роль -->
-        <div class="kimiko-stat-item">
-          <div class="kimiko-stat-label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span>Роль</span>
-          </div>
-          <div class="kimiko-stat-val" id="k-role">Бета-тестер</div>
         </div>
       </div>
     </div>

@@ -630,11 +630,9 @@ const ADMIN_HTML = `<!DOCTYPE html>
                 <thead>
                     <tr>
                         <th>Пользователь</th>
-                        <th>Ключ (SUN ID)</th>
-                        <th>Привязка HWID</th>
+                        <th>UID / SUN ID</th>
                         <th>Искры (Sparks)</th>
                         <th>Статус</th>
-                        <th>Истекает</th>
                         <th>Косметика</th>
                         <th>Действия</th>
                     </tr>
@@ -653,16 +651,8 @@ const ADMIN_HTML = `<!DOCTYPE html>
             <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Никнейм</label>
             <input type="text" id="newUsername" placeholder="Например: CoolPlayer">
 
-            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">HWID (если есть, или сгенерируется сам)</label>
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">SUN ID (если пусто, сгенерируется сам)</label>
             <input type="text" id="newHwid" placeholder="SUN-XXXX-YYYY">
-
-            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Срок подписки</label>
-            <select id="newDuration">
-                <option value="7">7 дней</option>
-                <option value="30" selected>30 дней (1 месяц)</option>
-                <option value="90">90 дней (3 месяца)</option>
-                <option value="365">1 год</option>
-            </select>
 
             <div class="modal-buttons">
                 <button class="action-btn" onclick="closeAddModal()">Отмена</button>
@@ -709,36 +699,27 @@ const ADMIN_HTML = `<!DOCTYPE html>
             Object.entries(allUsers).forEach(([key, user]) => {
                 total++;
                 const isBanned = !!user.banned;
-                const isExpired = new Date(user.expires) < now;
-                const isActive = user.active && !isBanned && !isExpired;
+                const isActive = user.active && !isBanned;
 
                 if (isActive) activeCount++;
                 if (isBanned) bannedCount++;
 
                 // Фильтр поиска
-                if (search && !(user.username || '').toLowerCase().includes(search) && !key.toLowerCase().includes(search) && !(user.hwid && user.hwid.toLowerCase().includes(search))) {
+                if (search && !(user.username || '').toLowerCase().includes(search) && !key.toLowerCase().includes(search)) {
                     return;
                 }
 
-                let statusBadge = '<span class="status-badge status-active"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:5px;"></span>Активна</span>';
+                let statusBadge = '<span class="status-badge status-active"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:5px;"></span>Активен</span>';
                 if (isBanned) {
                     statusBadge = '<span class="status-badge status-banned"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:5px;"></span>Забанен</span>';
-                } else if (isExpired) {
-                    statusBadge = '<span class="status-badge status-expired"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--yellow);margin-right:5px;"></span>Истекла</span>';
                 }
 
                 const safeUsername = esc(user.username || 'User');
                 const safeEmail = user.email ? '<div style="font-size:11px;color:var(--text-muted);">' + esc(user.email) + '</div>' : '';
                 const safeKey = esc(key);
-                const safeExpires = esc(user.expires || '');
                 const safeCoins = Number(user.coins) || 0;
-
-                let hwidBadge = user.hwid 
-                    ? ('<span style="color:#10b981;font-size:12px;font-family:monospace;" title="' + esc(user.hwid) + '"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;margin-right:5px;"></span>' + esc(user.hwid.substring(0, 14)) + '...</span>')
-                    : '<span style="color:#8b93a7;font-size:12px;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-right:5px;"></span>Не привязан</span>';
-
+                
                 const cosmeticsHtml = (Array.isArray(user.cosmetics) ? user.cosmetics : []).map(c => '<span class="tag">' + esc(c) + '</span>').join('') || '<span style="color:#555">нет</span>';
-                const resetHwidBtn = user.hwid ? ('<button class="action-btn" title="Сбросить привязку HWID" onclick="resetHwid(\'' + safeKey + '\')">Сброс HWID</button>') : '';
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = \`
@@ -747,16 +728,12 @@ const ADMIN_HTML = `<!DOCTYPE html>
                         \${safeEmail}
                     </td>
                     <td><span class="hwid-badge">\${safeKey}</span></td>
-                    <td>\${hwidBadge}</td>
                     <td><strong style="color:var(--accent);">\${safeCoins} Sparks</strong></td>
                     <td>\${statusBadge}</td>
-                    <td>\${safeExpires}</td>
                     <td>\${cosmeticsHtml}</td>
                     <td>
                         <div class="actions-cell">
                             <button class="action-btn" title="Начислить 50 Sparks" onclick="addCoins('\${safeKey}', 50)">+50 Sparks</button>
-                            \${resetHwidBtn}
-                            <button class="action-btn" title="Продлить на 30 дней" onclick="extendDays('\${safeKey}', 30)">+30д</button>
                             <button class="action-btn" title="Выдать/забрать косметику" onclick="toggleCosmetic('\${safeKey}')">Косметика</button>
                             <button class="action-btn ban" onclick="toggleBan('\${safeKey}', \${!isBanned})">\${isBanned ? 'Разбан' : 'Бан'}</button>
                             <button class="action-btn" title="Удалить пользователя" onclick="deleteUser('\${safeKey}')">Удалить</button>
@@ -831,13 +808,12 @@ const ADMIN_HTML = `<!DOCTYPE html>
         async function submitAddUser() {
             const username = document.getElementById('newUsername').value.trim() || 'User';
             let hwid = document.getElementById('newHwid').value.trim();
-            const days = parseInt(document.getElementById('newDuration').value);
 
             if (!hwid) {
                 hwid = 'SUN-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
             }
 
-            await sendAction({ action: 'create', username, hwid, days });
+            await sendAction({ action: 'create', username, hwid });
             closeAddModal();
         }
 
@@ -995,7 +971,7 @@ const server = http.createServer((req, res) => {
                 if (action === 'extend' && targetKey && database[targetKey]) {
                     const currentExp = new Date(database[targetKey].expires);
                     const baseDate = currentExp > new Date() ? currentExp : new Date();
-                    baseDate.setDate(baseDate.getDate() + (data.days || 30));
+                    baseDate.setDate(baseDate.getDate() + (data.days || 36500));
                     database[targetKey].expires = baseDate.toISOString().split('T')[0];
                     database[targetKey].active = true;
                     saveDatabase(database);
@@ -1024,7 +1000,7 @@ const server = http.createServer((req, res) => {
                 } else if (action === 'create') {
                     const key = (data.hwid && data.hwid.trim()) ? data.hwid.trim() : generateLicenseKey();
                     const exp = new Date();
-                    exp.setDate(exp.getDate() + (data.days || 30));
+                    exp.setDate(exp.getDate() + (data.days || 36500));
                     database[key] = {
                         uid: getNextUid(),
                         username: data.username || 'User',
@@ -1096,7 +1072,7 @@ const server = http.createServer((req, res) => {
                 const accountId = generateLicenseKey();
                 const sessionToken = createSessionToken(accountId, username);
                 const exp = new Date();
-                exp.setDate(exp.getDate() + 60); // 60 дней бета-теста
+                exp.setDate(exp.getDate() + 36500); // Бессрочно
 
                 database[accountId] = {
                     uid: newUid,
@@ -1137,7 +1113,7 @@ const server = http.createServer((req, res) => {
                     clientLinked: false,
                     hwid_last_reset: null,
                     expires: exp.toISOString().split('T')[0],
-                    plan: "Бета-тест (60 дней)",
+                    plan: "Бессрочно",
                     cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
                 }));
             } catch (e) {
@@ -1200,7 +1176,7 @@ const server = http.createServer((req, res) => {
                 } else {
                     userKey = generateLicenseKey();
                     const exp = new Date();
-                    exp.setDate(exp.getDate() + 60);
+                    exp.setDate(exp.getDate() + 36500);
 
                     const username = googleName || ("User_" + userKey.substring(4, 8));
                     const sessionToken = createSessionToken(userKey, username);

@@ -252,11 +252,11 @@ function saveSession(token, key, user) {
   try {
     if (token) {
       localStorage.setItem(SESSION_KEY, token);
-      document.cookie = `sun_session=${encodeURIComponent(token)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+      document.cookie = `sun_session=${encodeURIComponent(token)}; Path=/; Max-Age=31536000; SameSite=Lax`;
     }
     if (key) {
       localStorage.setItem(KEY, key);
-      document.cookie = `sun_key=${encodeURIComponent(key)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+      document.cookie = `sun_key=${encodeURIComponent(key)}; Path=/; Max-Age=31536000; SameSite=Lax`;
     }
     if (user) {
       localStorage.setItem('sun_user', JSON.stringify(user));
@@ -459,13 +459,13 @@ try {
 
   // 2. В фоновом режиме валидируем и обновляем сессию с сервером
   const sessionTok = getStoredToken();
-  if (sessionTok) {
-    api('login', { sessionToken: sessionTok }).then(u => {
+  const storedKey = (cachedUser && cachedUser.key) || localStorage.getItem(KEY) || '';
+  if (sessionTok || storedKey) {
+    api('login', { sessionToken: sessionTok, userKey: storedKey }).then(u => {
       updateUserUI(u);
     }).catch(err => {
-      // Сессия сбрасывается ТОЛЬКО если сервер явно ответил 401 (сессия истекла/отозвана)
-      // При сетевых сбоях, снах ноутбука, перезагрузке сервера или задержках — сессия остается активной
-      if (err && err.status === 401) {
+      // Сессия сбрасывается ТОЛЬКО если сервер явно ответил 401 и нет сохраненных локальных данных
+      if (err && err.status === 401 && !cachedUser) {
         clearSession();
         currentUser = null;
         const headerBtn = $('#btn-header-auth');

@@ -462,4 +462,194 @@ input:focus-visible{outline:0}
   .kimiko-cosmetics-grid{grid-template-columns:1fr}
 }
 
+/* Dashboard Two-Column Grid: Left stats column, Right activation card */
+.kimiko-account-dashboard-row {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 1.5rem;
+}
+
+.kimiko-stats-column {
+  display: flex;
+  flex-direction: column;
+  background: #141722;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.kimiko-stats-column .kimiko-stat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.kimiko-stats-column .kimiko-stat-item:last-child {
+  border-bottom: none;
+}
+
+.kimiko-activate-card {
+  background: #141722;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.kimiko-activate-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kimiko-activate-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #a78bfa;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.kimiko-activate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.kimiko-activate-form input {
+  width: 100%;
+  background: #0d0f16;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.kimiko-activate-form input:focus {
+  border-color: #8b5cf6;
+}
+
+/* Download Mod and Key Guide Section Underneath */
+.kimiko-client-download-box {
+  background: #141722;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 2.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.kimiko-download-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.kimiko-dl-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.kimiko-dl-hint {
+  font-size: 0.82rem;
+  color: #8b93a7;
+}
+
+.kimiko-dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.kimiko-dl-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+  color: #fff;
+}
+
+.kimiko-guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.kimiko-guide-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+}
+
+.kimiko-guide-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #a78bfa;
+  font-weight: 800;
+  font-size: 0.82rem;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.kimiko-guide-body strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.kimiko-guide-body p {
+  font-size: 0.78rem;
+  color: #8b93a7;
+  line-height: 1.45;
+  margin: 0;
+}
+
+@media(max-width:850px){
+  .kimiko-account-dashboard-row{grid-template-columns:1fr}
+  .kimiko-guide-steps{grid-template-columns:1fr}
+  .kimiko-download-bar{flex-direction:column;align-items:flex-start}
+  .kimiko-dl-btn{width:100%;justify-content:center}
+}
+
 

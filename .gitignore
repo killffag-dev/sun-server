@@ -1,3 +1,6 @@
 database.json
+database.backup.json
+uploads/
+site/uploads/
 *.log
 node_modules/

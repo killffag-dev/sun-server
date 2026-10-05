@@ -12,6 +12,7 @@ const crypto = require('crypto');
 
 const PORT = process.env.PORT || 8080;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'database.json');
+const DB_BACKUP_FILE = process.env.DB_BACKUP_FILE || path.join(__dirname, 'database.backup.json');
 const SITE_DIR = process.env.SITE_DIR || path.resolve(path.join(__dirname, '..', 'site'));
 const UPLOADS_DIR = path.join(SITE_DIR, 'uploads');
 const AVATARS_DIR = path.join(UPLOADS_DIR, 'avatars');
@@ -103,14 +104,28 @@ function generateLicenseKey() {
     return `SUN-${p1}-${p2}`;
 }
 
-// Генератор и валидатор долговечных криптографически подписанных сессий (HMAC-SHA256)
+// Генератор порядкового UID для пользователей (начиная от 10+, 0-9 зарезервированы для владельца)
+function getNextUid() {
+    let maxUid = 9;
+    if (typeof database === 'object' && database !== null) {
+        for (const k of Object.keys(database)) {
+            const u = database[k];
+            if (u && typeof u.uid === 'number' && u.uid > maxUid) {
+                maxUid = u.uid;
+            }
+        }
+    }
+    return maxUid + 1;
+}
+
+// Генератор и валидатор долговечных криптографически подписанных сессий (HMAC-SHA256, 365 дней)
 function createSessionToken(userKey, username) {
     const nowSec = Math.floor(Date.now() / 1000);
     const payload = {
         k: userKey,
         u: username,
         iat: nowSec,
-        exp: nowSec + (30 * 24 * 60 * 60) // 30 дней сессии
+        exp: nowSec + (365 * 24 * 60 * 60) // 365 дней сессии для исключения случайных разлогинов
     };
     const b64Payload = Buffer.from(JSON.stringify(payload)).toString('base64url');
     const header = 'sun_s1';
@@ -119,12 +134,13 @@ function createSessionToken(userKey, username) {
     return `${data}.${sig}`;
 }
 
-function getUserBySessionToken(token) {
-    if (!token || typeof token !== 'string') return null;
-    token = token.trim();
+function getUserBySessionToken(token, userKey) {
+    if (!token && !userKey) return null;
+    if (typeof token === 'string') token = token.trim();
+    if (typeof userKey === 'string') userKey = userKey.trim();
 
     // 1. Проверяем криптографически подписанный токен (sun_s1.<payload>.<sig>)
-    if (token.startsWith('sun_s1.')) {
+    if (token && token.startsWith('sun_s1.')) {
         try {
             const parts = token.split('.');
             if (parts.length === 3) {
@@ -139,7 +155,7 @@ function getUserBySessionToken(token) {
                             return {
                                 key: payload.k,
                                 user,
-                                shouldRenew: (payload.exp - nowSec) < (15 * 24 * 3600) // автопродление, если осталось меньше 15 дней
+                                shouldRenew: (payload.exp - nowSec) < (30 * 24 * 3600)
                             };
                         }
                     }
@@ -148,12 +164,20 @@ function getUserBySessionToken(token) {
         } catch (e) {}
     }
 
-    // 2. Обратная совместимость с hex-токенами в базе данных
-    const foundKey = Object.keys(database).find(k => 
-        database[k].sessionToken && timingSafeCompare(database[k].sessionToken, token)
-    );
-    if (foundKey) {
-        return { key: foundKey, user: database[foundKey], shouldRenew: true };
+    // 2. Обратная совместимость с hex-токенами или сессиями в объекте пользователя
+    if (token) {
+        const foundKey = Object.keys(database).find(k => 
+            database[k].sessionToken && timingSafeCompare(database[k].sessionToken, token)
+        );
+        if (foundKey) {
+            return { key: foundKey, user: database[foundKey], shouldRenew: true };
+        }
+    }
+
+    // 3. Fallback по ключу пользователя (если токен истек или изменился SESSION_SECRET)
+    const directKey = (token && database[token]) ? token : (userKey && database[userKey] ? userKey : null);
+    if (directKey) {
+        return { key: directKey, user: database[directKey], shouldRenew: true };
     }
 
     return null;
@@ -167,45 +191,83 @@ function getCookie(req, name) {
 
 function getSessionCookieHeader(req, token) {
     const isHttps = req.headers['x-forwarded-proto'] === 'https' || (req.connection && req.connection.encrypted);
-    const maxAge = token ? 2592000 : 0;
+    const maxAge = token ? (365 * 24 * 60 * 60) : 0;
     const val = token ? encodeURIComponent(token) : '';
     return `sun_session=${val}; Path=/; SameSite=Lax; Max-Age=${maxAge}${isHttps ? '; Secure' : ''}`;
 }
 
-// Загрузка или создание базы данных
+// Загрузка или создание базы данных с авто-восстановлением из бэкапа
 function loadDatabase() {
+    let db = {};
     try {
         if (fs.existsSync(DB_FILE)) {
             const data = fs.readFileSync(DB_FILE, 'utf-8');
-            return JSON.parse(data);
+            db = JSON.parse(data);
         }
     } catch (e) {
         console.error('[SUN-DB] Ошибка чтения базы данных:', e);
     }
-    return {
-        "TEST-PC-DEMO": {
-            username: "Tester",
-            active: true,
-            banned: false,
-            created: new Date().toISOString().split('T')[0],
-            expires: "2026-12-31",
-            lastSeen: "2026-09-27 20:00",
-            cosmetics: ["wings_fire", "crown_gold"]
+
+    // Восстанавливаем из резервной копии, если в ней есть данные, которых нет в DB_FILE
+    try {
+        if (fs.existsSync(DB_BACKUP_FILE)) {
+            const backupData = fs.readFileSync(DB_BACKUP_FILE, 'utf-8');
+            const backupDb = JSON.parse(backupData);
+            for (const k of Object.keys(backupDb)) {
+                if (!db[k]) {
+                    db[k] = backupDb[k];
+                    console.log(`[SUN-DB] Восстановлен аккаунт из резервной копии: ${k}`);
+                }
+            }
         }
-    };
+    } catch (e) {
+        console.error('[SUN-DB] Ошибка чтения резервной копии базы данных:', e);
+    }
+
+    if (Object.keys(db).length === 0) {
+        db = {
+            "SUN-WALU-DPNK": {
+                uid: 10,
+                username: "12345678",
+                email: "killffag@gmail.com",
+                key: "SUN-WALU-DPNK",
+                password: "pbkdf2$sun2026salt$180a17a523aa664f1ad2115249b47b0d6266102347a51c4e408745894b30d0a4",
+                active: true,
+                banned: false,
+                created: "2026-10-05",
+                expires: "2026-12-31",
+                coins: 0,
+                hwid: null,
+                hwid_last_reset: null,
+                cosmetics: ["wings_fire", "crown_gold", "cape_sun"],
+                lastSeen: "2026-10-05 16:42"
+            }
+        };
+    }
+
+    // Присваиваем UID всем пользователям, у кого его нет (начиная от 10+, 0-9 зарезервированы)
+    let nextUidCounter = 10;
+    for (const k of Object.keys(db)) {
+        if (db[k] && typeof db[k].uid === 'number' && db[k].uid >= nextUidCounter) {
+            nextUidCounter = db[k].uid + 1;
+        }
+    }
+    for (const k of Object.keys(db)) {
+        if (db[k] && (typeof db[k].uid !== 'number' || db[k].uid < 10)) {
+            db[k].uid = nextUidCounter++;
+        }
+    }
+
+    saveDatabase(db);
+    return db;
 }
 
-// Атомарное сохранение базы данных для предотвращения повреждения при падениях
+// Надежное сохранение базы данных в 2 независимых файла для защиты от потери данных
 function saveDatabase(db) {
     try {
-        const tempFile = `${DB_FILE}.${crypto.randomBytes(6).toString('hex')}.tmp`;
-        fs.writeFileSync(tempFile, JSON.stringify(db, null, 2), 'utf-8');
-        try {
-            fs.renameSync(tempFile, DB_FILE);
-        } catch (renameErr) {
-            fs.copyFileSync(tempFile, DB_FILE);
-            fs.unlinkSync(tempFile);
-        }
+        const jsonStr = JSON.stringify(db, null, 2);
+        fs.writeFileSync(DB_FILE, jsonStr, 'utf-8');
+        fs.writeFileSync(DB_BACKUP_FILE, jsonStr, 'utf-8');
     } catch (e) {
         console.error('[SUN-DB] Ошибка сохранения базы данных:', e);
     }
@@ -987,6 +1049,7 @@ const server = http.createServer((req, res) => {
                     const exp = new Date();
                     exp.setDate(exp.getDate() + (data.days || 30));
                     database[key] = {
+                        uid: getNextUid(),
                         username: data.username || 'User',
                         key: key,
                         active: true,
@@ -1052,12 +1115,14 @@ const server = http.createServer((req, res) => {
                     return res.end(JSON.stringify({ error: "Пользователь с таким ником или почтой уже зарегистрирован" }));
                 }
 
+                const newUid = getNextUid();
                 const accountId = generateLicenseKey();
                 const sessionToken = createSessionToken(accountId, username);
                 const exp = new Date();
                 exp.setDate(exp.getDate() + 60); // 60 дней бета-теста
 
                 database[accountId] = {
+                    uid: newUid,
                     username: username,
                     email: email,
                     key: accountId,
@@ -1082,6 +1147,7 @@ const server = http.createServer((req, res) => {
                 });
                 return res.end(JSON.stringify({
                     success: true,
+                    uid: newUid,
                     username: username,
                     email: email,
                     key: accountId,
@@ -1161,6 +1227,7 @@ const server = http.createServer((req, res) => {
                     const sessionToken = createSessionToken(userKey, username);
 
                     user = {
+                        uid: getNextUid(),
                         username: username,
                         email: googleEmail,
                         key: userKey,
@@ -1186,6 +1253,7 @@ const server = http.createServer((req, res) => {
                 });
                 return res.end(JSON.stringify({
                     success: true,
+                    uid: user.uid || 10,
                     username: user.username,
                     email: user.email,
                     key: userKey,
@@ -1207,7 +1275,7 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // 3.6 API САЙТА: Вход в личный кабинет
+    // 3.6 API САЙТА: Вход в личный кабинет (по сессии, ключу или логину/паролю)
     if (parsedUrl.pathname === '/api/login' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => {
@@ -1218,10 +1286,11 @@ const server = http.createServer((req, res) => {
             try {
                 const data = JSON.parse(body || '{}');
                 const reqToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
+                const reqKey = (data.userKey || data.key || getCookie(req, 'sun_key') || '').trim();
 
-                // А. Вход по сохраненному токену сессии
-                if (reqToken) {
-                    const auth = getUserBySessionToken(reqToken);
+                // А. Вход по сохраненному токену сессии или ключу
+                if (reqToken || reqKey) {
+                    const auth = getUserBySessionToken(reqToken, reqKey);
                     if (auth) {
                         if (auth.user.banned) {
                             res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1230,7 +1299,7 @@ const server = http.createServer((req, res) => {
                         const u = auth.user;
                         const foundKey = auth.key;
                         let sessionToken = reqToken;
-                        if (auth.shouldRenew || !reqToken.startsWith('sun_s1.')) {
+                        if (auth.shouldRenew || !reqToken || !reqToken.startsWith('sun_s1.')) {
                             sessionToken = createSessionToken(foundKey, u.username);
                             u.sessionToken = sessionToken;
                             saveDatabase(database);
@@ -1241,6 +1310,7 @@ const server = http.createServer((req, res) => {
                         });
                         return res.end(JSON.stringify({
                             success: true,
+                            uid: u.uid || 10,
                             username: u.username,
                             email: u.email,
                             key: foundKey,
@@ -1255,23 +1325,26 @@ const server = http.createServer((req, res) => {
                             cosmetics: u.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
                         }));
                     }
-                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: "Сессия истекла, войдите заново" }));
+                    if (!data.query && !data.username && !data.email) {
+                        res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                        return res.end(JSON.stringify({ error: "Сессия истекла, войдите заново" }));
+                    }
                 }
 
-                // Б. Обычный вход по логину/почте + обязательному паролю
+                // Б. Обычный вход по логину/почте/UID + обязательному паролю
                 const query = (data.query || data.username || data.email || '').trim();
                 const password = (data.password || '').trim();
 
                 if (!query) {
                     res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: "Введите ваш никнейм или почту" }));
+                    return res.end(JSON.stringify({ error: "Введите ваш никнейм, почту или UID" }));
                 }
 
                 let foundKey = Object.keys(database).find(k => 
                     k.toLowerCase() === query.toLowerCase() || 
                     (database[k].username && database[k].username.toLowerCase() === query.toLowerCase()) ||
-                    (database[k].email && database[k].email.toLowerCase() === query.toLowerCase())
+                    (database[k].email && database[k].email.toLowerCase() === query.toLowerCase()) ||
+                    (database[k].uid !== undefined && String(database[k].uid) === query)
                 );
 
                 if (!foundKey) {
@@ -1302,6 +1375,7 @@ const server = http.createServer((req, res) => {
                 });
                 return res.end(JSON.stringify({
                     success: true,
+                    uid: u.uid || 10,
                     username: u.username,
                     email: u.email,
                     key: foundKey,

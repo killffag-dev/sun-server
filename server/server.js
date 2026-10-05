@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 8080;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'database.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sun2026admin';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'SUN_SESSION_SECRET_2026_SECURE_KEY_9837418247918237';
 // Map of active admin session tokens -> expiration timestamp (ms)
 const activeAdminSessions = new Map();
 
@@ -89,6 +90,75 @@ function generateLicenseKey() {
     return `SUN-${p1}-${p2}`;
 }
 
+// Генератор и валидатор долговечных криптографически подписанных сессий (HMAC-SHA256)
+function createSessionToken(userKey, username) {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const payload = {
+        k: userKey,
+        u: username,
+        iat: nowSec,
+        exp: nowSec + (30 * 24 * 60 * 60) // 30 дней сессии
+    };
+    const b64Payload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const header = 'sun_s1';
+    const data = `${header}.${b64Payload}`;
+    const sig = crypto.createHmac('sha256', SESSION_SECRET).update(data).digest('base64url');
+    return `${data}.${sig}`;
+}
+
+function getUserBySessionToken(token) {
+    if (!token || typeof token !== 'string') return null;
+    token = token.trim();
+
+    // 1. Проверяем криптографически подписанный токен (sun_s1.<payload>.<sig>)
+    if (token.startsWith('sun_s1.')) {
+        try {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+                const dataPart = `${parts[0]}.${parts[1]}`;
+                const expectedSig = crypto.createHmac('sha256', SESSION_SECRET).update(dataPart).digest('base64url');
+                if (timingSafeCompare(parts[2], expectedSig)) {
+                    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf-8'));
+                    const nowSec = Math.floor(Date.now() / 1000);
+                    if (payload && payload.k && payload.exp && payload.exp > nowSec) {
+                        const user = database[payload.k];
+                        if (user) {
+                            return {
+                                key: payload.k,
+                                user,
+                                shouldRenew: (payload.exp - nowSec) < (15 * 24 * 3600) // автопродление, если осталось меньше 15 дней
+                            };
+                        }
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+
+    // 2. Обратная совместимость с hex-токенами в базе данных
+    const foundKey = Object.keys(database).find(k => 
+        database[k].sessionToken && timingSafeCompare(database[k].sessionToken, token)
+    );
+    if (foundKey) {
+        return { key: foundKey, user: database[foundKey], shouldRenew: true };
+    }
+
+    return null;
+}
+
+function getCookie(req, name) {
+    const cookies = req.headers['cookie'] || '';
+    const match = cookies.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+function getSessionCookieHeader(req, token) {
+    const isHttps = req.headers['x-forwarded-proto'] === 'https' || (req.connection && req.connection.encrypted);
+    const maxAge = token ? 2592000 : 0;
+    const val = token ? encodeURIComponent(token) : '';
+    return `sun_session=${val}; Path=/; SameSite=Lax; Max-Age=${maxAge}${isHttps ? '; Secure' : ''}`;
+}
+
 // Загрузка или создание базы данных
 function loadDatabase() {
     try {
@@ -117,7 +187,12 @@ function saveDatabase(db) {
     try {
         const tempFile = `${DB_FILE}.${crypto.randomBytes(6).toString('hex')}.tmp`;
         fs.writeFileSync(tempFile, JSON.stringify(db, null, 2), 'utf-8');
-        fs.renameSync(tempFile, DB_FILE);
+        try {
+            fs.renameSync(tempFile, DB_FILE);
+        } catch (renameErr) {
+            fs.copyFileSync(tempFile, DB_FILE);
+            fs.unlinkSync(tempFile);
+        }
     } catch (e) {
         console.error('[SUN-DB] Ошибка сохранения базы данных:', e);
     }
@@ -965,7 +1040,7 @@ const server = http.createServer((req, res) => {
                 }
 
                 const accountId = generateLicenseKey();
-                const sessionToken = crypto.randomBytes(32).toString('hex');
+                const sessionToken = createSessionToken(accountId, username);
                 const exp = new Date();
                 exp.setDate(exp.getDate() + 60); // 60 дней бета-теста
 
@@ -986,7 +1061,10 @@ const server = http.createServer((req, res) => {
                 };
                 saveDatabase(database);
 
-                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                res.writeHead(200, {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Set-Cookie': getSessionCookieHeader(req, sessionToken)
+                });
                 return res.end(JSON.stringify({
                     success: true,
                     username: username,
@@ -1056,17 +1134,17 @@ const server = http.createServer((req, res) => {
                     userKey = foundKey;
                     user = database[foundKey];
                     if (googleSub) user.googleSub = googleSub;
-                    if (!user.sessionToken) {
-                        user.sessionToken = crypto.randomBytes(32).toString('hex');
-                    }
+                    user.sessionToken = createSessionToken(userKey, user.username);
                 } else {
                     userKey = generateLicenseKey();
-                    const sessionToken = crypto.randomBytes(32).toString('hex');
                     const exp = new Date();
                     exp.setDate(exp.getDate() + 60);
 
+                    const username = googleName || ("User_" + userKey.substring(4, 8));
+                    const sessionToken = createSessionToken(userKey, username);
+
                     user = {
-                        username: googleName || ("User_" + userKey.substring(4, 8)),
+                        username: username,
                         email: googleEmail,
                         key: userKey,
                         googleSub: googleSub,
@@ -1085,7 +1163,10 @@ const server = http.createServer((req, res) => {
                 }
                 saveDatabase(database);
 
-                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                res.writeHead(200, {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Set-Cookie': getSessionCookieHeader(req, user.sessionToken)
+                });
                 return res.end(JSON.stringify({
                     success: true,
                     username: user.username,
@@ -1116,22 +1197,35 @@ const server = http.createServer((req, res) => {
         });
         req.on('end', () => {
             try {
-                const data = JSON.parse(body);
+                const data = JSON.parse(body || '{}');
+                const reqToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
 
                 // А. Вход по сохраненному токену сессии
-                if (data.sessionToken) {
-                    const foundKey = Object.keys(database).find(k => 
-                        database[k].sessionToken && timingSafeCompare(database[k].sessionToken, data.sessionToken)
-                    );
-                    if (foundKey) {
-                        const u = database[foundKey];
-                        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                if (reqToken) {
+                    const auth = getUserBySessionToken(reqToken);
+                    if (auth) {
+                        if (auth.user.banned) {
+                            res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+                            return res.end(JSON.stringify({ error: "Ваш аккаунт заблокирован" }));
+                        }
+                        const u = auth.user;
+                        const foundKey = auth.key;
+                        let sessionToken = reqToken;
+                        if (auth.shouldRenew || !reqToken.startsWith('sun_s1.')) {
+                            sessionToken = createSessionToken(foundKey, u.username);
+                            u.sessionToken = sessionToken;
+                            saveDatabase(database);
+                        }
+                        res.writeHead(200, {
+                            'Content-Type': 'application/json; charset=utf-8',
+                            'Set-Cookie': getSessionCookieHeader(req, sessionToken)
+                        });
                         return res.end(JSON.stringify({
                             success: true,
                             username: u.username,
                             email: u.email,
                             key: foundKey,
-                            sessionToken: u.sessionToken,
+                            sessionToken: sessionToken,
                             coins: u.coins || 0,
                             hwid: u.hwid || null,
                             hwid_last_reset: u.hwid_last_reset || null,
@@ -1176,19 +1270,21 @@ const server = http.createServer((req, res) => {
                     return res.end(JSON.stringify({ error: "Неверный пароль" }));
                 }
 
-                // Выдаем сессионный токен при успешном логине
-                if (!u.sessionToken) {
-                    u.sessionToken = crypto.randomBytes(32).toString('hex');
-                    saveDatabase(database);
-                }
+                // Выдаем долговечный подписанный сессионный токен при успешном логине
+                const sessionToken = createSessionToken(foundKey, u.username);
+                u.sessionToken = sessionToken;
+                saveDatabase(database);
 
-                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                res.writeHead(200, {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Set-Cookie': getSessionCookieHeader(req, sessionToken)
+                });
                 return res.end(JSON.stringify({
                     success: true,
                     username: u.username,
                     email: u.email,
                     key: foundKey,
-                    sessionToken: u.sessionToken,
+                    sessionToken: sessionToken,
                     coins: u.coins || 0,
                     hwid: u.hwid || null,
                     hwid_last_reset: u.hwid_last_reset || null,
@@ -1204,6 +1300,15 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // 3.65 API САЙТА: Выход из профиля
+    if (parsedUrl.pathname === '/api/logout' && req.method === 'POST') {
+        res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Set-Cookie': getSessionCookieHeader(req, null)
+        });
+        return res.end(JSON.stringify({ success: true }));
+    }
+
     // 3.7 API САЙТА: Сброс привязки HWID пользователем (с кулдауном 3 дня и защитой авторизацией)
     if (parsedUrl.pathname === '/api/reset-hwid' && req.method === 'POST') {
         let body = '';
@@ -1214,27 +1319,25 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const data = JSON.parse(body);
+                const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
                 const key = (data.key || '').trim();
-                const sessionToken = (data.sessionToken || '').trim();
                 const password = (data.password || '').trim();
 
-                let foundKey = Object.keys(database).find(k => 
-                    k.toUpperCase() === key.toUpperCase() || 
-                    (database[k].key && database[k].key.toUpperCase() === key.toUpperCase())
-                );
+                let auth = sessionToken ? getUserBySessionToken(sessionToken) : null;
+                let foundKey = auth ? auth.key : null;
+                let user = auth ? auth.user : null;
 
-                if (!foundKey) {
-                    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: "Аккаунт не найден" }));
+                if (!user && key) {
+                    foundKey = Object.keys(database).find(k => 
+                        k.toUpperCase() === key.toUpperCase() || 
+                        (database[k].key && database[k].key.toUpperCase() === key.toUpperCase())
+                    );
+                    if (foundKey && database[foundKey].password && verifyPassword(password, database[foundKey].password)) {
+                        user = database[foundKey];
+                    }
                 }
 
-                const user = database[foundKey];
-
-                // Проверка авторизации: валидный sessionToken или пароль
-                const isTokenValid = sessionToken && user.sessionToken && timingSafeCompare(sessionToken, user.sessionToken);
-                const isPasswordValid = password && user.password && verifyPassword(password, user.password);
-
-                if (!isTokenValid && !isPasswordValid) {
+                if (!user) {
                     res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
                     return res.end(JSON.stringify({ error: "Требуется авторизация для сброса привязки" }));
                 }
@@ -1280,25 +1383,18 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const data = JSON.parse(body || '{}');
-                const sessionToken = (data.sessionToken || '').trim();
+                const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
                 const currentPassword = (data.currentPassword || '').trim();
                 const newPassword = (data.newPassword || '').trim();
 
-                if (!sessionToken) {
-                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: "Требуется авторизация" }));
-                }
-
-                const foundKey = Object.keys(database).find(k => 
-                    database[k].sessionToken && timingSafeCompare(database[k].sessionToken, sessionToken)
-                );
-
-                if (!foundKey) {
+                const auth = getUserBySessionToken(sessionToken);
+                if (!auth) {
                     res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
                     return res.end(JSON.stringify({ error: "Сессия не найдена или устарела" }));
                 }
 
-                const user = database[foundKey];
+                const foundKey = auth.key;
+                const user = auth.user;
 
                 if (user.password && (!currentPassword || !verifyPassword(currentPassword, user.password))) {
                     res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1311,10 +1407,19 @@ const server = http.createServer((req, res) => {
                 }
 
                 user.password = hashPassword(newPassword);
+                const newSessionToken = createSessionToken(foundKey, user.username);
+                user.sessionToken = newSessionToken;
                 saveDatabase(database);
 
-                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-                return res.end(JSON.stringify({ success: true, message: "Пароль успешно обновлен!" }));
+                res.writeHead(200, {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Set-Cookie': getSessionCookieHeader(req, newSessionToken)
+                });
+                return res.end(JSON.stringify({
+                    success: true,
+                    message: "Пароль успешно обновлен!",
+                    sessionToken: newSessionToken
+                }));
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
                 return res.end(JSON.stringify({ error: e.message }));
@@ -1333,24 +1438,17 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const data = JSON.parse(body || '{}');
-                const sessionToken = (data.sessionToken || '').trim();
+                const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
                 const keyInput = (data.key || '').trim().toUpperCase();
 
-                if (!sessionToken) {
-                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: "Требуется авторизация" }));
-                }
-
-                const foundKey = Object.keys(database).find(k => 
-                    database[k].sessionToken && timingSafeCompare(database[k].sessionToken, sessionToken)
-                );
-
-                if (!foundKey) {
+                const auth = getUserBySessionToken(sessionToken);
+                if (!auth) {
                     res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
                     return res.end(JSON.stringify({ error: "Сессия недействительна" }));
                 }
 
-                const user = database[foundKey];
+                const foundKey = auth.key;
+                const user = auth.user;
 
                 if (!keyInput) {
                     res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });

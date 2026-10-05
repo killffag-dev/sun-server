@@ -239,16 +239,65 @@ async function api(path, body) {
     body: JSON.stringify(body)
   });
   const d = await r.json().catch(() => null);
-  if (!r.ok || !d || !d.success) throw new Error(d && d.error || 'Ошибка запроса');
+  if (!r.ok || !d || !d.success) {
+    const err = new Error(d && d.error || 'Ошибка запроса');
+    err.status = r.status;
+    err.data = d;
+    throw err;
+  }
   return d;
 }
 
-function updateUserUI(u) {
-  currentUser = u;
+function saveSession(token, key, user) {
   try {
-    if (u.sessionToken) localStorage.setItem(SESSION_KEY, u.sessionToken);
-    localStorage.setItem(KEY, u.key);
-  } catch {}
+    if (token) {
+      localStorage.setItem(SESSION_KEY, token);
+      document.cookie = `sun_session=${encodeURIComponent(token)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+    }
+    if (key) {
+      localStorage.setItem(KEY, key);
+      document.cookie = `sun_key=${encodeURIComponent(key)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+    }
+    if (user) {
+      localStorage.setItem('sun_user', JSON.stringify(user));
+    }
+  } catch (e) {}
+}
+
+function clearSession() {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(KEY);
+    localStorage.removeItem('sun_user');
+    document.cookie = 'sun_session=; Path=/; Max-Age=0; SameSite=Lax';
+    document.cookie = 'sun_key=; Path=/; Max-Age=0; SameSite=Lax';
+  } catch (e) {}
+}
+
+function getStoredToken() {
+  try {
+    const fromStorage = localStorage.getItem(SESSION_KEY);
+    if (fromStorage) return fromStorage;
+    const match = document.cookie.match(/(?:^|;\s*)sun_session=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem('sun_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function updateUserUI(u) {
+  if (!u) return;
+  currentUser = u;
+  saveSession(u.sessionToken, u.key, u);
 
   const headerBtn = $('#btn-header-auth');
   if (headerBtn) {
@@ -381,11 +430,9 @@ if (googleAuthBtn) {
 const modalLogoutBtn = $('#btn-modal-logout');
 if (modalLogoutBtn) {
   modalLogoutBtn.onclick = () => {
-    try {
-      localStorage.removeItem(KEY);
-      localStorage.removeItem(SESSION_KEY);
-    } catch {}
+    clearSession();
     currentUser = null;
+    fetch('/api/logout', { method: 'POST' }).catch(() => {});
     const headerBtn = $('#btn-header-auth');
     if (headerBtn) {
       headerBtn.textContent = 'Войти / SUN ID';
@@ -399,17 +446,34 @@ if (modalLogoutBtn) {
   };
 }
 
-// Проверка сессии при загрузке страницы
+// Проверка сессии при загрузке страницы:
 try {
-  const sessionTok = localStorage.getItem(SESSION_KEY);
+  // 1. Мгновенно отображаем сохраненные данные профиля из кеша (0мс задержка)
+  const cachedUser = getStoredUser();
+  if (cachedUser) {
+    updateUserUI(cachedUser);
+  }
+
+  // 2. В фоновом режиме валидируем и обновляем сессию с сервером
+  const sessionTok = getStoredToken();
   if (sessionTok) {
     api('login', { sessionToken: sessionTok }).then(u => {
       updateUserUI(u);
-    }).catch(() => {
-      localStorage.removeItem(SESSION_KEY);
+    }).catch(err => {
+      // Сессия сбрасывается ТОЛЬКО если сервер явно ответил 401 (сессия истекла/отозвана)
+      // При сетевых сбоях, снах ноутбука, перезагрузке сервера или задержках — сессия остается активной
+      if (err && err.status === 401) {
+        clearSession();
+        currentUser = null;
+        const headerBtn = $('#btn-header-auth');
+        if (headerBtn) {
+          headerBtn.textContent = 'Войти / SUN ID';
+          headerBtn.onclick = () => openAuthModal('log');
+        }
+      }
     });
   }
-} catch {}
+} catch (e) {}
 
 // Проверка query параметра ?openAuth=1
 try {

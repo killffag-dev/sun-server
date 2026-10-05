@@ -362,13 +362,66 @@ async function api(path, body) {
     body: JSON.stringify(body)
   });
   const d = await r.json().catch(() => null);
-  if (!r.ok || !d || !d.success) throw new Error(d && d.error || 'Ошибка запроса');
+  if (!r.ok || !d || !d.success) {
+    const err = new Error(d && d.error || 'Ошибка запроса');
+    err.status = r.status;
+    err.data = d;
+    throw err;
+  }
   return d;
+}
+
+function saveSession(token, key, user) {
+  try {
+    if (token) {
+      localStorage.setItem(SESSION_KEY, token);
+      document.cookie = `sun_session=${encodeURIComponent(token)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+    }
+    if (key) {
+      localStorage.setItem(KEY, key);
+      document.cookie = `sun_key=${encodeURIComponent(key)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+    }
+    if (user) {
+      localStorage.setItem('sun_user', JSON.stringify(user));
+    }
+  } catch (e) {}
+}
+
+function clearSession() {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(KEY);
+    localStorage.removeItem('sun_user');
+    document.cookie = 'sun_session=; Path=/; Max-Age=0; SameSite=Lax';
+    document.cookie = 'sun_key=; Path=/; Max-Age=0; SameSite=Lax';
+  } catch (e) {}
+}
+
+function getStoredToken() {
+  try {
+    const fromStorage = localStorage.getItem(SESSION_KEY);
+    if (fromStorage) return fromStorage;
+    const match = document.cookie.match(/(?:^|;\s*)sun_session=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem('sun_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 // Заполнение данных аккаунта
 function populateProfile(u) {
+  if (!u) return;
   currentUser = u;
+  saveSession(u.sessionToken, u.key, u);
   const username = u.username || 'Пользователь';
   const firstChar = username.charAt(0).toUpperCase();
 
@@ -403,17 +456,40 @@ function populateProfile(u) {
 
 // Сессионный запуск
 (async function initSession() {
-  const token = localStorage.getItem(SESSION_KEY);
-  if (!token) {
+  const token = getStoredToken();
+  const cachedUser = getStoredUser();
+
+  // 1. Отображаем кешированные данные пользователя немедленно (страница загружается без пустых экранов)
+  if (cachedUser) {
+    populateProfile(cachedUser);
+  }
+
+  // 2. Если нет ни сохраненного токена, ни кешированных данных — отправляем на форму входа
+  if (!token && !cachedUser) {
     window.location.replace('/?openAuth=1');
     return;
   }
-  try {
-    const res = await api('login', { sessionToken: token });
-    populateProfile(res);
-  } catch (e) {
-    localStorage.removeItem(SESSION_KEY);
-    window.location.replace('/?openAuth=1');
+
+  // 3. Актуализируем сессию через API
+  if (token) {
+    try {
+      const res = await api('login', { sessionToken: token });
+      populateProfile(res);
+    } catch (err) {
+      // Сбрасываем сессию и редиректим ТОЛЬКО при явном 401 Unauthorized
+      // При сетевом сбое, тайм-ауте или перезагрузке сервера сессия НЕ сбрасывается!
+      if (err && err.status === 401) {
+        clearSession();
+        currentUser = null;
+        window.location.replace('/?openAuth=1');
+      } else {
+        console.warn('Сервер временно недоступен, сессия сохранена');
+        if (!cachedUser) {
+          toast('Связь с сервером потеряна, повторная попытка...');
+          setTimeout(initSession, 4000);
+        }
+      }
+    }
   }
 })();
 
@@ -472,10 +548,14 @@ if (fChangePass) {
 
     try {
       const res = await api('change-password', {
-        sessionToken: currentUser.sessionToken,
+        sessionToken: currentUser?.sessionToken || getStoredToken(),
         currentPassword: cur,
         newPassword: pNew
       });
+      if (res.sessionToken) {
+        saveSession(res.sessionToken, currentUser?.key, currentUser);
+        if (currentUser) currentUser.sessionToken = res.sessionToken;
+      }
       toast(res.message || 'Пароль успешно обновлен!');
       fChangePass.reset();
     } catch (err) {
@@ -503,7 +583,7 @@ if (btnResetHwid) {
     try {
       const res = await api('reset-hwid', {
         key: currentUser.key,
-        sessionToken: currentUser.sessionToken
+        sessionToken: currentUser?.sessionToken || getStoredToken()
       });
       currentUser.hwid = null;
       populateProfile(currentUser);
@@ -526,7 +606,7 @@ if (fActKey) {
     if (!key) return;
     try {
       const res = await api('activate-key', {
-        sessionToken: currentUser.sessionToken,
+        sessionToken: currentUser?.sessionToken || getStoredToken(),
         key: key
       });
       if (res.expires) currentUser.expires = res.expires;
@@ -542,9 +622,9 @@ if (fActKey) {
 
 // Выход из профиля
 function doLogout() {
-  localStorage.removeItem(KEY);
-  localStorage.removeItem(SESSION_KEY);
+  clearSession();
   currentUser = null;
+  fetch('/api/logout', { method: 'POST' }).catch(() => {});
   window.location.href = '/';
 }
 const logoutBtn = $('#btn-kimiko-logout');

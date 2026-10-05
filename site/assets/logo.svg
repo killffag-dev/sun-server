@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="monoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <g filter="url(#softGlow)">
+    <path d="M 100.00 16.81 L 115.49 51.17 L 107.46 68.92 A 31.96 31.96 0 0 0 92.54 68.92 L 84.51 51.17 Z" fill="url(#monoGrad)"/>
+    <path d="M 158.82 41.18 L 145.48 76.42 L 127.25 83.30 A 31.96 31.96 0 0 0 116.70 72.75 L 123.58 54.52 Z" fill="url(#monoGrad)"/>
+    <path d="M 183.19 100.00 L 148.83 115.49 L 131.08 107.46 A 31.96 31.96 0 0 0 131.08 92.54 L 148.83 84.51 Z" fill="url(#monoGrad)"/>
+    <path d="M 158.82 158.82 L 123.58 145.48 L 116.70 127.25 A 31.96 31.96 0 0 0 127.25 116.70 L 145.48 123.58 Z" fill="url(#monoGrad)"/>
+    <path d="M 100.00 183.19 L 84.51 148.83 L 92.54 131.08 A 31.96 31.96 0 0 0 107.46 131.08 L 115.49 148.83 Z" fill="url(#monoGrad)"/>
+    <path d="M 41.18 158.82 L 54.52 123.58 L 72.75 116.70 A 31.96 31.96 0 0 0 83.30 127.25 L 76.42 145.48 Z" fill="url(#monoGrad)"/>
+    <path d="M 16.81 100.00 L 51.17 84.51 L 68.92 92.54 A 31.96 31.96 0 0 0 68.92 107.46 L 51.17 115.49 Z" fill="url(#monoGrad)"/>
+    <path d="M 41.18 41.18 L 76.42 54.52 L 83.30 72.75 A 31.96 31.96 0 0 0 72.75 83.30 L 54.52 76.42 Z" fill="url(#monoGrad)"/>
+  </g>
+</svg>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUN Visuals (Beta) — визуальный клиент для Minecraft 1.21.4 Fabric</title>
+<meta name="description" content="Визуальный клиент для Minecraft 1.21.4 Fabric (Открытая Бета) с упором на производительность: свой ClickGUI, HUD и оптимизация рендера.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SUN Visuals (Beta)">
+<meta property="og:description" content="Визуальный клиент для Minecraft 1.21.4 Fabric (Открытая Бета)">
+<meta property="og:image" content="assets/after.webp">
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg?v=white2">
+<link rel="apple-touch-icon" href="assets/logo.svg?v=white2">
+<link rel="stylesheet" href="style.css?v=3">
+<script>document.documentElement.classList.add('js')</script>
+</head>
+<body>
+<div class="bg"></div>
+
+<header class="bar">
+  <a href="#" class="brand"><img src="assets/logo.svg" alt="" width="22" height="22"><b>SUN Visuals</b></a>
+  <i class="sep"></i>
+  <nav><a href="#about">О клиенте</a><a href="#download">Скачать</a><a href="#install">Установка</a><a href="#faq">FAQ</a></nav>
+  <i class="sep"></i>
+  <div class="social-links">
+    <a class="social-icon tg-icon" href="https://t.me/SUN_Visual" target="_blank" rel="noopener" aria-label="Telegram" title="Telegram канал">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.75 4.01-1.75 6.69-2.9 8.04-3.47 3.83-1.61 4.62-1.89 5.15-1.9.11 0 .37.03.54.17.14.12.18.28.2.45-.02.07-.02.21-.04.37z"/></svg>
+    </a>
+    <button type="button" class="social-icon ds-icon is-stub" data-stub="Discord" aria-label="Discord (скоро)" title="Discord (скоро откроется)">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+    </button>
+    <button type="button" class="social-icon yt-icon is-stub" data-stub="YouTube" aria-label="YouTube (скоро)" title="YouTube (скоро откроется)">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+    </button>
+  </div>
+  <i class="sep"></i>
+  <button type="button" class="btn sm" id="btn-header-auth" data-open-auth>Войти / SUN ID</button>
+</header>
+
+<main>
+  <section class="hero reveal">
+    <img src="assets/logo.svg" alt="SUN" class="hero-logo" width="168" height="168">
+    <h1>SUN Visuals <span class="beta-badge lg">BETA</span></h1>
+    <p class="hero-sub">Открытое бета-тестирование визуального клиента нового поколения</p>
+  </section>
+
+  <section id="preview" class="reveal">
+    <div class="win">
+      <div class="win-top">
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab" data-compare-tab="before">До</button>
+          <button type="button" class="tab on" data-compare-tab="after">После</button>
+        </div>
+      </div>
+      <div class="view compare-box" id="compare-box" style="--pos:50%">
+        <img class="shot compare-img" src="assets/after.webp" alt="Игра с клиентом SUN" decoding="async">
+        <div class="compare-clip">
+          <img class="shot compare-img" src="assets/before.webp" alt="Ванильный Minecraft" decoding="async">
+        </div>
+        <div class="compare-divider">
+          <div class="compare-line"></div>
+          <div class="compare-handle" role="slider" tabindex="0" aria-label="Сравнить До и После" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8.5 7l-5 5 5 5V7zm7 10l5-5-5-5v10z"/></svg>
+          </div>
+        </div>
+        <span class="compare-tag tag-before">До</span>
+        <span class="compare-tag tag-after">После</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="reveal stagger">
+    <div class="section-head">
+      <h2>О клиенте</h2>
+      <p class="section-sub">Ключевые технологии и визуальные особенности клиента</p>
+    </div>
+    <div class="grid4">
+      <article class="card st">
+        <h3>Оптимизация</h3>
+        <p>SmartCull, RenderSphere и AutoFps держат ровный фреймрейт.</p>
+      </article>
+      <article class="card st">
+        <h3>Тренировка аима</h3>
+        <p>Есть режимы для тренировки аима и реакции под PvP.</p>
+      </article>
+      <article class="card st">
+        <h3>Обновления</h3>
+        <p>Регулярные обновления клиента с новыми функциями и исправлениями.</p>
+      </article>
+      <article class="card st">
+        <h3>Поддержка</h3>
+        <p>Администрация слушает пользователей и учитывает их пожелания.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="download" class="reveal">
+    <div class="section-head">
+      <h2>Скачать SUN Visuals</h2>
+      <p class="section-sub">Официальная сборка клиента со встроенной оптимизацией и графикой</p>
+    </div>
+    <div class="dl-single-box">
+      <div class="card dl-card hl">
+        <div class="dl-header">
+          <span class="tag beta">Открытая бета</span>
+          <h3 class="dl-title">SUN Client</h3>
+        </div>
+
+        <div class="dl-specs">
+          <div class="dl-spec-item"><span class="dl-spec-label">Версия Minecraft</span><span class="dl-spec-val">1.21.4</span></div>
+          <div class="dl-spec-item"><span class="dl-spec-label">Загрузчик</span><span class="dl-spec-val">Fabric</span></div>
+          <div class="dl-spec-item"><span class="dl-spec-label">Версия мода</span><span class="dl-spec-val">v2.0_Beta</span></div>
+          <div class="dl-spec-item"><span class="dl-spec-label">Файл</span><span class="dl-spec-val">.jar · 10 MB</span></div>
+        </div>
+
+        <p class="dl-desc">Официальная сборка со встроенной оптимизацией FPS, кастомным ClickGUI и HUD. Подходит для любых лаунчеров (TLauncher, Prism, Modrinth, Legacy, Official).</p>
+
+        <a class="btn primary block download-main-btn" href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+          <span>Скачать SUN Client (.jar)</span>
+        </a>
+
+        <div class="card-sub-hint">Прямая загрузка · В 1 клик · Бесплатная бета без ограничений</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install" class="reveal stagger">
+    <div class="section-head">
+      <h2>Установка</h2>
+      <p class="section-sub">Простая интеграция за 3 шага — без сторонних библиотек и сложных настроек</p>
+    </div>
+
+    <!-- Ряд 1: Блочный режим — 3 ключевых шага -->
+    <div class="install-grid">
+      <div class="card install-step-card st">
+        <div class="step-head">
+          <span class="step-badge">Шаг 01</span>
+          <h3>Профиль Fabric</h3>
+          <p>В любом лаунчере выберите чистый профиль <b>Fabric 1.21.4</b>. Необходимая среда Java 21 загрузится автоматически.</p>
+        </div>
+      </div>
+
+      <div class="card install-step-card st">
+        <div class="step-head">
+          <span class="step-badge">Шаг 02</span>
+          <h3>Папка mods</h3>
+          <p>Поместите скачанный <code>sun-client-1.21.4.jar</code> в папку <code>mods</code> вашего Minecraft. Файл должен оставаться единым jar-файлом.</p>
+        </div>
+      </div>
+
+      <div class="card install-step-card st">
+        <div class="step-head">
+          <span class="step-badge">Шаг 03</span>
+          <h3>Запуск клиента</h3>
+          <p>Нажмите «Играть». Меню клиента и модули открываются в игре по нажатию клавиши <kbd class="kbd-inline">Правый Shift</kbd>.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ряд 2: 2 блока под шагами (Лаунчеры + Предупреждение по поводу модов) -->
+    <div class="install-sub-grid">
+      <!-- Блок 1: Как выбрать Fabric в лаунчере -->
+      <div class="card launcher-guide-card st">
+        <div class="launcher-header">
+          <h3 class="more-title">Как выбрать Fabric в лаунчере</h3>
+          <p class="muted">Выберите лаунчер для пошаговой подсказки</p>
+        </div>
+        <div class="launcher-pills">
+          <button type="button" class="launcher-pill on" data-launcher-tab="tl">TLauncher</button>
+          <button type="button" class="launcher-pill" data-launcher-tab="legacy">Legacy</button>
+          <button type="button" class="launcher-pill" data-launcher-tab="prism">Prism / Modrinth</button>
+          <button type="button" class="launcher-pill" data-launcher-tab="official">Официальный</button>
+        </div>
+        <div class="launcher-infos">
+          <div class="launcher-info on" data-launcher="tl"><p>В списке версий найдите <strong>Fabric 1.21.4</strong> (именно чистый Fabric, <u>не</u> версию со сторонними модами). Лаунчер загрузит всё самостоятельно.</p></div>
+          <div class="launcher-info" data-launcher="legacy"><p>Выберите тип <strong>Fabric</strong> и версию <strong>1.21.4</strong>. Убедитесь, что сторонние моды не отмечены галочками.</p></div>
+          <div class="launcher-info" data-launcher="prism"><p>Нажмите «Добавить инстанс» &rarr; версия <strong>1.21.4</strong> &rarr; «Установить Fabric» &rarr; нажмите «ОК».</p></div>
+          <div class="launcher-info" data-launcher="official"><p>Скачайте официальный Fabric Installer с <code>fabricmc.net</code>, выберите версию <strong>1.21.4</strong> и нажмите кнопку «Install».</p></div>
+        </div>
+      </div>
+
+      <!-- Блок 2: Предупреждение по поводу модов -->
+      <div class="card install-banner-card st">
+        <div class="banner-badge-wrap">
+          <div class="banner-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <span class="banner-tag">ВАЖНОЕ ПРАВИЛО</span>
+        </div>
+        <div class="banner-title">Чистая папка mods — без сторонних модов</div>
+        <div class="banner-desc">
+          В SUN Client уже встроены <strong>Sodium, Iris, шейдерный движок</strong> и глубокая оптимизация FPS. Не устанавливайте <strong>Fabric API</strong>, <strong>Sodium</strong> или <strong>OptiFine</strong> в папку <code>mods</code> — это приведет к конфликту и ошибке при запуске. Если они уже есть — обязательно удалите их.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Секция: Частые вопросы -->
+  <section id="faq" class="reveal stagger">
+    <div class="section-head">
+      <h2>Частые вопросы</h2>
+      <p class="section-sub">Ответы на популярные вопросы о запуске, настройке и совместимости</p>
+    </div>
+    <div class="faq-grid">
+      <div class="card faq-item st">
+        <h4>Игра вылетает при запуске?</h4>
+        <p>В папке <code>mods</code> остались Fabric API, Sodium или другие моды. Очистите папку перед запуском SUN Client.</p>
+      </div>
+      <div class="card faq-item st">
+        <h4>Не открывается меню?</h4>
+        <p>Нажимайте именно <strong>Правый Shift</strong> — горячая клавиша по умолчанию для открытия ClickGUI в игре.</p>
+      </div>
+      <div class="card faq-item st">
+        <h4>Нужно ли ставить Java?</h4>
+        <p>Нет. Все современные лаунчеры скачивают и настраивают изолированную среду Java 21 автоматически.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>© 2026 SUN Visuals. Не связан с Mojang AB или Microsoft. <a href="https://t.me/SUN_Visual" target="_blank" rel="noopener">Telegram канал</a></footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="auth" class="modal">
+  <div class="sun-modal-card">
+    <button type="button" class="x" data-close aria-label="Закрыть">×</button>
+
+    <div class="sun-modal-art">
+      <div class="sun-modal-art-content">
+        <img src="assets/logo.svg" alt="" class="sun-auth-logo" width="38" height="38">
+        <span class="sun-auth-brand">SUN VISUALS</span>
+      </div>
+    </div>
+
+    <div class="sun-modal-body">
+      <div class="sun-modal-header">
+        <h2 id="auth-title">Вход в аккаунт</h2>
+        <p class="muted" id="auth-desc">Единый аккаунт для клиента и настроек</p>
+      </div>
+
+      <div id="auth-box">
+        <button type="button" class="btn google-sign-btn block" id="btn-google-auth">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.13C3.27 21.36 7.35 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.26C.46 8.19 0 10.03 0 12s.46 3.81 1.26 5.42l4.02-3.13z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.27 2.64 1.26 6.58l4.02 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
+          </svg>
+          <span id="google-btn-text">Продолжить с Google</span>
+        </button>
+
+        <div class="auth-divider"><span>или с паролем</span></div>
+
+        <form id="f-log">
+          <label>Никнейм или E-mail
+            <input id="log-login" name="username" required autocomplete="username" placeholder="Ваш ник или почта">
+          </label>
+          <label>Пароль
+            <input id="log-pass" name="password" type="password" required autocomplete="current-password" placeholder="••••••••">
+          </label>
+          <div class="turnstile-box"><div id="turnstile-log" class="cf-turnstile-wrapper"></div></div>
+          <button class="btn primary block">Войти в аккаунт</button>
+        </form>
+
+        <form id="f-reg" hidden>
+          <label>Никнейм
+            <input id="reg-user" name="username" required autocomplete="username" placeholder="Steve">
+          </label>
+          <label>E-mail
+            <div class="input-with-action">
+              <input id="reg-email" name="email" type="email" required autocomplete="email" placeholder="username@gmail.com">
+              <button type="button" class="field-quick-btn" id="btn-fill-gmail" title="Дописать @gmail.com">+ @gmail.com</button>
+            </div>
+          </label>
+          <label>
+            <div class="label-row">
+              <span>Пароль</span>
+              <button type="button" class="gen-pass-btn" id="btn-gen-pass">Сгенерировать надежный</button>
+            </div>
+            <div class="input-with-action">
+              <input id="reg-pass" name="new-password" type="password" required minlength="8" autocomplete="new-password" placeholder="Пароль">
+              <button type="button" class="field-quick-btn" id="btn-toggle-eye" title="Скрыть/Показать">👁</button>
+            </div>
+          </label>
+          <div class="turnstile-box"><div id="turnstile-reg" class="cf-turnstile-wrapper"></div></div>
+          <button class="btn primary block">Создать аккаунт (60 дней)</button>
+        </form>
+
+        <div class="auth-toggle-box">
+          <span id="auth-switch-text">Нет аккаунта?</span>
+          <button type="button" class="auth-switch-btn" id="btn-switch-auth">Зарегистрироваться</button>
+        </div>
+
+        <div id="alert" class="alert" hidden></div>
+      </div>
+
+      <div id="profile" hidden>
+        <div class="sun-profile-head">
+          <div>
+            <h3 id="p-name" class="profile-username">User</h3>
+            <span class="user-role-badge">Бета-тестер</span>
+          </div>
+          <span id="p-status-badge" class="profile-status-badge">Активен</span>
+        </div>
+
+        <!-- Ключ активации -->
+        <div class="cabinet-section">
+          <div class="section-title-sm">Лицензионный ключ (SUN Key)</div>
+          <div class="cabinet-key-box">
+            <span id="p-key" class="cabinet-key-text">SUN-XXXX-XXXX</span>
+            <button type="button" class="cabinet-btn-copy" id="btn-copy-key" title="Скопировать ключ">Скопировать</button>
+          </div>
+          <p class="cabinet-hint">Используйте этот ключ для авторизации в клиенте при первом входе.</p>
+        </div>
+
+        <!-- Привязка к ПК (HWID) -->
+        <div class="cabinet-section">
+          <div class="section-title-sm">Привязка к устройству (HWID)</div>
+          <div class="cabinet-hwid-box">
+            <div class="hwid-status-line">
+              <span id="p-hwid-badge" class="hwid-badge-indicator">🟡 Не привязан</span>
+              <span id="p-hwid-text" class="hwid-code-masked">—</span>
+            </div>
+            <button type="button" class="btn glass sm" id="btn-reset-hwid">Сбросить HWID</button>
+          </div>
+          <p class="cabinet-hint" id="hwid-hint-text">Привязывается автоматически при первом запуске на ПК. Сброс доступен раз в 3 дня.</p>
+        </div>
+
+        <!-- Баланс очков тестера -->
+        <div class="cabinet-sparks-card">
+          <div class="sparks-header">
+            <span class="sparks-title">Баланс баг-тестера</span>
+            <span class="sparks-val">⚡ <span id="p-coins">0</span> Sparks</span>
+          </div>
+          <p class="sparks-desc">Находите баги и отправляйте в Telegram-группу для получения эксклюзивных наград и косметики на релизе!</p>
+        </div>
+
+        <!-- Детали лицензии -->
+        <dl class="profile-details">
+          <dt>Действует до</dt><dd id="p-exp"></dd>
+          <dt>Косметика беты</dt><dd id="p-cosmetics">Крылья, Корона, Плащ</dd>
+        </dl>
+
+        <a class="btn primary block download-main-btn" href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="margin-right:6px"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+          Скачать клиент (.jar)
+        </a>
+        <button type="button" class="btn glass block" id="logout">Выйти из аккаунта</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script src="app.js?v=3"></script>
+</body>
+</html>

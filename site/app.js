@@ -188,11 +188,16 @@ $$('[data-open-auth]').forEach(b => {
 });
 
 const closeBtn = $('[data-close]');
-if (closeBtn) closeBtn.onclick = () => auth.close();
+if (closeBtn) {
+  closeBtn.onclick = () => {
+    if (auth) auth.close();
+  };
+}
 
 if (auth) {
-  auth.addEventListener('click', e => {
-    if (e.target === auth) auth.close();
+  // Запрещаем случайное закрытие окна по клику вне формы или клавише Escape
+  auth.addEventListener('cancel', e => {
+    e.preventDefault();
   });
 }
 

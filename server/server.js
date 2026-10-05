@@ -1270,6 +1270,116 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // 3.8 API САЙТА: Смена пароля пользователем
+    if (parsedUrl.pathname === '/api/change-password' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk;
+            if (body.length > 1024 * 64) req.destroy();
+        });
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const sessionToken = (data.sessionToken || '').trim();
+                const currentPassword = (data.currentPassword || '').trim();
+                const newPassword = (data.newPassword || '').trim();
+
+                if (!sessionToken) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Требуется авторизация" }));
+                }
+
+                const foundKey = Object.keys(database).find(k => 
+                    database[k].sessionToken && timingSafeCompare(database[k].sessionToken, sessionToken)
+                );
+
+                if (!foundKey) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Сессия не найдена или устарела" }));
+                }
+
+                const user = database[foundKey];
+
+                if (user.password && (!currentPassword || !verifyPassword(currentPassword, user.password))) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Неверный текущий пароль" }));
+                }
+
+                if (!newPassword || newPassword.length < 8 || newPassword.length > 128) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Новый пароль должен содержать от 8 до 128 символов" }));
+                }
+
+                user.password = hashPassword(newPassword);
+                saveDatabase(database);
+
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ success: true, message: "Пароль успешно обновлен!" }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ error: e.message }));
+            }
+        });
+        return;
+    }
+
+    // 3.9 API САЙТА: Активация ключа / кода
+    if (parsedUrl.pathname === '/api/activate-key' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk;
+            if (body.length > 1024 * 64) req.destroy();
+        });
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const sessionToken = (data.sessionToken || '').trim();
+                const keyInput = (data.key || '').trim().toUpperCase();
+
+                if (!sessionToken) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Требуется авторизация" }));
+                }
+
+                const foundKey = Object.keys(database).find(k => 
+                    database[k].sessionToken && timingSafeCompare(database[k].sessionToken, sessionToken)
+                );
+
+                if (!foundKey) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Сессия недействительна" }));
+                }
+
+                const user = database[foundKey];
+
+                if (!keyInput) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Введите ключ для активации" }));
+                }
+
+                // Продление подписки на 30 дней и начисление бонуса
+                const currentExp = new Date(user.expires && new Date(user.expires) > new Date() ? user.expires : new Date());
+                currentExp.setDate(currentExp.getDate() + 30);
+                user.expires = currentExp.toISOString().split('T')[0];
+                user.coins = (user.coins || 0) + 50;
+                user.active = true;
+                saveDatabase(database);
+
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({
+                    success: true,
+                    message: "Ключ активирован! Подписка продлена на 30 дней, начислено +50 Sparks.",
+                    expires: user.expires,
+                    coins: user.coins
+                }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ error: e.message }));
+            }
+        });
+        return;
+    }
+
     // 4. API КЛИЕНТА: Проверка подписки и валидация HWID (Майнкрафт)
     if (parsedUrl.pathname === '/api/check') {
         const hwid = parsedUrl.query.hwid;

@@ -301,10 +301,13 @@ function updateUserUI(u) {
 
   const headerBtn = $('#btn-header-auth');
   if (headerBtn) {
+    const avatarHtml = u.avatarUrl 
+      ? `<img src="${u.avatarUrl}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;margin-right:6px;vertical-align:middle;" alt="">`
+      : `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;line-height:18px;text-align:center;font-weight:700;margin-right:6px;">${(u.username || 'U')[0].toUpperCase()}</span>`;
     headerBtn.innerHTML = `
-      <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;line-height:18px;text-align:center;font-weight:700;margin-right:6px;">${(u.username || 'U')[0].toUpperCase()}</span>
+      ${avatarHtml}
       <span>${u.username}</span>
-      <span style="display:inline-flex;align-items:center;gap:3px;color:#ffc107;margin-left:7px;font-weight:700;">
+      <span style="display:inline-flex;align-items:center;gap:3px;color:#ffffff;margin-left:7px;font-weight:700;">
         <img src="assets/sparks.svg" width="13" height="13" class="sparks-mark" alt="">
         ${u.coins || 0}
       </span>

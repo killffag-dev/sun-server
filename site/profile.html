@@ -34,10 +34,6 @@
         <span>Аккаунт</span>
       </button>
 
-      <button type="button" class="kimiko-nav-item" data-tab="subscription">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
-        <span>Подписка</span>
-      </button>
 
       <button type="button" class="kimiko-nav-item" data-tab="cosmetics">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -49,20 +45,12 @@
         <span>Баланс Sparks</span>
       </button>
 
-      <button type="button" class="kimiko-nav-item" data-tab="download">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-        <span>Скачать клиент</span>
-      </button>
 
       <button type="button" class="kimiko-nav-item" data-tab="configs">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
         <span>Конфиги</span>
       </button>
 
-      <button type="button" class="kimiko-nav-item" data-tab="help">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
-        <span>Помощь</span>
-      </button>
 
       <button type="button" class="kimiko-nav-item kimiko-logout" id="btn-kimiko-logout">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
@@ -83,10 +71,22 @@
 
       <!-- Баннер пользователя с обложкой -->
       <div class="kimiko-user-banner">
-        <div class="kimiko-banner-cover"></div>
+        <div class="kimiko-banner-cover" id="banner-cover">
+          <input type="file" id="input-banner" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">
+          <button type="button" class="kimiko-banner-btn" id="btn-upload-banner" title="Загрузить фон профиля">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+            <span>Сменить фон</span>
+          </button>
+        </div>
         <div class="kimiko-banner-profile">
-          <div class="kimiko-avatar" id="avatar-box">
-            <span id="avatar-initial">U</span>
+          <input type="file" id="input-avatar" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">
+          <div class="kimiko-avatar-wrapper" id="btn-upload-avatar" title="Нажмите, чтобы сменить аватарку">
+            <div class="kimiko-avatar" id="avatar-box">
+              <span id="avatar-initial">U</span>
+            </div>
+            <div class="kimiko-avatar-overlay">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3 4V1h2v3h3v2H5v3H3V6H0V4h3zm3 6V7h3V4h7l1.83 2H21c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V10h3zm7 9c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-3.2-5c0 1.77 1.43 3.2 3.2 3.2s3.2-1.43 3.2-3.2-1.43-3.2-3.2-3.2-3.2 1.43-3.2 3.2z"/></svg>
+            </div>
           </div>
           <div class="kimiko-banner-meta">
             <div class="kimiko-banner-name" id="banner-username">Загрузка...</div>
@@ -111,11 +111,12 @@
 
           <div class="kimiko-stat-item">
             <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-              <span>Подписка</span>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M4 6h16v12H4z"/></svg>
+              <span>HWID</span>
             </div>
-            <div class="kimiko-stat-val">
-              <span id="k-sub-status" class="kimiko-highlight">Активна</span>
+            <div class="kimiko-stat-val" id="k-hwid-display">
+              <span class="kimiko-dot" id="k-hwid-dot"></span>
+              <span id="k-hwid-text">Не привязан</span>
             </div>
           </div>
         </div>
@@ -138,64 +139,8 @@
           </div>
         </div>
 
-        <div class="kimiko-stat-row">
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>
-              <span>Дата регистрации</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-reg-date">5 октября 2026 г.</div>
-          </div>
-
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-              <span>Почта</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-email">user@gmail.com</div>
-          </div>
-        </div>
-
-        <div class="kimiko-stat-row">
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-              <span>Последний заход</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-last-seen">Сегодня</div>
-          </div>
-
-          <div class="kimiko-stat-item">
-            <div class="kimiko-stat-label">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M4 6h16v12H4z"/></svg>
-              <span>HWID</span>
-            </div>
-            <div class="kimiko-stat-val" id="k-hwid-display">
-              <span class="kimiko-dot" id="k-hwid-dot"></span>
-              <span id="k-hwid-text">Не привязан</span>
-            </div>
-          </div>
-        </div>
       </div>
 
-      <!-- Блок: Изменить пароль -->
-      <div class="kimiko-section-block">
-        <h3 class="kimiko-block-title">Изменить пароль</h3>
-        <p class="kimiko-block-sub">Введите текущий и новый пароль (8–128 символов)</p>
-        <form id="f-change-password" class="kimiko-password-grid">
-          <input type="password" id="cp-current" placeholder="Текущий пароль" required autocomplete="current-password">
-          <input type="password" id="cp-new" placeholder="Новый пароль" minlength="8" required autocomplete="new-password">
-          <input type="password" id="cp-confirm" placeholder="Повторите новый пароль" minlength="8" required autocomplete="new-password">
-          <button type="submit" class="kimiko-btn-primary" id="btn-save-pass">Сохранить</button>
-        </form>
-      </div>
-
-      <!-- Блок: Привязка к оборудованию HWID -->
-      <div class="kimiko-section-block">
-        <h3 class="kimiko-block-title">Привязка к устройству (HWID)</h3>
-        <p class="kimiko-block-sub" id="k-hwid-explain">Аппаратная привязка защищает аккаунт. Сброс доступен 1 раз в 3 дня.</p>
-        <button type="button" class="kimiko-btn-secondary" id="btn-reset-hwid-kimiko">Сбросить HWID</button>
-      </div>
 
       <!-- Блок: Активировать ключ -->
       <div class="kimiko-section-block">
@@ -208,23 +153,6 @@
       </div>
     </div>
 
-    <!-- Вкладка 2: Подписка -->
-    <div class="kimiko-tab-pane" id="pane-subscription">
-      <div class="kimiko-pane-head">
-        <h1 class="kimiko-page-title">Подписка</h1>
-        <p class="kimiko-page-sub">Информация о вашей активной лицензии SUN Client</p>
-      </div>
-      <div class="kimiko-sub-card">
-        <div class="kimiko-sub-badge">Активна</div>
-        <div class="kimiko-sub-plan">Открытый бета-тест SUN 2.0</div>
-        <div class="kimiko-sub-exp">Действует до: <strong id="sub-pane-exp">2026-12-04</strong></div>
-        <p class="kimiko-sub-desc">Полный доступ ко всем модулям оптимизации, ClickGUI, HUD и косметике бета-тестера.</p>
-        <a href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar" class="kimiko-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-top:1rem;">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-          <span>Скачать SUN Client (.jar)</span>
-        </a>
-      </div>
-    </div>
 
     <!-- Вкладка 3: Косметика -->
     <div class="kimiko-tab-pane" id="pane-cosmetics">
@@ -232,21 +160,24 @@
         <h1 class="kimiko-page-title">Косметика</h1>
         <p class="kimiko-page-sub">Разблокированные 3D модели и эффекты для вашего персонажа</p>
       </div>
-      <div class="kimiko-cosmetics-grid">
-        <div class="kimiko-cosmetic-card">
-          <span class="kimiko-cosm-tag">Разблокировано</span>
-          <h3>Огненные крылья</h3>
-          <p>3D модель анимированных крыльев феникса с кастомным рендером.</p>
+      <div class="kimiko-cosm-box-grid">
+        <div class="card kimiko-cosm-soon-card">
+          <div class="kimiko-cosm-soon-text">(Скоро...)</div>
         </div>
-        <div class="kimiko-cosmetic-card">
-          <span class="kimiko-cosm-tag">Разблокировано</span>
-          <h3>Золотая корона</h3>
-          <p>Вращающаяся золотая корона над головой игрока с мягким свечением.</p>
+        <div class="card kimiko-cosm-soon-card">
+          <div class="kimiko-cosm-soon-text">(Скоро...)</div>
         </div>
-        <div class="kimiko-cosmetic-card">
-          <span class="kimiko-cosm-tag">Разблокировано</span>
-          <h3>Плащ SUN</h3>
-          <p>Фирменный черный анимированный плащ с логотипом клиента.</p>
+        <div class="card kimiko-cosm-soon-card">
+          <div class="kimiko-cosm-soon-text">(Скоро...)</div>
+        </div>
+        <div class="card kimiko-cosm-soon-card">
+          <div class="kimiko-cosm-soon-text">(Скоро...)</div>
+        </div>
+        <div class="card kimiko-cosm-soon-card">
+          <div class="kimiko-cosm-soon-text">(Скоро...)</div>
+        </div>
+        <div class="card kimiko-cosm-soon-card">
+          <div class="kimiko-cosm-soon-text">(Скоро...)</div>
         </div>
       </div>
     </div>
@@ -272,27 +203,6 @@
       </div>
     </div>
 
-    <!-- Вкладка 5: Скачать клиент -->
-    <div class="kimiko-tab-pane" id="pane-download">
-      <div class="kimiko-pane-head">
-        <h1 class="kimiko-page-title">Скачать клиент</h1>
-        <p class="kimiko-page-sub">Актуальный официальный билд SUN Visuals 1.21.4 Fabric</p>
-      </div>
-      <div class="kimiko-section-block">
-        <h3 class="kimiko-block-title">Официальный установщик</h3>
-        <p class="kimiko-block-sub">Minecraft 1.21.4 · Fabric Loader · Java 21 · Размер: 10 MB</p>
-        <a href="downloads/sun-client-1.21.4.jar" download="sun-client-1.21.4.jar" class="kimiko-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-top:.8rem;">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-          <span>Скачать sun-client-1.21.4.jar</span>
-        </a>
-        <div style="margin-top:1.5rem;font-size:0.85rem;color:var(--tx2);line-height:1.6;">
-          <strong>Быстрая установка:</strong><br>
-          1. Установите чистый профиль Fabric 1.21.4.<br>
-          2. Скопируйте файл <code>sun-client-1.21.4.jar</code> в папку <code>.minecraft/mods</code>.<br>
-          3. Запустите игру. Меню открывается на клавишу <strong>Правый Shift</strong>.
-        </div>
-      </div>
-    </div>
 
     <!-- Вкладка 6: Конфиги -->
     <div class="kimiko-tab-pane" id="pane-configs">
@@ -307,20 +217,6 @@
       </div>
     </div>
 
-    <!-- Вкладка 7: Помощь -->
-    <div class="kimiko-tab-pane" id="pane-help">
-      <div class="kimiko-pane-head">
-        <h1 class="kimiko-page-title">Помощь и поддержка</h1>
-        <p class="kimiko-page-sub">Часто задаваемые вопросы и связь с разработчиками</p>
-      </div>
-      <div class="kimiko-section-block">
-        <h3 class="kimiko-block-title">Telegram канал и чат</h3>
-        <p class="kimiko-block-sub">Оперативная поддержка и новости обновлений</p>
-        <a href="https://t.me/SUN_Visual" target="_blank" rel="noopener" class="kimiko-btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-top:.8rem;">
-          <span>Перейти в Telegram</span>
-        </a>
-      </div>
-    </div>
 
   </main>
 </div>
@@ -425,32 +321,38 @@ function populateProfile(u) {
   const username = u.username || 'Пользователь';
   const firstChar = username.charAt(0).toUpperCase();
 
-  $('#avatar-initial').textContent = firstChar;
-  $('#banner-username').textContent = username;
-  $('#banner-email').textContent = u.email || 'Не привязан';
+  const avatarBox = $('#avatar-box');
+  if (avatarBox) {
+    if (u.avatarUrl) {
+      avatarBox.innerHTML = `<img src="${u.avatarUrl}" class="kimiko-avatar-photo" alt="">`;
+    } else {
+      avatarBox.innerHTML = `<span id="avatar-initial">${firstChar}</span>`;
+    }
+  }
 
-  $('#k-uid').textContent = u.key || 'SUN-XXXX-XXXX';
-  $('#k-login').textContent = username;
-  $('#k-email').textContent = u.email || '—';
-  $('#k-reg-date').textContent = u.created || '5 октября 2026 г.';
-  $('#k-sub-status').textContent = u.active ? ('Активна (до ' + (u.expires || '2026-12-04') + ')') : 'Истекла';
+  const bannerCover = $('#banner-cover');
+  if (bannerCover && u.bannerUrl) {
+    bannerCover.style.background = `linear-gradient(180deg,rgba(14,16,23,0.3),rgba(14,16,23,0.95)),url('${u.bannerUrl}') center 30%/cover`;
+  }
 
-  if ($('#sub-pane-exp')) $('#sub-pane-exp').textContent = u.expires || '2026-12-04';
+  if ($('#banner-username')) $('#banner-username').textContent = username;
+  if ($('#banner-email')) $('#banner-email').textContent = u.email || 'Не привязан';
+
+  if ($('#k-uid')) $('#k-uid').textContent = u.key || 'SUN-XXXX-XXXX';
+  if ($('#k-login')) $('#k-login').textContent = username;
+  if ($('#k-role')) $('#k-role').textContent = 'Бета-тестер';
   if ($('#sparks-pane-val')) $('#sparks-pane-val').textContent = u.coins || 0;
 
   // HWID статус
   const dot = $('#k-hwid-dot');
   const hwidText = $('#k-hwid-text');
-  const hwidExplain = $('#k-hwid-explain');
 
   if (u.hwid) {
     if (dot) dot.className = 'kimiko-dot active';
     if (hwidText) hwidText.textContent = 'Привязан (' + u.hwid.substring(0, 10) + '...)';
-    if (hwidExplain) hwidExplain.textContent = 'Ключ заблокирован за вашим компьютером. Сброс доступен раз в 3 дня.';
   } else {
     if (dot) dot.className = 'kimiko-dot warning';
     if (hwidText) hwidText.textContent = 'Не привязан';
-    if (hwidExplain) hwidExplain.textContent = 'Ключ привяжется автоматически при первом входе в игру через клиент.';
   }
 }
 
@@ -524,78 +426,126 @@ if (copyUidBtn) {
   };
 }
 
-// Форма изменения пароля
-const fChangePass = $('#f-change-password');
-if (fChangePass) {
-  fChangePass.onsubmit = async (e) => {
-    e.preventDefault();
-    const cur = $('#cp-current').value;
-    const pNew = $('#cp-new').value;
-    const pConf = $('#cp-confirm').value;
-
-    if (pNew !== pConf) {
-      toast('Новые пароли не совпадают!');
+// Загрузка аватарки
+const avatarInput = $('#input-avatar');
+const btnUploadAvatar = $('#btn-upload-avatar');
+if (btnUploadAvatar && avatarInput) {
+  btnUploadAvatar.onclick = () => avatarInput.click();
+  avatarInput.onchange = async () => {
+    const file = avatarInput.files && avatarInput.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast('Размер аватарки не должен превышать 5 МБ');
       return;
     }
-    if (pNew.length < 8) {
-      toast('Пароль должен содержать от 8 символов');
-      return;
-    }
-
-    const btn = $('#btn-save-pass');
-    btn.disabled = true;
-    btn.textContent = 'Сохранение...';
-
-    try {
-      const res = await api('change-password', {
-        sessionToken: currentUser?.sessionToken || getStoredToken(),
-        currentPassword: cur,
-        newPassword: pNew
-      });
-      if (res.sessionToken) {
-        saveSession(res.sessionToken, currentUser?.key, currentUser);
-        if (currentUser) currentUser.sessionToken = res.sessionToken;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        toast('Загрузка аватарки...');
+        const res = await api('upload-avatar', {
+          sessionToken: currentUser?.sessionToken || getStoredToken(),
+          imageBase64: e.target.result
+        });
+        if (currentUser) {
+          currentUser.avatarUrl = res.avatarUrl;
+          populateProfile(currentUser);
+        }
+        toast('Аватарка успешно обновлена!');
+      } catch (err) {
+        toast(err.message || 'Ошибка загрузки аватарки');
       }
-      toast(res.message || 'Пароль успешно обновлен!');
-      fChangePass.reset();
-    } catch (err) {
-      toast(err.message || 'Ошибка смены пароля');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Сохранить';
-    }
+    };
+    reader.readAsDataURL(file);
   };
 }
 
-// Сброс HWID
-const btnResetHwid = $('#btn-reset-hwid-kimiko');
-if (btnResetHwid) {
-  btnResetHwid.onclick = async () => {
-    if (!currentUser || !currentUser.key) return;
-    if (!currentUser.hwid) {
-      toast('Ключ еще не привязан к ПК. Сброс не требуется.');
+// Загрузка фона профиля (баннера)
+const bannerInput = $('#input-banner');
+const btnUploadBanner = $('#btn-upload-banner');
+if (btnUploadBanner && bannerInput) {
+  btnUploadBanner.onclick = () => bannerInput.click();
+  bannerInput.onchange = async () => {
+    const file = bannerInput.files && bannerInput.files[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      toast('Размер фона не должен превышать 8 МБ');
       return;
     }
-    if (!confirm('Вы действительно хотите сбросить аппаратную привязку?')) return;
-
-    btnResetHwid.disabled = true;
-    btnResetHwid.textContent = 'Сброс...';
-    try {
-      const res = await api('reset-hwid', {
-        key: currentUser.key,
-        sessionToken: currentUser?.sessionToken || getStoredToken()
-      });
-      currentUser.hwid = null;
-      populateProfile(currentUser);
-      toast(res.message || 'Привязка HWID успешно сброшена!');
-    } catch (err) {
-      toast(err.message || 'Ошибка сброса HWID');
-    } finally {
-      btnResetHwid.disabled = false;
-      btnResetHwid.textContent = 'Сбросить HWID';
-    }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        toast('Загрузка фона профиля...');
+        const res = await api('upload-banner', {
+          sessionToken: currentUser?.sessionToken || getStoredToken(),
+          imageBase64: e.target.result
+        });
+        if (currentUser) {
+          currentUser.bannerUrl = res.bannerUrl;
+          populateProfile(currentUser);
+        }
+        toast('Фон профиля успешно обновлен!');
+      } catch (err) {
+        toast(err.message || 'Ошибка загрузки фона');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 }
+
+// 3D-наклон боксов за курсором мыши (как в главном меню)
+function initCardTilt() {
+  const cards = document.querySelectorAll('.card');
+  if (!cards.length) return;
+
+  const states = new Map();
+  cards.forEach(card => {
+    states.set(card, {
+      targetRx: 0,
+      targetRy: 0,
+      currentRx: 0,
+      currentRy: 0
+    });
+
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty('--mouse-x', `${x}px`);
+      card.style.setProperty('--mouse-y', `${y}px`);
+
+      const nx = (x / rect.width) * 2 - 1;
+      const ny = (y / rect.height) * 2 - 1;
+      const s = states.get(card);
+      if (s) {
+        s.targetRx = -ny * 9;
+        s.targetRy = nx * 9;
+      }
+    });
+
+    card.addEventListener('mouseleave', () => {
+      const s = states.get(card);
+      if (s) {
+        s.targetRx = 0;
+        s.targetRy = 0;
+      }
+    });
+  });
+
+  function tick() {
+    cards.forEach(card => {
+      const s = states.get(card);
+      if (!s) return;
+      s.currentRx += (s.targetRx - s.currentRx) * 0.12;
+      s.currentRy += (s.targetRy - s.currentRy) * 0.12;
+      if (Math.abs(s.currentRx) < 0.001) s.currentRx = 0;
+      if (Math.abs(s.currentRy) < 0.001) s.currentRy = 0;
+      card.style.transform = `perspective(900px) rotateX(${s.currentRx.toFixed(2)}deg) rotateY(${s.currentRy.toFixed(2)}deg)`;
+    });
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+initCardTilt();
 
 // Активация ключа
 const fActKey = $('#f-activate-key');

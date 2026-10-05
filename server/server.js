@@ -12,6 +12,19 @@ const crypto = require('crypto');
 
 const PORT = process.env.PORT || 8080;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'database.json');
+const SITE_DIR = process.env.SITE_DIR || path.resolve(path.join(__dirname, '..', 'site'));
+const UPLOADS_DIR = path.join(SITE_DIR, 'uploads');
+const AVATARS_DIR = path.join(UPLOADS_DIR, 'avatars');
+const BANNERS_DIR = path.join(UPLOADS_DIR, 'banners');
+
+try {
+    if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    if (!fs.existsSync(AVATARS_DIR)) fs.mkdirSync(AVATARS_DIR, { recursive: true });
+    if (!fs.existsSync(BANNERS_DIR)) fs.mkdirSync(BANNERS_DIR, { recursive: true });
+} catch (e) {
+    console.warn('[SUN-API] Ошибка создания папок загрузок:', e.message);
+}
+
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sun2026admin';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'SUN_SESSION_SECRET_2026_SECURE_KEY_9837418247918237';
 // Map of active admin session tokens -> expiration timestamp (ms)
@@ -1050,6 +1063,8 @@ const server = http.createServer((req, res) => {
                     key: accountId,
                     password: hashPassword(password),
                     sessionToken: sessionToken,
+                    avatarUrl: null,
+                    bannerUrl: null,
                     active: true,
                     banned: false,
                     created: new Date().toISOString().split('T')[0],
@@ -1071,6 +1086,8 @@ const server = http.createServer((req, res) => {
                     email: email,
                     key: accountId,
                     sessionToken: sessionToken,
+                    avatarUrl: null,
+                    bannerUrl: null,
                     coins: 0,
                     hwid: null,
                     hwid_last_reset: null,
@@ -1173,6 +1190,8 @@ const server = http.createServer((req, res) => {
                     email: user.email,
                     key: userKey,
                     sessionToken: user.sessionToken,
+                    avatarUrl: user.avatarUrl || null,
+                    bannerUrl: user.bannerUrl || null,
                     coins: user.coins || 0,
                     hwid: user.hwid || null,
                     hwid_last_reset: user.hwid_last_reset || null,
@@ -1226,6 +1245,8 @@ const server = http.createServer((req, res) => {
                             email: u.email,
                             key: foundKey,
                             sessionToken: sessionToken,
+                            avatarUrl: u.avatarUrl || null,
+                            bannerUrl: u.bannerUrl || null,
                             coins: u.coins || 0,
                             hwid: u.hwid || null,
                             hwid_last_reset: u.hwid_last_reset || null,
@@ -1285,6 +1306,8 @@ const server = http.createServer((req, res) => {
                     email: u.email,
                     key: foundKey,
                     sessionToken: sessionToken,
+                    avatarUrl: u.avatarUrl || null,
+                    bannerUrl: u.bannerUrl || null,
                     coins: u.coins || 0,
                     hwid: u.hwid || null,
                     hwid_last_reset: u.hwid_last_reset || null,
@@ -1478,6 +1501,176 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // 3.92 API САЙТА: Загрузка аватарки пользователя (видна всем)
+    if (parsedUrl.pathname === '/api/upload-avatar' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk;
+            if (body.length > 1024 * 1024 * 10) req.destroy(); // 10MB limit
+        });
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
+                const auth = getUserBySessionToken(sessionToken);
+                if (!auth) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Сессия недействительна или истекла" }));
+                }
+
+                const user = auth.user;
+                const foundKey = auth.key;
+                const rawImage = (data.imageBase64 || data.image || '').trim();
+
+                if (!rawImage) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Изображение не передано" }));
+                }
+
+                let ext = 'png';
+                let base64Data = rawImage;
+                const match = rawImage.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/i);
+                if (match) {
+                    ext = match[1].toLowerCase() === 'jpeg' ? 'jpg' : match[1].toLowerCase();
+                    base64Data = match[2];
+                }
+
+                const buffer = Buffer.from(base64Data, 'base64');
+                if (buffer.length > 5 * 1024 * 1024) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Размер изображения не должен превышать 5 МБ" }));
+                }
+
+                const safeKey = foundKey.replace(/[^a-zA-Z0-9_-]/g, '_');
+                const fileName = `${safeKey}_avatar_${Date.now()}.${ext}`;
+                const savePath = path.join(AVATARS_DIR, fileName);
+                fs.writeFileSync(savePath, buffer);
+
+                if (user.avatarUrl && user.avatarUrl.startsWith('/uploads/avatars/')) {
+                    const oldPath = path.join(SITE_DIR, user.avatarUrl);
+                    try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); } catch (e) {}
+                }
+
+                const avatarUrl = `/uploads/avatars/${fileName}`;
+                user.avatarUrl = avatarUrl;
+                saveDatabase(database);
+                console.log(`[SUN-API] [AVATAR] Пользователь ${user.username} обновил аватарку -> ${avatarUrl}`);
+
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ success: true, avatarUrl }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ error: e.message || "Ошибка загрузки аватарки" }));
+            }
+        });
+        return;
+    }
+
+    // 3.94 API САЙТА: Загрузка фона профиля (баннера, виден всем)
+    if (parsedUrl.pathname === '/api/upload-banner' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk;
+            if (body.length > 1024 * 1024 * 10) req.destroy(); // 10MB limit
+        });
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
+                const auth = getUserBySessionToken(sessionToken);
+                if (!auth) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Сессия недействительна или истекла" }));
+                }
+
+                const user = auth.user;
+                const foundKey = auth.key;
+                const rawImage = (data.imageBase64 || data.image || '').trim();
+
+                if (!rawImage) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Изображение не передано" }));
+                }
+
+                let ext = 'png';
+                let base64Data = rawImage;
+                const match = rawImage.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/i);
+                if (match) {
+                    ext = match[1].toLowerCase() === 'jpeg' ? 'jpg' : match[1].toLowerCase();
+                    base64Data = match[2];
+                }
+
+                const buffer = Buffer.from(base64Data, 'base64');
+                if (buffer.length > 8 * 1024 * 1024) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: "Размер изображения не должен превышать 8 МБ" }));
+                }
+
+                const safeKey = foundKey.replace(/[^a-zA-Z0-9_-]/g, '_');
+                const fileName = `${safeKey}_banner_${Date.now()}.${ext}`;
+                const savePath = path.join(BANNERS_DIR, fileName);
+                fs.writeFileSync(savePath, buffer);
+
+                if (user.bannerUrl && user.bannerUrl.startsWith('/uploads/banners/')) {
+                    const oldPath = path.join(SITE_DIR, user.bannerUrl);
+                    try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); } catch (e) {}
+                }
+
+                const bannerUrl = `/uploads/banners/${fileName}`;
+                user.bannerUrl = bannerUrl;
+                saveDatabase(database);
+                console.log(`[SUN-API] [BANNER] Пользователь ${user.username} обновил баннер -> ${bannerUrl}`);
+
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ success: true, bannerUrl }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ error: e.message || "Ошибка загрузки фона" }));
+            }
+        });
+        return;
+    }
+
+    // 3.96 API САЙТА: Общедоступный профиль (аватарка и баннер видны всем)
+    if (parsedUrl.pathname === '/api/profile' && (req.method === 'GET' || req.method === 'POST')) {
+        const queryUser = (parsedUrl.query.username || parsedUrl.query.u || parsedUrl.query.key || '').trim().toLowerCase();
+        const sessionToken = (getCookie(req, 'sun_session') || '').trim();
+
+        let targetUser = null;
+        let targetKey = null;
+
+        if (queryUser) {
+            targetKey = Object.keys(database).find(k => 
+                (database[k].username && database[k].username.toLowerCase() === queryUser) ||
+                (database[k].key && database[k].key.toLowerCase() === queryUser)
+            );
+            if (targetKey) targetUser = database[targetKey];
+        }
+
+        if (!targetUser && sessionToken) {
+            const auth = getUserBySessionToken(sessionToken);
+            if (auth) {
+                targetUser = auth.user;
+                targetKey = auth.key;
+            }
+        }
+
+        if (!targetUser) {
+            res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+            return res.end(JSON.stringify({ error: "Профиль не найден" }));
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify({
+            success: true,
+            username: targetUser.username,
+            avatarUrl: targetUser.avatarUrl || null,
+            bannerUrl: targetUser.bannerUrl || null,
+            role: "Бета-тестер",
+            created: targetUser.created || "2026-10-05"
+        }));
+    }
+
     // 4. API КЛИЕНТА: Проверка подписки и валидация HWID (Майнкрафт)
     if (parsedUrl.pathname === '/api/check') {
         const hwid = parsedUrl.query.hwid;
@@ -1593,7 +1786,6 @@ const server = http.createServer((req, res) => {
     }
 
     // 6. СТАТИЧЕСКИЙ САЙТ-ВИЗИТКА (site/)
-    const SITE_DIR = path.resolve(path.join(__dirname, '..', 'site'));
     const safeBaseDir = SITE_DIR.endsWith(path.sep) ? SITE_DIR : SITE_DIR + path.sep;
     let reqPath = parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname;
     if (parsedUrl.pathname === '/profile') {
@@ -1617,6 +1809,7 @@ const server = http.createServer((req, res) => {
             '.jpg': 'image/jpeg',
             '.jpeg': 'image/jpeg',
             '.webp': 'image/webp',
+            '.gif': 'image/gif',
             '.svg': 'image/svg+xml',
             '.json': 'application/json; charset=utf-8',
             '.ico': 'image/x-icon',

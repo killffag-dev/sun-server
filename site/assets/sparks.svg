@@ -1,59 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" class="sparks-icon-svg">
   <defs>
-    <!-- Градиент верхней левой грани -->
+    <!-- Градиент верхней левой грани (белый чистый свет) -->
     <linearGradient id="sparkGradTL" x1="2" y1="1" x2="12" y2="12" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFD54F" />
-      <stop offset="100%" stop-color="#FFA000" />
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#E2E8F0" />
     </linearGradient>
-    <!-- Градиент верхней правой грани (яркий блик) -->
+    <!-- Градиент верхней правой грани (яркий белый блик) -->
     <linearGradient id="sparkGradTR" x1="12" y1="1" x2="22" y2="12" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFF9C4" />
-      <stop offset="60%" stop-color="#FFCA28" />
-      <stop offset="100%" stop-color="#FF8F00" />
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="60%" stop-color="#F1F5F9" />
+      <stop offset="100%" stop-color="#CBD5E1" />
     </linearGradient>
     <!-- Градиент нижней левой грани -->
     <linearGradient id="sparkGradBL" x1="2" y1="12" x2="12" y2="23" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FF8F00" />
-      <stop offset="100%" stop-color="#E65100" />
+      <stop offset="0%" stop-color="#CBD5E1" />
+      <stop offset="100%" stop-color="#94A3B8" />
     </linearGradient>
     <!-- Градиент нижней правой грани -->
     <linearGradient id="sparkGradBR" x1="12" y1="12" x2="22" y2="23" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFA726" />
-      <stop offset="100%" stop-color="#EF6C00" />
+      <stop offset="0%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#94A3B8" />
     </linearGradient>
     <!-- Центральный кристаллический ромб (ядро искры) -->
     <linearGradient id="sparkCore" x1="7" y1="7" x2="17" y2="17" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="45%" stop-color="#FFF59D" />
-      <stop offset="100%" stop-color="#FFB300" />
+      <stop offset="50%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#E2E8F0" />
     </linearGradient>
-    <!-- Фильтр неонового свечения для больших размеров -->
+    <!-- Фильтр чистого белого свечения -->
     <filter id="sparkGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="#FFB300" flood-opacity="0.6"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="#FFFFFF" flood-opacity="0.6"/>
     </filter>
   </defs>
 
   <g filter="url(#sparkGlow)">
     <!-- 4 основные геометрические фасетные грани ромбической искры -->
-    <!-- Верхняя левая грань -->
     <polygon points="12,1.5 12,12 2,12" fill="url(#sparkGradTL)" />
-    <!-- Верхняя правая грань (основной блик) -->
     <polygon points="12,1.5 22,12 12,12" fill="url(#sparkGradTR)" />
-    <!-- Нижняя левая грань -->
     <polygon points="2,12 12,12 12,22.5" fill="url(#sparkGradBL)" />
-    <!-- Нижняя правая грань -->
     <polygon points="12,12 22,12 12,22.5" fill="url(#sparkGradBR)" />
 
     <!-- Центральный ромбовидный кристалл чистого света -->
     <polygon points="12,6.5 17.5,12 12,17.5 6.5,12" fill="url(#sparkCore)" />
     <!-- Тонкие геометрические грани ядра -->
-    <polygon points="12,6.5 17.5,12 12,12" fill="#FFFFFF" fill-opacity="0.4" />
-    <polygon points="6.5,12 12,17.5 12,12" fill="#E65100" fill-opacity="0.25" />
+    <polygon points="12,6.5 17.5,12 12,12" fill="#FFFFFF" fill-opacity="0.6" />
+    <polygon points="6.5,12 12,17.5 12,12" fill="#64748B" fill-opacity="0.2" />
 
     <!-- 4 диагональные микро-вершины для идеальной гармонии формы -->
-    <circle cx="12" cy="1.5" r="0.75" fill="#FFF9C4" />
-    <circle cx="22" cy="12" r="0.75" fill="#FFCA28" />
-    <circle cx="12" cy="22.5" r="0.75" fill="#E65100" />
-    <circle cx="2" cy="12" r="0.75" fill="#FFA000" />
+    <circle cx="12" cy="1.5" r="0.75" fill="#FFFFFF" />
+    <circle cx="22" cy="12" r="0.75" fill="#FFFFFF" />
+    <circle cx="12" cy="22.5" r="0.75" fill="#CBD5E1" />
+    <circle cx="2" cy="12" r="0.75" fill="#E2E8F0" />
   </g>
 </svg>

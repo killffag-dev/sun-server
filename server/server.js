@@ -736,7 +736,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
 
             Object.entries(allUsers).forEach(([key, user]) => {
                 total++;
-                const isBanned = !!user.banned;
+                const isBanned = false;
                 const isActive = user.active && !isBanned;
 
                 if (isActive) activeCount++;
@@ -795,7 +795,6 @@ const ADMIN_HTML = `<!DOCTYPE html>
                                 <button class="action-btn" style="padding:2px 6px;background:var(--red);border:none;color:#fff;" title="Убавить" onclick="modifySparks('\${safeKey}', -1)">-</button>
                             </div>
                             <button class="action-btn" title="Выдать/забрать косметику" onclick="toggleCosmetic('\${safeKey}')">Косметика</button>
-                            <button class="action-btn ban" onclick="toggleBan('\${safeKey}', \${!isBanned})">\${isBanned ? 'Разбан' : 'Бан'}</button>
                             <button class="action-btn" title="Удалить пользователя" onclick="deleteUser('\${safeKey}')">Удалить</button>
                         </div>
                     </td>
@@ -1313,10 +1312,6 @@ const server = http.createServer((req, res) => {
                 if (reqToken || reqKey) {
                     const auth = getUserBySessionToken(reqToken, reqKey);
                     if (auth) {
-                        if (auth.user.banned) {
-                            res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
-                            return res.end(JSON.stringify({ error: "Ваш аккаунт заблокирован" }));
-                        }
                         const u = auth.user;
                         const foundKey = auth.key;
                         let sessionToken = reqToken;
@@ -1943,41 +1938,12 @@ const server = http.createServer((req, res) => {
             }));
         }
 
-        const isBanned = !!user.banned;
-        const isExpired = new Date(user.expires) < new Date();
-
-        if (isBanned) {
-            console.log(`[SUN-API] [BAN] Заблокированный пользователь: ${user.username}`);
-            res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
-            return res.end(JSON.stringify({ valid: false, message: "Ваш аккаунт заблокирован!" }));
-        }
-
-        if (isExpired) {
-            console.log(`[SUN-API] [EXP] Истекшая подписка: ${user.username}`);
-            res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
-            return res.end(JSON.stringify({ valid: false, message: "Срок действия бета-теста истек!" }));
-        }
-
-        // Проверка и аппаратная привязка (HWID Lock)
+        // Freemium: HWID Lock removed
         if (hwid) {
-            if (!user.hwid) {
-                user.hwid = hwid;
-                user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
-                saveDatabase(database);
-                console.log(`[SUN-API] [HWID] Ключ ${userKey} (${user.username}) успешно ПРИВЯЗАН к ПК HWID: ${hwid}`);
-            } else if (user.hwid.toUpperCase() !== hwid.toUpperCase()) {
-                console.log(`[SUN-API] [HWID-MISMATCH] Несовпадение HWID для ${user.username}! База: ${user.hwid}, Клиент: ${hwid}`);
-                res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
-                return res.end(JSON.stringify({ 
-                    valid: false, 
-                    message: "Ключ привязан к другому компьютеру! Сбросьте привязку HWID в Личном кабинете на сайте." 
-                }));
-            } else {
-                user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
-                saveDatabase(database);
-            }
+            user.hwid = hwid;
+            user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
+            saveDatabase(database);
         }
-
         console.log(`[SUN-API] [OK] Доступ разрешен: ${user.username} (HWID: ${user.hwid || 'проверен'})`);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         return res.end(JSON.stringify({

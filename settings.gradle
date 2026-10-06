@@ -1,0 +1,27 @@
+﻿pluginManagement {
+    repositories {
+        maven { url = 'https://maven.kikugie.dev/releases' }
+        maven { url = 'https://maven.fabricmc.net/' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+plugins {
+    // 0.7.x is the latest Stonecutter line compatible with Gradle 8.14.
+    id 'dev.kikugie.stonecutter' version '0.7.11'
+}
+
+stonecutter {
+    // Keep the controller in Groovy because this project uses Groovy Gradle scripts.
+    kotlinController = false
+    centralScript = 'build.gradle'
+
+    create(rootProject) {
+        // Add a target here only when its dependency versions have been verified.
+        vers '1.21.4', '1.21.4'
+        vcsVersion = '1.21.4'
+    }
+}
+
+rootProject.name = 'SUN'

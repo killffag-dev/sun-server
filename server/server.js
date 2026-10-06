@@ -788,7 +788,12 @@ const ADMIN_HTML = `<!DOCTYPE html>
                     <td>\${cosmeticsHtml}</td>
                     <td>
                         <div class="actions-cell">
-                            <button class="action-btn" title="Начислить 50 Sparks" onclick="addCoins('\${safeKey}', 50)">+50 Sparks</button>
+                            
+                            <div style="display:flex;align-items:center;gap:4px;background:#0f121b;padding:2px 6px;border-radius:6px;border:1px solid #2e364e;">
+                                <input type="number" id="sparksInput_\${safeKey}" style="width:60px;background:transparent;border:none;color:#fff;font-size:12px;text-align:center;outline:none;" placeholder="Сумма" value="50">
+                                <button class="action-btn" style="padding:2px 6px;background:var(--green);border:none;color:#fff;" title="Добавить" onclick="modifySparks('\${safeKey}', 1)">+</button>
+                                <button class="action-btn" style="padding:2px 6px;background:var(--red);border:none;color:#fff;" title="Убавить" onclick="modifySparks('\${safeKey}', -1)">-</button>
+                            </div>
                             <button class="action-btn" title="Выдать/забрать косметику" onclick="toggleCosmetic('\${safeKey}')">Косметика</button>
                             <button class="action-btn ban" onclick="toggleBan('\${safeKey}', \${!isBanned})">\${isBanned ? 'Разбан' : 'Бан'}</button>
                             <button class="action-btn" title="Удалить пользователя" onclick="deleteUser('\${safeKey}')">Удалить</button>
@@ -824,8 +829,13 @@ const ADMIN_HTML = `<!DOCTYPE html>
             loadUsers();
         }
 
-        function addCoins(hwid, amount) {
-            sendAction({ action: 'add_coins', hwid, amount });
+        function modifySparks(hwid, multiplier) {
+            const val = parseInt(document.getElementById('sparksInput_' + hwid).value) || 0;
+            if (val <= 0) {
+                alert('Введите число больше 0');
+                return;
+            }
+            sendAction({ action: 'add_coins', hwid, amount: val * multiplier });
         }
 
         function resetHwid(hwid) {

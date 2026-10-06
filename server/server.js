@@ -223,81 +223,62 @@ function getSessionCookieHeader(req, token) {
 }
 
 // Загрузка или создание базы данных с авто-восстановлением из бэкапа
+
 function loadDatabase() {
     let db = {};
     try {
-        if (fs.existsSync(DB_FILE)) {
-            const data = fs.readFileSync(DB_FILE, 'utf-8');
-            db = JSON.parse(data);
+        const rows = sqlDb.prepare('SELECT key, data FROM users').all();
+        for (const row of rows) {
+            try {
+                db[row.key] = JSON.parse(row.data);
+            } catch(e) {}
         }
+        console.log(`[SUN-DB] Загружено ${Object.keys(db).length} аккаунтов из SQLite.`);
     } catch (e) {
-        console.error('[SUN-DB] Ошибка чтения базы данных:', e);
+        console.error('[SUN-DB] Ошибка загрузки SQLite:', e);
     }
-
-    // Восстанавливаем из резервной копии, если в ней есть данные, которых нет в DB_FILE
-    try {
-        if (fs.existsSync(DB_BACKUP_FILE)) {
-            const backupData = fs.readFileSync(DB_BACKUP_FILE, 'utf-8');
-            const backupDb = JSON.parse(backupData);
-            for (const k of Object.keys(backupDb)) {
-                if (!db[k]) {
-                    db[k] = backupDb[k];
-                    console.log(`[SUN-DB] Восстановлен аккаунт из резервной копии: ${k}`);
-                }
-            }
-        }
-    } catch (e) {
-        console.error('[SUN-DB] Ошибка чтения резервной копии базы данных:', e);
-    }
-
-    if (Object.keys(db).length === 0) {
-        db = {
-            "SUN-WALU-DPNK": {
-                uid: 10,
-                username: "12345678",
-                email: "killffag@gmail.com",
-                key: "SUN-WALU-DPNK",
-                password: "pbkdf2$sun2026salt$180a17a523aa664f1ad2115249b47b0d6266102347a51c4e408745894b30d0a4",
-                active: true,
-                banned: false,
-                created: "2026-10-05",
-                expires: "2026-12-31",
-                coins: 0,
-                hwid: null,
-                hwid_last_reset: null,
-                cosmetics: [],
-                lastSeen: "2026-10-05 16:42"
-            }
-        };
-    }
-
-    // Присваиваем UID всем пользователям, у кого его нет (начиная от 10+, 0-9 зарезервированы)
-    let nextUidCounter = 10;
-    for (const k of Object.keys(db)) {
-        if (db[k] && typeof db[k].uid === 'number' && db[k].uid >= nextUidCounter) {
-            nextUidCounter = db[k].uid + 1;
-        }
-    }
-    for (const k of Object.keys(db)) {
-        if (db[k] && (typeof db[k].uid !== 'number' || db[k].uid < 10)) {
-            db[k].uid = nextUidCounter++;
-        }
-    }
-
-    saveDatabase(db);
     return db;
 }
 
+
 // Надежное сохранение базы данных в 2 независимых файла для защиты от потери данных
-function saveDatabase(db) {
+
+const Database = require('better-sqlite3');
+const sqlDb = new Database(path.join(__dirname, 'database.sqlite'));
+sqlDb.pragma('journal_mode = WAL');
+
+sqlDb.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    key TEXT PRIMARY KEY,
+    data TEXT
+  )
+`);
+
+const stmtInsert = sqlDb.prepare('INSERT OR REPLACE INTO users (key, data) VALUES (?, ?)');
+const stmtDelete = sqlDb.prepare('DELETE FROM users WHERE key = ?');
+
+function saveDatabase(db, modifiedKey = null) {
     try {
-        const jsonStr = JSON.stringify(db, null, 2);
-        fs.writeFileSync(DB_FILE, jsonStr, 'utf-8');
-        fs.writeFileSync(DB_BACKUP_FILE, jsonStr, 'utf-8');
+        if (modifiedKey) {
+            if (!db[modifiedKey]) {
+                stmtDelete.run(modifiedKey);
+            } else {
+                stmtInsert.run(modifiedKey, JSON.stringify(db[modifiedKey]));
+            }
+        } else {
+            // Fallback: save all
+            const insertMany = sqlDb.transaction((database) => {
+                for (const key in database) {
+                    stmtInsert.run(key, JSON.stringify(database[key]));
+                }
+            });
+            insertMany(db);
+        }
     } catch (e) {
-        console.error('[SUN-DB] Ошибка сохранения базы данных:', e);
+        console.error('[SUN-DB] SQLite Save Error:', e);
     }
 }
+
 
 const database = loadDatabase();
 
@@ -1038,10 +1019,10 @@ const server = http.createServer((req, res) => {
                     baseDate.setDate(baseDate.getDate() + (data.days || 36500));
                     database[targetKey].expires = baseDate.toISOString().split('T')[0];
                     database[targetKey].active = true;
-                    saveDatabase(database);
+                    saveDatabase(database, targetKey);
                 } else if (action === 'ban' && targetKey && database[targetKey]) {
                     database[targetKey].banned = !!data.banned;
-                    saveDatabase(database);
+                    saveDatabase(database, targetKey);
                 } else if (action === 'toggle_cosmetics' && targetKey && database[targetKey]) {
                     const list = database[targetKey].cosmetics || [];
                     if (list.length > 0) {
@@ -1049,18 +1030,18 @@ const server = http.createServer((req, res) => {
                     } else {
                         database[targetKey].cosmetics = [];
                     }
-                    saveDatabase(database);
+                    saveDatabase(database, targetKey);
                 } else if (action === 'delete' && targetKey) {
                     delete database[targetKey];
-                    saveDatabase(database);
+                    saveDatabase(database, targetKey);
                 } else if (action === 'reset_hwid' && targetKey && database[targetKey]) {
                     database[targetKey].hwid = null;
                     database[targetKey].clientLinked = false;
                     database[targetKey].hwid_last_reset = null;
-                    saveDatabase(database);
+                    saveDatabase(database, targetKey);
                 } else if (action === 'add_coins' && targetKey && database[targetKey]) {
                     database[targetKey].coins = (database[targetKey].coins || 0) + (parseInt(data.amount) || 50);
-                    saveDatabase(database);
+                    saveDatabase(database, targetKey);
                 } else if (action === 'create') {
                     const key = (data.hwid && data.hwid.trim()) ? data.hwid.trim() : generateLicenseKey();
                     const exp = new Date();
@@ -1078,7 +1059,7 @@ const server = http.createServer((req, res) => {
                         hwid_last_reset: null,
                         cosmetics: []
                     };
-                    saveDatabase(database);
+                    saveDatabase(database, key);
                 }
 
                 res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1157,7 +1138,7 @@ const server = http.createServer((req, res) => {
                     hwid_last_reset: null,
                     cosmetics: []
                 };
-                saveDatabase(database);
+                saveDatabase(database, accountId);
 
                 res.writeHead(200, {
                     'Content-Type': 'application/json; charset=utf-8',
@@ -1264,7 +1245,7 @@ const server = http.createServer((req, res) => {
                     };
                     database[userKey] = user;
                 }
-                saveDatabase(database);
+                saveDatabase(database, userKey);
 
                 res.writeHead(200, {
                     'Content-Type': 'application/json; charset=utf-8',
@@ -1318,7 +1299,7 @@ const server = http.createServer((req, res) => {
                         if (auth.shouldRenew || !reqToken || !reqToken.startsWith('sun_s1.')) {
                             sessionToken = createSessionToken(foundKey, u.username);
                             u.sessionToken = sessionToken;
-                            saveDatabase(database);
+                            saveDatabase(database, foundKey);
                         }
                         res.writeHead(200, {
                             'Content-Type': 'application/json; charset=utf-8',
@@ -1384,7 +1365,7 @@ const server = http.createServer((req, res) => {
                 // Выдаем долговечный подписанный сессионный токен при успешном логине
                 const sessionToken = createSessionToken(foundKey, u.username);
                 u.sessionToken = sessionToken;
-                saveDatabase(database);
+                saveDatabase(database, foundKey);
 
                 res.writeHead(200, {
                     'Content-Type': 'application/json; charset=utf-8',
@@ -1501,7 +1482,7 @@ const server = http.createServer((req, res) => {
                 u.hwid = u.hwid || 'SUN-CONNECTED';
                 u.clientLinked = true;
                 u.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
-                saveDatabase(database);
+                saveDatabase(database, foundKey);
 
                 foundPair.status = 'linked';
                 foundPair.token = newClientToken;
@@ -1602,7 +1583,7 @@ const server = http.createServer((req, res) => {
 
                 user.hwid = null;
                 user.hwid_last_reset = new Date().toISOString();
-                saveDatabase(database);
+                saveDatabase(database, foundKey);
                 console.log(`[SUN-API] [RESET-HWID] Сброс HWID для пользователя ${user.username} (${foundKey})`);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1654,7 +1635,7 @@ const server = http.createServer((req, res) => {
                 user.password = hashPassword(newPassword);
                 const newSessionToken = createSessionToken(foundKey, user.username);
                 user.sessionToken = newSessionToken;
-                saveDatabase(database);
+                saveDatabase(database, foundKey);
 
                 res.writeHead(200, {
                     'Content-Type': 'application/json; charset=utf-8',
@@ -1706,7 +1687,7 @@ const server = http.createServer((req, res) => {
                 user.expires = currentExp.toISOString().split('T')[0];
                 user.coins = (user.coins || 0) + 50;
                 user.active = true;
-                saveDatabase(database);
+                saveDatabase(database, foundKey);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
                 return res.end(JSON.stringify({
@@ -1775,7 +1756,7 @@ const server = http.createServer((req, res) => {
 
                 const avatarUrl = `/uploads/avatars/${fileName}`;
                 user.avatarUrl = avatarUrl;
-                saveDatabase(database);
+                saveDatabase(database, foundKey);
                 console.log(`[SUN-API] [AVATAR] Пользователь ${user.username} обновил аватарку -> ${avatarUrl}`);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1840,7 +1821,7 @@ const server = http.createServer((req, res) => {
 
                 const bannerUrl = `/uploads/banners/${fileName}`;
                 user.bannerUrl = bannerUrl;
-                saveDatabase(database);
+                saveDatabase(database, foundKey);
                 console.log(`[SUN-API] [BANNER] Пользователь ${user.username} обновил баннер -> ${bannerUrl}`);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1942,7 +1923,7 @@ const server = http.createServer((req, res) => {
         if (hwid) {
             user.hwid = hwid;
             user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
-            saveDatabase(database);
+            saveDatabase(database, userKey);
         }
         console.log(`[SUN-API] [OK] Доступ разрешен: ${user.username} (HWID: ${user.hwid || 'проверен'})`);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });

@@ -1,0 +1,240 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUN Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0f111a',
+                        card: '#1a1d2d',
+                        primary: '#3b82f6',
+                        accent: '#8b5cf6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f111a; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass-modal { background: rgba(26, 29, 45, 0.95); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="min-h-screen bg-dark text-gray-200">
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 glass-modal">
+        <div class="bg-card p-8 rounded-xl shadow-2xl w-96 border border-gray-700">
+            <h2 class="text-2xl font-bold mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">SUN Admin Login</h2>
+            <input type="password" id="authPassword" placeholder="Admin Password" class="w-full p-3 rounded bg-dark border border-gray-600 focus:outline-none focus:border-primary mb-4" onkeypress="if(event.key === 'Enter') loginAdmin()">
+            <button onclick="loginAdmin()" class="w-full bg-gradient-to-r from-primary to-accent hover:from-blue-600 hover:to-purple-600 text-white font-bold py-3 rounded transition-all">Login</button>
+            <p id="authError" class="text-red-400 text-sm mt-3 text-center hidden"></p>
+        </div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-card border-r border-gray-800 flex flex-col">
+            <div class="p-6 flex items-center gap-3 border-b border-gray-800">
+                <i class="fa-solid fa-sun text-accent text-2xl"></i>
+                <span class="text-xl font-bold tracking-wider">SUN ADMIN</span>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="#" class="flex items-center gap-3 px-4 py-3 bg-dark/50 text-primary rounded-lg border border-primary/20">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Users</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-800">
+                <button onclick="logoutAdmin()" class="w-full flex items-center justify-center gap-2 px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition">
+                    <i class="fa-solid fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-8">
+            <header class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold">Users Management</h1>
+                    <p class="text-gray-400 mt-1">Manage Freemium accounts, Sparks, and cosmetics.</p>
+                </div>
+                <div class="flex gap-4">
+                    <div class="bg-card px-6 py-3 rounded-lg border border-gray-800 flex items-center gap-4">
+                        <i class="fa-solid fa-user-check text-green-500 text-xl"></i>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider">Total Users</p>
+                            <p class="text-xl font-bold" id="stat-total">0</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Actions Bar -->
+            <div class="flex justify-between items-center bg-card p-4 rounded-lg border border-gray-800 mb-6">
+                <div class="flex gap-3 w-1/2">
+                    <div class="relative w-full">
+                        <i class="fa-solid fa-search absolute left-3 top-3 text-gray-500"></i>
+                        <input type="text" id="searchInput" oninput="renderTable()" placeholder="Search users..." class="w-full pl-10 pr-4 py-2 rounded bg-dark border border-gray-700 focus:outline-none focus:border-primary">
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <input type="text" id="newUsername" placeholder="Username" class="px-4 py-2 rounded bg-dark border border-gray-700 focus:outline-none focus:border-primary">
+                    <button onclick="createUser()" class="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded font-medium transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Add User
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-card rounded-lg border border-gray-800 overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-dark/50 border-b border-gray-800">
+                        <tr>
+                            <th class="p-4 text-gray-400 font-medium">ID / UID</th>
+                            <th class="p-4 text-gray-400 font-medium">Username</th>
+                            <th class="p-4 text-gray-400 font-medium">Sparks</th>
+                            <th class="p-4 text-gray-400 font-medium">Cosmetics</th>
+                            <th class="p-4 text-gray-400 font-medium text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody" class="divide-y divide-gray-800/50">
+                        <!-- Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let allUsers = {};
+        
+        function getAuthToken() { return localStorage.getItem('sun_admin_token'); }
+        
+        async function checkAuth() {
+            if(!getAuthToken()) {
+                document.getElementById('authModal').style.display = 'flex';
+                return;
+            }
+            await fetchUsers();
+        }
+
+        async function loginAdmin() {
+            const pwd = document.getElementById('authPassword').value;
+            const err = document.getElementById('authError');
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ password: pwd })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    localStorage.setItem('sun_admin_token', data.token);
+                    document.getElementById('authModal').style.display = 'none';
+                    err.style.display = 'none';
+                    fetchUsers();
+                } else {
+                    err.textContent = data.error || 'Login failed';
+                    err.style.display = 'block';
+                }
+            } catch(e) {
+                err.textContent = 'Server error';
+                err.style.display = 'block';
+            }
+        }
+
+        async function logoutAdmin() {
+            try { await fetch('/api/admin/logout', { method: 'POST' }); } catch(e) {}
+            localStorage.removeItem('sun_admin_token');
+            document.getElementById('authModal').style.display = 'flex';
+            document.getElementById('authPassword').value = '';
+            allUsers = {};
+            renderTable();
+        }
+
+        async function fetchUsers() {
+            try {
+                const res = await fetch('/api/admin/users', {
+                    headers: getAuthToken() ? {'X-Admin-Token': getAuthToken()} : {}
+                });
+                if(res.status === 401) { logoutAdmin(); return; }
+                allUsers = await res.json();
+                renderTable();
+            } catch(e) { console.error(e); }
+        }
+
+        async function sendAction(data) {
+            const res = await fetch('/api/admin/action', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(getAuthToken() ? {'X-Admin-Token': getAuthToken()} : {})
+                },
+                body: JSON.stringify(data)
+            });
+            if(res.status === 401) logoutAdmin();
+            else fetchUsers();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('usersTableBody');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            tbody.innerHTML = '';
+            
+            let total = 0;
+
+            for (const [key, user] of Object.entries(allUsers)) {
+                if (search && !(user.username||'').toLowerCase().includes(search) && !key.toLowerCase().includes(search)) continue;
+                total++;
+                
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-dark/30 transition";
+                
+                const cosmetics = (Array.isArray(user.cosmetics) ? user.cosmetics : []).map(c => 
+                    <span class="px-2 py-1 bg-accent/20 text-accent text-xs rounded border border-accent/30 mr-1"></span>
+                ).join('') || '<span class="text-gray-500 text-sm">None</span>';
+
+                tr.innerHTML = 
+                    <td class="p-4">
+                        <div class="font-mono text-xs text-gray-400">...</div>
+                        <div class="text-xs text-gray-500 mt-1">UID: </div>
+                    </td>
+                    <td class="p-4 font-medium"></td>
+                    <td class="p-4">
+                        <span class="text-yellow-400 font-bold"><i class="fa-solid fa-bolt mr-1"></i></span>
+                    </td>
+                    <td class="p-4"></td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="sendAction({action:'add_coins', hwid:'', amount:50})" class="px-3 py-1 bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30 rounded border border-yellow-500/30 transition" title="Add 50 Sparks">
+                            <i class="fa-solid fa-coins"></i>
+                        </button>
+                        <button onclick="sendAction({action:'toggle_cosmetics', hwid:''})" class="px-3 py-1 bg-accent/20 text-accent hover:bg-accent/30 rounded border border-accent/30 transition" title="Toggle Standard Cosmetics">
+                            <i class="fa-solid fa-shirt"></i>
+                        </button>
+                        <button onclick="if(confirm('Delete user?')) sendAction({action:'delete', hwid:''})" class="px-3 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded border border-red-500/30 transition" title="Delete User">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                ;
+                tbody.appendChild(tr);
+            }
+            document.getElementById('stat-total').textContent = total;
+        }
+
+        function createUser() {
+            const username = document.getElementById('newUsername').value || 'NewUser';
+            sendAction({ action: 'create', username });
+            document.getElementById('newUsername').value = '';
+        }
+
+        window.onload = checkAuth;
+    </script>
+</body>
+</html>

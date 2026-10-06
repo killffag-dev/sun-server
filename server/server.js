@@ -1036,7 +1036,7 @@ const server = http.createServer((req, res) => {
     // 1. АДМИН-ПАНЕЛЬ (Красивая HTML-страница)
     if (parsedUrl.pathname === '/admin' || parsedUrl.pathname === '/admin/') {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        return res.end(ADMIN_HTML);
+        return res.end(fs.readFileSync(require('path').join(__dirname, 'admin.html'), 'utf-8'));
     }
 
     // 2. API ДЛЯ АДМИНКИ: Получение списка пользователей (строго защищено паролем)

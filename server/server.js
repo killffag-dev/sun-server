@@ -671,7 +671,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
             <h3 style="margin-bottom: 8px; font-size: 18px;">Вход в Панель Управления</h3>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Введите пароль администратора для доступа к управлению клиентом и лицензиями.</p>
             
-            <form onsubmit="handleAuthSubmit(event)">
+            <form onsubmit="event.preventDefault(); handleAuthSubmit(event); return false;">
                 <input type="password" id="authPassword" placeholder="Пароль администратора" style="text-align: center; font-size: 15px; margin-bottom: 12px;" autofocus required>
                 <div id="authError" style="color: var(--red); font-size: 13px; margin-bottom: 12px; display: none;"></div>
                 <button type="submit" class="btn-add" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px;">Войти</button>
@@ -2013,3 +2013,4 @@ server.listen(PORT, () => {
         }, 8 * 60 * 1000); // каждые 8 минут (Render засыпает через 15 минут)
     }
 });
+

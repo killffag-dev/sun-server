@@ -1,0 +1,21 @@
+{
+    "vertex": "sun:core/motion_blur/vertex",
+    "fragment": "sun:core/motion_blur/fragment",
+    "samplers": [
+        { "name": "Sampler0" },
+        { "name": "Sampler1" }
+    ],
+    "uniforms": [
+        { "name": "GamePrevModelView", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "GamePrevProjection", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "InverseGameModelView", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "InverseGameProjection", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "CameraPos", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
+        { "name": "PrevCameraPos", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
+        { "name": "ViewRes", "type": "float", "count": 2, "values": [ 1.0, 1.0 ] },
+        { "name": "BlendFactor", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "MotionBlurSamples", "type": "int", "count": 1, "values": [ 100 ] },
+        { "name": "BlurAlgorithm", "type": "int", "count": 1, "values": [ 1 ] },
+        { "name": "UseDepth", "type": "int", "count": 1, "values": [ 1 ] }
+    ]
+}

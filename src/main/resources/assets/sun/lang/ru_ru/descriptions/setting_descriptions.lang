@@ -1,0 +1,58 @@
+# Module Setting Descriptions (Russian)
+
+# Motion Blur
+modules.settings.motion_blur.strength.desc=Регулирует интенсивность и длину шлейфа размытия при движении камеры.
+modules.settings.motion_blur.algorithm.desc=Определяет способ расчёта векторов движения: Назад (по предыдущему положению) или По центру (сглаженно между кадрами).
+modules.settings.motion_blur.depth_blur.desc=Учитывает буфер глубины геометрии мира, предотвращая артефакты и смазывание переднего плана на фоне удалённых объектов.
+modules.settings.motion_blur.refresh_rate_scaling.desc=Автоматически подстраивает силу размытия и количество сэмплов под текущую частоту обновления монитора (Гц) и FPS.
+modules.settings.motion_blur.third_person.desc=Включает эффект размытия при виде от третьего лица.
+
+# Optimizer
+modules.settings.optimizer.preset.desc=Готовые профили оптимизации производительности от максимального качества до картофельного ПК.
+modules.settings.optimizer.entity_shadows.desc=Отключает отрисовку теней под мобами и игроками для повышения FPS.
+modules.settings.optimizer.entity_occlusion_culling.desc=Полностью отключает рендеринг сущностей и игроков, скрытых за стенами, горами или под землей.
+modules.settings.optimizer.block_entity_occlusion_culling.desc=Отключает рендеринг сундуков, табличек и спавнеров, скрытых за непрозрачными блоками.
+modules.settings.optimizer.entity_distance_culling.desc=Прекращает рендеринг мобов и дропа, находящихся дальше заданной дистанции.
+modules.settings.optimizer.cull_distance.desc=Максимальное расстояние в блоках, на котором отображаются мобы и дроп.
+modules.settings.optimizer.player_distance_culling.desc=Прекращает рендеринг игроков, находящихся дальше заданной дистанции.
+modules.settings.optimizer.player_cull_distance.desc=Максимальное расстояние в блоках, на котором отображаются игроки.
+modules.settings.optimizer.block_entity_distance_culling.desc=Прекращает рендеринг сундуков и блочных сущностей дальше заданной дистанции.
+modules.settings.optimizer.block_entity_cull_distance.desc=Максимальное расстояние в блоках, на котором отображаются сундуки и таблички.
+modules.settings.optimizer.hide_armor_stands.desc=Полностью скрывает стойки для брони, снижая нагрузку на процессор и видеокарту.
+modules.settings.optimizer.disable_fireworks.desc=Отключает рендеринг и частицы фейерверков, предотвращая лаг-машины на серверах.
+modules.settings.optimizer.cull_particles.desc=Скрывает невидимые и перекрытые частицы вне поля зрения камеры.
+modules.settings.optimizer.disable_glint.desc=Убирает анимированное свечение зачарования на броне и предметах.
+modules.settings.optimizer.static_fluids.desc=Замораживает цикличную анимацию текстур воды и лавы.
+modules.settings.optimizer.aggressive_gc.desc=Принудительно очищает неиспользуемую оперативную память при телепортации или смене мира.
+
+# Sky
+modules.settings.sky.mode.desc=Выбор цветовой палитры и стиля неба (Аква / Магма).
+modules.settings.sky.quality.desc=Детализация процедурного шума (Низкое — 3 октавы, Высокое — 5 октав).
+modules.settings.sky.second_layer.desc=Дополнительный аддитивный слой облаков с независимой скоростью движения.
+modules.settings.sky.intensity.desc=Яркость и насыщенность процедурного неба.
+
+# HitColor
+modules.settings.hit_color.target.desc=Выбор элементов для перекрашивания при получении урона: Тело, Броня или Всё вместе.
+modules.settings.hit_color.color.desc=Цвет вспышки при получении урона сущностью.
+
+# Profiler
+modules.settings.profiler.spike_threshold.desc=Минимальная длительность кадра для фиксации лаг-спайка (например, 33 мс = <30 FPS).
+modules.settings.profiler.save_location.desc=Папка, в которую будет сохраняться текстовый отчет о производительности.
+modules.settings.profiler.custom_path.desc=Выбранный пользовательский путь к папке для сохранения отчетов.
+modules.settings.profiler.select_folder.desc=Открывает диалоговое окно для выбора папки сохранения на компьютере.
+modules.settings.profiler.open_folder.desc=Открывает текущую папку с отчетами в проводнике Windows.
+modules.settings.profiler.auto_open_report.desc=Автоматически открывать созданный отчет в текстовом редакторе после выключения записи.
+
+# NoRender
+modules.settings.norender.entities.desc=Выборочное отключение отрисовки различных сущностей.
+modules.settings.norender.tile_entities.desc=Выборочное отключение отрисовки блочных сущностей (сундуки, спавнеры и т.д.).
+modules.settings.norender.particles.desc=Выборочное отключение эффектов частиц для устранения лагов.
+modules.settings.norender.overlays.desc=Отключение раздражающих экранных эффектов и оверлеев.
+
+# PacketFilter
+modules.settings.packet_filter.drop_obstacle_particles.desc=Не создает частицы, скрытые за непрозрачными стенами и препятствиями.
+modules.settings.packet_filter.max_particles_per_sec.desc=Максимальное количество частиц, обрабатываемых клиентом за секунду.
+modules.settings.packet_filter.sound_limiter.desc=Ограничивает воспроизведение идентичных звуков за один игровой тик (защита от звукового спама).
+modules.settings.packet_filter.max_sounds_per_tick.desc=Максимальное количество одинаковых звуковых событий за один тик.
+modules.settings.packet_filter.burst_protection.desc=Сглаживает сетевые лаги при одновременном получении сотен пакетов от сервера.
+modules.settings.packet_filter.entity_throttling.desc=Снижает частоту интерполяции и тиков далеких сущностей вне боя.

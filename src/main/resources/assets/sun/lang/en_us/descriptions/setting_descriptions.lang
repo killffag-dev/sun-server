@@ -1,0 +1,58 @@
+# Module Setting Descriptions (English)
+
+# Motion Blur
+modules.settings.motion_blur.strength.desc=Controls the intensity and trail length of motion blur during camera movement.
+modules.settings.motion_blur.algorithm.desc=Determines how motion vectors are calculated: Backwards (from previous frame) or Centered (interpolated).
+modules.settings.motion_blur.depth_blur.desc=Uses geometry depth buffer to prevent blurring artifacts between foreground and background objects.
+modules.settings.motion_blur.refresh_rate_scaling.desc=Dynamically scales blur strength and sample count based on your monitor refresh rate and current FPS.
+modules.settings.motion_blur.third_person.desc=Enables motion blur effect in third-person view.
+
+# Optimizer
+modules.settings.optimizer.preset.desc=Predefined optimization presets ranging from high quality to maximum performance for low-end PCs.
+modules.settings.optimizer.entity_shadows.desc=Disables shadows rendered under entities to boost FPS.
+modules.settings.optimizer.entity_occlusion_culling.desc=Completely disables rendering of entities and players hidden behind walls, mountains, or underground.
+modules.settings.optimizer.block_entity_occlusion_culling.desc=Disables rendering of chests, signs, and spawners hidden behind opaque blocks.
+modules.settings.optimizer.entity_distance_culling.desc=Stops rendering mobs and item drops beyond the configured distance.
+modules.settings.optimizer.cull_distance.desc=Maximum distance in blocks to render mobs and item drops.
+modules.settings.optimizer.player_distance_culling.desc=Stops rendering players beyond the configured distance.
+modules.settings.optimizer.player_cull_distance.desc=Maximum distance in blocks to render players.
+modules.settings.optimizer.block_entity_distance_culling.desc=Stops rendering chests and block entities beyond the configured distance.
+modules.settings.optimizer.block_entity_cull_distance.desc=Maximum distance in blocks to render chests and signs.
+modules.settings.optimizer.hide_armor_stands.desc=Hides armor stands to reduce CPU and GPU load.
+modules.settings.optimizer.disable_fireworks.desc=Disables firework rendering and explosions to prevent lag on servers.
+modules.settings.optimizer.cull_particles.desc=Hides obstructed and off-screen particles.
+modules.settings.optimizer.disable_glint.desc=Removes the enchanted item shimmering effect.
+modules.settings.optimizer.static_fluids.desc=Freezes texture animations of still water and lava.
+modules.settings.optimizer.aggressive_gc.desc=Forces garbage collection when switching worlds or servers to free RAM.
+
+# Sky
+modules.settings.sky.mode.desc=Choose color palette and sky style (Aqua / Magma).
+modules.settings.sky.quality.desc=Detail level of procedural noise (Low — 3 octaves, High — 5 octaves).
+modules.settings.sky.second_layer.desc=Additional additive cloud layer with independent movement speed.
+modules.settings.sky.intensity.desc=Brightness and saturation of procedural sky.
+
+# HitColor
+modules.settings.hit_color.target.desc=Select elements to recolor upon taking damage: Body, Armor, or Both.
+modules.settings.hit_color.color.desc=Color of damage flash on entities.
+
+# Profiler
+modules.settings.profiler.spike_threshold.desc=Minimum frame duration to register as a lag spike (e.g. 33 ms = <30 FPS).
+modules.settings.profiler.save_location.desc=Target folder to save generated performance reports.
+modules.settings.profiler.custom_path.desc=Custom selected directory path for saving reports.
+modules.settings.profiler.select_folder.desc=Opens a folder chooser dialog to select a custom destination.
+modules.settings.profiler.open_folder.desc=Opens the configured reports folder in your system file explorer.
+modules.settings.profiler.auto_open_report.desc=Automatically open the generated report in text editor when profiling stops.
+
+# NoRender
+modules.settings.norender.entities.desc=Selectively disable rendering of specific entity types.
+modules.settings.norender.tile_entities.desc=Selectively disable rendering of block entities (chests, spawners, etc.).
+modules.settings.norender.particles.desc=Selectively disable particle effects to eliminate rendering stutter.
+modules.settings.norender.overlays.desc=Disable distracting camera overlays and screen effects.
+
+# PacketFilter
+modules.settings.packet_filter.drop_obstacle_particles.desc=Do not spawn particles occluded behind opaque obstacles.
+modules.settings.packet_filter.max_particles_per_sec.desc=Maximum allowed incoming particle packets processed per second.
+modules.settings.packet_filter.sound_limiter.desc=Rate limits identical sounds played within a single game tick to prevent audio lag spam.
+modules.settings.packet_filter.max_sounds_per_tick.desc=Maximum number of identical sound events allowed per tick.
+modules.settings.packet_filter.burst_protection.desc=Smoothes network processing during high-volume server packet bursts.
+modules.settings.packet_filter.entity_throttling.desc=Reduces tick rate and interpolation load for distant non-combat entities.

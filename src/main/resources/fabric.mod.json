@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "sun",
+	"version": "2.0.0",
+	"name": "Sun",
+	"description": "SUN Client — современный клиент для Minecraft 1.21.4 с шейдерным рендерингом, MSDF-шрифтами, оптимизацией и плавным интерфейсом.",
+	"authors": [
+		"Эдил"
+	],
+	"license": "CC0-1.0",
+	"icon": "assets/sun/icon.png",
+	"environment": "client",
+	"entrypoints": {},
+	"mixins": [
+		"sun.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.14",
+		"minecraft": "~${minecraft_version}",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"sodium": ">=0.6.0 <0.7.0"
+	},
+	"accessWidener": "sun.accesswidener"
+}

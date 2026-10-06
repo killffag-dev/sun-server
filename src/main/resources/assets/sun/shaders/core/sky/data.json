@@ -1,0 +1,15 @@
+{
+    "vertex": "sun:core/sky/vertex",
+    "fragment": "sun:core/sky/fragment",
+    "samplers": [],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "Time", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "Speed", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "Scale", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "Intensity", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "Mode", "type": "int", "count": 1, "values": [ 0 ] },
+        { "name": "Octaves", "type": "int", "count": 1, "values": [ 4 ] }
+    ]
+}

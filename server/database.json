@@ -9,7 +9,7 @@
     "banned": false,
     "created": "2026-10-05",
     "expires": "2026-12-31",
-    "coins": 50,
+    "coins": 100,
     "hwid": "SUN-CONNECTED",
     "clientLinked": true,
     "hwid_last_reset": null,

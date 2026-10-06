@@ -645,6 +645,18 @@ const ADMIN_HTML = `<!DOCTYPE html>
     </div>
 
     <!-- Модальное окно добавления -->
+    
+    <div class="modal-overlay" id="authModal">
+        <div class="modal">
+            <h2>Требуется авторизация</h2>
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Пароль администратора</label>
+            <input type="password" id="adminPassword" placeholder="Введите пароль...">
+            <div class="modal-buttons">
+                <button class="btn-add" onclick="submitAuth()">Войти</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="addModal">
         <div class="modal">
             <h2>Добавить / Активировать пользователя</h2>
@@ -669,17 +681,35 @@ const ADMIN_HTML = `<!DOCTYPE html>
             return match ? match[1] : '';
         }
 
+        
+        async function submitAuth() {
+            const pwd = document.getElementById('adminPassword').value;
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pwd })
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.cookie = 'sun_admin_token=' + data.token + '; path=/; max-age=86400';
+                document.getElementById('authModal').style.display = 'none';
+                loadUsers();
+            } else {
+                alert('Неверный пароль!');
+            }
+        }
+
         let allUsers = {};
 
         async function loadUsers() {
             try {
-                const res = await fetch('/api/admin/users', { headers: { 'X-Admin-Token': getAuthToken() } });
+                const res = await fetch('/api/admin/users');
                 if (res.ok) {
                     allUsers = await res.json();
                     renderTable();
                 } else if (res.status === 401) {
-                    document.cookie = 'sun_admin_token=; Max-Age=0; path=/';
-                    location.reload();
+                    const authModal = document.getElementById('authModal');
+                    if (authModal) authModal.style.display = 'flex';
                 }
             } catch (e) {
                 console.error('Ошибка загрузки пользователей', e);

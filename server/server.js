@@ -827,7 +827,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
                     : '<span style="color:#8b93a7;font-size:12px;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-right:5px;"></span>Не привязан</span>';
 
                 const cosmeticsHtml = (Array.isArray(user.cosmetics) ? user.cosmetics : []).map(c => '<span class="tag">' + esc(c) + '</span>').join('') || '<span style="color:#555">нет</span>';
-                const resetHwidBtn = user.hwid ? ('<button class="action-btn" title="Сбросить привязку HWID" onclick="resetHwid(\'' + safeKey + '\')">Сброс HWID</button>') : '';
+                const resetHwidBtn = user.hwid ? ('<button class="action-btn" title="Сбросить привязку HWID" onclick="resetHwid(\\\\\\'' + safeKey + '\\\\\\')">Сброс HWID</button>') : '';
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = \`

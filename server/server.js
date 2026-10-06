@@ -31,17 +31,6 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'SUN_SESSION_SECRET_2026_SE
 // Map of active admin session tokens -> expiration timestamp (ms)
 const activeAdminSessions = new Map();
 
-// SUN Connect: Map of pending device pairing requests
-// requestId -> { code, createdAt, expiresAt, status: 'pending'|'linked', token, userKey, user }
-const activePairRequests = new Map();
-
-function cleanupPairRequests() {
-    const now = Date.now();
-    for (const [id, req] of activePairRequests.entries()) {
-        if (now > req.expiresAt) activePairRequests.delete(id);
-    }
-}
-
 function timingSafeCompare(a, b) {
     if (typeof a !== 'string' || typeof b !== 'string') return false;
     const bufA = Buffer.from(a);
@@ -57,22 +46,7 @@ function cleanupAdminSessions() {
     }
 }
 
-function isLocalRequest(req) {
-    const rawForwarded = req.headers['x-forwarded-for'];
-    const ip = (rawForwarded ? rawForwarded.split(',')[0].trim() : null) || 
-               req.headers['cf-connecting-ip'] || 
-               req.socket.remoteAddress || '';
-    return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip === 'localhost';
-}
-
 function isAdminAuthorized(req) {
-    if (false /* Remote admin allowed by default */) {
-        return false;
-    }
-    // Если запрос идёт локально с вашего ПК — полный доступ без ввода паролей
-    if (isLocalRequest(req)) {
-        return true;
-    }
     cleanupAdminSessions();
     const now = Date.now();
     const authHeader = req.headers['authorization'] || '';
@@ -223,64 +197,100 @@ function getSessionCookieHeader(req, token) {
 }
 
 // Загрузка или создание базы данных с авто-восстановлением из бэкапа
-
 function loadDatabase() {
     let db = {};
     try {
-        const rows = sqlDb.prepare('SELECT key, data FROM users').all();
-        for (const row of rows) {
-            try {
-                db[row.key] = JSON.parse(row.data);
-            } catch(e) {}
+        if (fs.existsSync(DB_FILE)) {
+            const data = fs.readFileSync(DB_FILE, 'utf-8');
+            db = JSON.parse(data);
         }
-        console.log(`[SUN-DB] Загружено ${Object.keys(db).length} аккаунтов из SQLite.`);
     } catch (e) {
-        console.error('[SUN-DB] Ошибка загрузки SQLite:', e);
+        console.error('[SUN-DB] Ошибка чтения базы данных:', e);
     }
+
+    // Восстанавливаем из резервной копии, если в ней есть данные, которых нет в DB_FILE
+    try {
+        if (fs.existsSync(DB_BACKUP_FILE)) {
+            const backupData = fs.readFileSync(DB_BACKUP_FILE, 'utf-8');
+            const backupDb = JSON.parse(backupData);
+            for (const k of Object.keys(backupDb)) {
+                if (!db[k]) {
+                    db[k] = backupDb[k];
+                    console.log(`[SUN-DB] Восстановлен аккаунт из резервной копии: ${k}`);
+                }
+            }
+        }
+    } catch (e) {
+        console.error('[SUN-DB] Ошибка чтения резервной копии базы данных:', e);
+    }
+
+    if (Object.keys(db).length === 0) {
+        db = {
+            "SUN-WALU-DPNK": {
+                uid: 10,
+                username: "12345678",
+                email: "killffag@gmail.com",
+                key: "SUN-WALU-DPNK",
+                password: "pbkdf2$sun2026salt$180a17a523aa664f1ad2115249b47b0d6266102347a51c4e408745894b30d0a4",
+                active: true,
+                banned: false,
+                created: "2026-10-05",
+                expires: "2026-12-31",
+                coins: 0,
+                hwid: null,
+                hwid_last_reset: null,
+                cosmetics: ["wings_fire", "crown_gold", "cape_sun"],
+                lastSeen: "2026-10-05 16:42"
+            }
+        };
+    }
+
+    // Присваиваем UID всем пользователям, у кого его нет (начиная от 10+, 0-9 зарезервированы)
+    let nextUidCounter = 10;
+    for (const k of Object.keys(db)) {
+        if (db[k] && typeof db[k].uid === 'number' && db[k].uid >= nextUidCounter) {
+            nextUidCounter = db[k].uid + 1;
+        }
+    }
+    for (const k of Object.keys(db)) {
+        if (db[k] && (typeof db[k].uid !== 'number' || db[k].uid < 10)) {
+            db[k].uid = nextUidCounter++;
+        }
+    }
+
+    saveDatabase(db);
     return db;
 }
 
-
 // Надежное сохранение базы данных в 2 независимых файла для защиты от потери данных
-
-const Database = require('better-sqlite3');
-const sqlDb = new Database(path.join(__dirname, 'database.sqlite'));
-sqlDb.pragma('journal_mode = WAL');
-
-sqlDb.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    key TEXT PRIMARY KEY,
-    data TEXT
-  )
-`);
-
-const stmtInsert = sqlDb.prepare('INSERT OR REPLACE INTO users (key, data) VALUES (?, ?)');
-const stmtDelete = sqlDb.prepare('DELETE FROM users WHERE key = ?');
-
-function saveDatabase(db, modifiedKey = null) {
+function saveDatabase(db) {
     try {
-        if (modifiedKey) {
-            if (!db[modifiedKey]) {
-                stmtDelete.run(modifiedKey);
-            } else {
-                stmtInsert.run(modifiedKey, JSON.stringify(db[modifiedKey]));
-            }
-        } else {
-            // Fallback: save all
-            const insertMany = sqlDb.transaction((database) => {
-                for (const key in database) {
-                    stmtInsert.run(key, JSON.stringify(database[key]));
-                }
-            });
-            insertMany(db);
-        }
+        const jsonStr = JSON.stringify(db, null, 2);
+        fs.writeFileSync(DB_FILE, jsonStr, 'utf-8');
+        fs.writeFileSync(DB_BACKUP_FILE, jsonStr, 'utf-8');
     } catch (e) {
-        console.error('[SUN-DB] SQLite Save Error:', e);
+        console.error('[SUN-DB] Ошибка сохранения базы данных:', e);
     }
 }
 
-
 const database = loadDatabase();
+
+const ANNOUNCEMENT_FILE = path.join(__dirname, 'announcement.json');
+let announcement = { active: false, type: 'info', title: '', message: '', url: '' };
+try {
+    if (fs.existsSync(ANNOUNCEMENT_FILE)) {
+        announcement = JSON.parse(fs.readFileSync(ANNOUNCEMENT_FILE, 'utf-8'));
+    }
+} catch (e) {
+    console.error('[SUN-API] Error loading announcement:', e.message);
+}
+
+function saveAnnouncement() {
+    try {
+        fs.writeFileSync(ANNOUNCEMENT_FILE, JSON.stringify(announcement, null, 2), 'utf-8');
+    } catch(e) {}
+}
+
 
 // HTML-код современной темной админ-панели
 const ADMIN_HTML = `<!DOCTYPE html>
@@ -579,8 +589,9 @@ const ADMIN_HTML = `<!DOCTYPE html>
             <div style="display: flex; align-items: center; gap: 14px;">
                 <div>
                     <span style="font-size: 13px; color: var(--text-muted);">Статус:</span>
-                    <span style="color: var(--green); font-weight: 600; font-size: 13px;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;"></span>Локальный доступ</span>
+                    <span style="color: var(--green); font-weight: 600; font-size: 13px;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;"></span>Онлайн</span>
                 </div>
+                <button class="action-btn" onclick="logoutAdmin()" title="Выйти из админки" style="padding: 6px 12px; border-color: rgba(239, 68, 68, 0.4); color: var(--red);">Выйти</button>
             </div>
         </header>
 
@@ -604,6 +615,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
                 <input type="text" id="searchInput" placeholder="Поиск по нику или HWID..." oninput="filterUsers()">
             </div>
             <button class="btn-add" onclick="openAddModal()">+ Добавить пользователя</button>
+            <button class="btn-add" style="background:#8b5cf6;" onclick="openAnnounceModal()">Объявление</button>
         </div>
 
         <div class="table-wrap">
@@ -611,9 +623,11 @@ const ADMIN_HTML = `<!DOCTYPE html>
                 <thead>
                     <tr>
                         <th>Пользователь</th>
-                        <th>UID / SUN ID</th>
+                        <th>Ключ (SUN ID)</th>
+                        <th>Привязка HWID</th>
                         <th>Искры (Sparks)</th>
                         <th>Статус</th>
+                        <th>Истекает</th>
                         <th>Косметика</th>
                         <th>Действия</th>
                     </tr>
@@ -626,26 +640,22 @@ const ADMIN_HTML = `<!DOCTYPE html>
     </div>
 
     <!-- Модальное окно добавления -->
-    
-    <div class="modal-overlay" id="authModal">
-        <div class="modal">
-            <h2>Требуется авторизация</h2>
-            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Пароль администратора</label>
-            <input type="password" id="adminPassword" placeholder="Введите пароль...">
-            <div class="modal-buttons">
-                <button class="btn-add" onclick="submitAuth()">Войти</button>
-            </div>
-        </div>
-    </div>
-
     <div class="modal-overlay" id="addModal">
         <div class="modal">
             <h2>Добавить / Активировать пользователя</h2>
             <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Никнейм</label>
             <input type="text" id="newUsername" placeholder="Например: CoolPlayer">
 
-            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">SUN ID (если пусто, сгенерируется сам)</label>
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">HWID (если есть, или сгенерируется сам)</label>
             <input type="text" id="newHwid" placeholder="SUN-XXXX-YYYY">
+
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Срок подписки</label>
+            <select id="newDuration">
+                <option value="7">7 дней</option>
+                <option value="30" selected>30 дней (1 месяц)</option>
+                <option value="90">90 дней (3 месяца)</option>
+                <option value="365">1 год</option>
+            </select>
 
             <div class="modal-buttons">
                 <button class="action-btn" onclick="closeAddModal()">Отмена</button>
@@ -654,44 +664,114 @@ const ADMIN_HTML = `<!DOCTYPE html>
         </div>
     </div>
 
-
+    <!-- AUTH MODAL -->
+    <div class="modal-overlay" id="authModal" style="display: flex; z-index: 9999; backdrop-filter: blur(10px); background: rgba(8, 10, 15, 0.88);">
+        <div class="modal" style="text-align: center; max-width: 380px; border-color: rgba(255, 152, 0, 0.3); box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+            <div style="display: inline-block; background: linear-gradient(135deg, #ff9800, #ff5722); color: #fff; font-weight: 800; font-size: 18px; padding: 8px 16px; border-radius: 10px; margin-bottom: 16px; box-shadow: 0 4px 16px var(--accent-glow);">SUN ADMIN</div>
+            <h3 style="margin-bottom: 8px; font-size: 18px;">Вход в Панель Управления</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Введите пароль администратора для доступа к управлению клиентом и лицензиями.</p>
+            
+            <form onsubmit="handleAuthSubmit(event)">
+                <input type="password" id="authPassword" placeholder="Пароль администратора" style="text-align: center; font-size: 15px; margin-bottom: 12px;" autofocus required>
+                <div id="authError" style="color: var(--red); font-size: 13px; margin-bottom: 12px; display: none;"></div>
+                <button type="submit" class="btn-add" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px;">Войти</button>
+            </form>
+        </div>
+    </div>
 
     <script>
-        function getAuthToken() {
-            const match = document.cookie.match(/sun_admin_token=([^;]+)/);
-            return match ? match[1] : '';
-        }
-
         
-        async function submitAuth() {
-            const pwd = document.getElementById('adminPassword').value;
-            const res = await fetch('/api/admin/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pwd })
+        function openAnnounceModal() {
+            fetch('/api/announcement').then(r => r.json()).then(data => {
+                document.getElementById('annActive').value = data.active ? 'true' : 'false';
+                document.getElementById('annType').value = data.type || 'info';
+                document.getElementById('annTitle').value = data.title || '';
+                document.getElementById('annMessage').value = data.message || '';
+                document.getElementById('annUrl').value = data.url || '';
+                document.getElementById('announceModal').style.display = 'flex';
             });
-            const data = await res.json();
-            if (data.success) {
-                document.cookie = 'sun_admin_token=' + data.token + '; path=/; max-age=86400';
-                document.getElementById('authModal').style.display = 'none';
-                loadUsers();
+        }
+        
+        async function submitAnnounce() {
+            const payload = {
+                active: document.getElementById('annActive').value === 'true',
+                type: document.getElementById('annType').value,
+                title: document.getElementById('annTitle').value,
+                message: document.getElementById('annMessage').value,
+                url: document.getElementById('annUrl').value
+            };
+            const res = await fetch('/api/admin/announcement', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getAuthToken() },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                document.getElementById('announceModal').style.display = 'none';
+                alert('Объявление обновлено!');
             } else {
-                alert('Неверный пароль!');
+                alert('Ошибка сохранения');
             }
         }
 
         let allUsers = {};
 
-        async function loadUsers() {
+        function getAuthToken() {
+            return localStorage.getItem('sun_admin_token') || '';
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const password = document.getElementById('authPassword').value;
+            const errorEl = document.getElementById('authError');
+            errorEl.style.display = 'none';
+
             try {
-                const res = await fetch('/api/admin/users');
-                if (res.ok) {
-                    allUsers = await res.json();
-                    renderTable();
-                } else if (res.status === 401) {
-                    const authModal = document.getElementById('authModal');
-                    if (authModal) authModal.style.display = 'flex';
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    localStorage.setItem('sun_admin_token', data.token);
+                    document.getElementById('authModal').style.display = 'none';
+                    loadUsers();
+                } else {
+                    errorEl.innerText = data.error || 'Неверный пароль администратора';
+                    errorEl.style.display = 'block';
                 }
+            } catch (err) {
+                errorEl.innerText = 'Ошибка соединения с сервером';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        async function logoutAdmin() {
+            try {
+                await fetch('/api/admin/logout', { method: 'POST' });
+            } catch (e) {}
+            localStorage.removeItem('sun_admin_token');
+            document.getElementById('authModal').style.display = 'flex';
+            document.getElementById('authPassword').value = '';
+            allUsers = {};
+            renderTable();
+        }
+
+        async function loadUsers() {
+            const token = getAuthToken();
+            try {
+                const res = await fetch('/api/admin/users', {
+                    headers: token ? { 'X-Admin-Token': token } : {}
+                });
+                if (res.status === 401) {
+                    document.getElementById('authModal').style.display = 'flex';
+                    allUsers = {};
+                    renderTable();
+                    return;
+                }
+                document.getElementById('authModal').style.display = 'none';
+                allUsers = await res.json();
+                renderTable();
             } catch (e) {
                 console.error('Ошибка загрузки пользователей', e);
             }
@@ -717,45 +797,37 @@ const ADMIN_HTML = `<!DOCTYPE html>
 
             Object.entries(allUsers).forEach(([key, user]) => {
                 total++;
-                const isBanned = false;
-                const isActive = user.active && !isBanned;
+                const isBanned = !!user.banned;
+                const isExpired = new Date(user.expires) < now;
+                const isActive = user.active && !isBanned && !isExpired;
 
                 if (isActive) activeCount++;
                 if (isBanned) bannedCount++;
 
                 // Фильтр поиска
-                if (search && !(user.username || '').toLowerCase().includes(search) && !key.toLowerCase().includes(search)) {
+                if (search && !(user.username || '').toLowerCase().includes(search) && !key.toLowerCase().includes(search) && !(user.hwid && user.hwid.toLowerCase().includes(search))) {
                     return;
                 }
 
-                
-                let isOnline = false;
-                if (user.lastSeen) {
-                    const lastSeenTime = new Date(user.lastSeen).getTime();
-                    const nowTime = Date.now();
-                    // Just simple logic or checking lastSeen string
-                    if (nowTime - lastSeenTime < 15 * 60 * 1000) {
-                        isOnline = true;
-                    }
-                }
-                // Also default to online if clientLinked and recent? Let's just use lastSeen
-                // If it fails parsing we can just show "Не в сети"
-                
-                let statusBadge = '<span class="status-badge status-active"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:5px;"></span>В сети</span>';
-                if (!isActive || !isOnline) {
-                    statusBadge = '<span class="status-badge" style="background: rgba(139, 147, 167, 0.15); color: var(--text-muted); border: 1px solid rgba(139, 147, 167, 0.3);"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--text-muted);margin-right:5px;"></span>Не в сети</span>';
-                }
-
+                let statusBadge = '<span class="status-badge status-active"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:5px;"></span>Активна</span>';
                 if (isBanned) {
                     statusBadge = '<span class="status-badge status-banned"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:5px;"></span>Забанен</span>';
+                } else if (isExpired) {
+                    statusBadge = '<span class="status-badge status-expired"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--yellow);margin-right:5px;"></span>Истекла</span>';
                 }
 
                 const safeUsername = esc(user.username || 'User');
                 const safeEmail = user.email ? '<div style="font-size:11px;color:var(--text-muted);">' + esc(user.email) + '</div>' : '';
                 const safeKey = esc(key);
+                const safeExpires = esc(user.expires || '');
                 const safeCoins = Number(user.coins) || 0;
-                
+
+                let hwidBadge = user.hwid 
+                    ? ('<span style="color:#10b981;font-size:12px;font-family:monospace;" title="' + esc(user.hwid) + '"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;margin-right:5px;"></span>' + esc(user.hwid.substring(0, 14)) + '...</span>')
+                    : '<span style="color:#8b93a7;font-size:12px;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-right:5px;"></span>Не привязан</span>';
+
                 const cosmeticsHtml = (Array.isArray(user.cosmetics) ? user.cosmetics : []).map(c => '<span class="tag">' + esc(c) + '</span>').join('') || '<span style="color:#555">нет</span>';
+                const resetHwidBtn = user.hwid ? ('<button class="action-btn" title="Сбросить привязку HWID" onclick="resetHwid(\'' + safeKey + '\')">Сброс HWID</button>') : '';
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = \`
@@ -764,18 +836,18 @@ const ADMIN_HTML = `<!DOCTYPE html>
                         \${safeEmail}
                     </td>
                     <td><span class="hwid-badge">\${safeKey}</span></td>
+                    <td>\${hwidBadge}</td>
                     <td><strong style="color:var(--accent);">\${safeCoins} Sparks</strong></td>
                     <td>\${statusBadge}</td>
+                    <td>\${safeExpires}</td>
                     <td>\${cosmeticsHtml}</td>
                     <td>
                         <div class="actions-cell">
-                            
-                            <div style="display:flex;align-items:center;gap:4px;background:#0f121b;padding:2px 6px;border-radius:6px;border:1px solid #2e364e;">
-                                <input type="number" id="sparksInput_\${safeKey}" style="width:60px;background:transparent;border:none;color:#fff;font-size:12px;text-align:center;outline:none;" placeholder="Сумма" value="50">
-                                <button class="action-btn" style="padding:2px 6px;background:var(--green);border:none;color:#fff;" title="Добавить" onclick="modifySparks('\${safeKey}', 1)">+</button>
-                                <button class="action-btn" style="padding:2px 6px;background:var(--red);border:none;color:#fff;" title="Убавить" onclick="modifySparks('\${safeKey}', -1)">-</button>
-                            </div>
+                            <button class="action-btn" title="Начислить 50 Sparks" onclick="addCoins('\${safeKey}', 50)">+50 Sparks</button>
+                            \${resetHwidBtn}
+                            <button class="action-btn" title="Продлить на 30 дней" onclick="extendDays('\${safeKey}', 30)">+30д</button>
                             <button class="action-btn" title="Выдать/забрать косметику" onclick="toggleCosmetic('\${safeKey}')">Косметика</button>
+                            <button class="action-btn ban" onclick="toggleBan('\${safeKey}', \${!isBanned})">\${isBanned ? 'Разбан' : 'Бан'}</button>
                             <button class="action-btn" title="Удалить пользователя" onclick="deleteUser('\${safeKey}')">Удалить</button>
                         </div>
                     </td>
@@ -809,13 +881,8 @@ const ADMIN_HTML = `<!DOCTYPE html>
             loadUsers();
         }
 
-        function modifySparks(hwid, multiplier) {
-            const val = parseInt(document.getElementById('sparksInput_' + hwid).value) || 0;
-            if (val <= 0) {
-                alert('Введите число больше 0');
-                return;
-            }
-            sendAction({ action: 'add_coins', hwid, amount: val * multiplier });
+        function addCoins(hwid, amount) {
+            sendAction({ action: 'add_coins', hwid, amount });
         }
 
         function resetHwid(hwid) {
@@ -853,12 +920,13 @@ const ADMIN_HTML = `<!DOCTYPE html>
         async function submitAddUser() {
             const username = document.getElementById('newUsername').value.trim() || 'User';
             let hwid = document.getElementById('newHwid').value.trim();
+            const days = parseInt(document.getElementById('newDuration').value);
 
             if (!hwid) {
                 hwid = 'SUN-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
             }
 
-            await sendAction({ action: 'create', username, hwid });
+            await sendAction({ action: 'create', username, hwid, days });
             closeAddModal();
         }
 
@@ -920,12 +988,8 @@ const server = http.createServer((req, res) => {
 
     const parsedUrl = url.parse(req.url, true);
 
-    // 0.5 АВТОРИЗАЦИЯ АДМИНИСТРАТОРА (Разрешена только локально)
+    // 0.5 АВТОРИЗАЦИЯ АДМИНИСТРАТОРА
     if (parsedUrl.pathname === '/api/admin/login' && req.method === 'POST') {
-        if (false /* Remote admin allowed by default */) {
-            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-            return res.end('404 Not Found');
-        }
         let body = '';
         req.on('data', chunk => {
             body += chunk;
@@ -969,12 +1033,8 @@ const server = http.createServer((req, res) => {
         return res.end(JSON.stringify({ success: true }));
     }
 
-    // 1. АДМИН-ПАНЕЛЬ (Разрешена только локально на вашем ПК для 100% безопасности)
+    // 1. АДМИН-ПАНЕЛЬ (Красивая HTML-страница)
     if (parsedUrl.pathname === '/admin' || parsedUrl.pathname === '/admin/') {
-        if (false /* Remote admin allowed by default */) {
-            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-            return res.end('404 Not Found');
-        }
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         return res.end(ADMIN_HTML);
     }
@@ -1007,45 +1067,38 @@ const server = http.createServer((req, res) => {
                 const data = JSON.parse(body);
                 const { action, hwid } = data;
 
-                const targetKey = hwid ? (database[hwid] ? hwid : Object.keys(database).find(k => 
-                    k.toUpperCase() === String(hwid).toUpperCase() || 
-                    (database[k].key && database[k].key.toUpperCase() === String(hwid).toUpperCase()) ||
-                    (database[k].username && database[k].username.toLowerCase() === String(hwid).toLowerCase())
-                )) : null;
-
-                if (action === 'extend' && targetKey && database[targetKey]) {
-                    const currentExp = new Date(database[targetKey].expires);
+                if (action === 'extend' && database[hwid]) {
+                    const currentExp = new Date(database[hwid].expires);
                     const baseDate = currentExp > new Date() ? currentExp : new Date();
-                    baseDate.setDate(baseDate.getDate() + (data.days || 36500));
-                    database[targetKey].expires = baseDate.toISOString().split('T')[0];
-                    database[targetKey].active = true;
-                    saveDatabase(database, targetKey);
-                } else if (action === 'ban' && targetKey && database[targetKey]) {
-                    database[targetKey].banned = !!data.banned;
-                    saveDatabase(database, targetKey);
-                } else if (action === 'toggle_cosmetics' && targetKey && database[targetKey]) {
-                    const list = database[targetKey].cosmetics || [];
-                    if (list.length > 0) {
-                        database[targetKey].cosmetics = [];
+                    baseDate.setDate(baseDate.getDate() + (data.days || 30));
+                    database[hwid].expires = baseDate.toISOString().split('T')[0];
+                    database[hwid].active = true;
+                    saveDatabase(database);
+                } else if (action === 'ban' && database[hwid]) {
+                    database[hwid].banned = !!data.banned;
+                    saveDatabase(database);
+                } else if (action === 'toggle_cosmetics' && database[hwid]) {
+                    const list = database[hwid].cosmetics || [];
+                    if (list.includes("wings_fire")) {
+                        database[hwid].cosmetics = [];
                     } else {
-                        database[targetKey].cosmetics = [];
+                        database[hwid].cosmetics = ["wings_fire", "crown_gold", "cape_sun"];
                     }
-                    saveDatabase(database, targetKey);
-                } else if (action === 'delete' && targetKey) {
-                    delete database[targetKey];
-                    saveDatabase(database, targetKey);
-                } else if (action === 'reset_hwid' && targetKey && database[targetKey]) {
-                    database[targetKey].hwid = null;
-                    database[targetKey].clientLinked = false;
-                    database[targetKey].hwid_last_reset = null;
-                    saveDatabase(database, targetKey);
-                } else if (action === 'add_coins' && targetKey && database[targetKey]) {
-                    database[targetKey].coins = (database[targetKey].coins || 0) + (parseInt(data.amount) || 50);
-                    saveDatabase(database, targetKey);
+                    saveDatabase(database);
+                } else if (action === 'delete') {
+                    delete database[hwid];
+                    saveDatabase(database);
+                } else if (action === 'reset_hwid' && database[hwid]) {
+                    database[hwid].hwid = null;
+                    database[hwid].hwid_last_reset = null;
+                    saveDatabase(database);
+                } else if (action === 'add_coins' && database[hwid]) {
+                    database[hwid].coins = (database[hwid].coins || 0) + (parseInt(data.amount) || 50);
+                    saveDatabase(database);
                 } else if (action === 'create') {
                     const key = (data.hwid && data.hwid.trim()) ? data.hwid.trim() : generateLicenseKey();
                     const exp = new Date();
-                    exp.setDate(exp.getDate() + (data.days || 36500));
+                    exp.setDate(exp.getDate() + (data.days || 30));
                     database[key] = {
                         uid: getNextUid(),
                         username: data.username || 'User',
@@ -1057,9 +1110,9 @@ const server = http.createServer((req, res) => {
                         coins: 0,
                         hwid: null,
                         hwid_last_reset: null,
-                        cosmetics: []
+                        cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
                     };
-                    saveDatabase(database, key);
+                    saveDatabase(database);
                 }
 
                 res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1117,7 +1170,7 @@ const server = http.createServer((req, res) => {
                 const accountId = generateLicenseKey();
                 const sessionToken = createSessionToken(accountId, username);
                 const exp = new Date();
-                exp.setDate(exp.getDate() + 36500); // Бессрочно
+                exp.setDate(exp.getDate() + 60); // 60 дней бета-теста
 
                 database[accountId] = {
                     uid: newUid,
@@ -1134,11 +1187,10 @@ const server = http.createServer((req, res) => {
                     expires: exp.toISOString().split('T')[0],
                     coins: 0,
                     hwid: null,
-                    clientLinked: false,
                     hwid_last_reset: null,
-                    cosmetics: []
+                    cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
                 };
-                saveDatabase(database, accountId);
+                saveDatabase(database);
 
                 res.writeHead(200, {
                     'Content-Type': 'application/json; charset=utf-8',
@@ -1155,11 +1207,10 @@ const server = http.createServer((req, res) => {
                     bannerUrl: null,
                     coins: 0,
                     hwid: null,
-                    clientLinked: false,
                     hwid_last_reset: null,
                     expires: exp.toISOString().split('T')[0],
-                    plan: "Бессрочно",
-                    cosmetics: []
+                    plan: "Бета-тест (60 дней)",
+                    cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
                 }));
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1221,7 +1272,7 @@ const server = http.createServer((req, res) => {
                 } else {
                     userKey = generateLicenseKey();
                     const exp = new Date();
-                    exp.setDate(exp.getDate() + 36500);
+                    exp.setDate(exp.getDate() + 60);
 
                     const username = googleName || ("User_" + userKey.substring(4, 8));
                     const sessionToken = createSessionToken(userKey, username);
@@ -1241,11 +1292,11 @@ const server = http.createServer((req, res) => {
                         coins: 0,
                         hwid: null,
                         hwid_last_reset: null,
-                        cosmetics: []
+                        cosmetics: ["wings_fire", "crown_gold", "cape_sun"]
                     };
                     database[userKey] = user;
                 }
-                saveDatabase(database, userKey);
+                saveDatabase(database);
 
                 res.writeHead(200, {
                     'Content-Type': 'application/json; charset=utf-8',
@@ -1265,9 +1316,8 @@ const server = http.createServer((req, res) => {
                     hwid_last_reset: user.hwid_last_reset || null,
                     expires: user.expires,
                     active: user.active && !user.banned,
-                    cosmetics: user.cosmetics || [],
-            clientLinked: !!user.hwid || !!user.clientLinked
-        }));
+                    cosmetics: user.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
+                }));
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
                 return res.end(JSON.stringify({ error: "Ошибка обработки Google-авторизации" }));
@@ -1293,13 +1343,17 @@ const server = http.createServer((req, res) => {
                 if (reqToken || reqKey) {
                     const auth = getUserBySessionToken(reqToken, reqKey);
                     if (auth) {
+                        if (auth.user.banned) {
+                            res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+                            return res.end(JSON.stringify({ error: "Ваш аккаунт заблокирован" }));
+                        }
                         const u = auth.user;
                         const foundKey = auth.key;
                         let sessionToken = reqToken;
                         if (auth.shouldRenew || !reqToken || !reqToken.startsWith('sun_s1.')) {
                             sessionToken = createSessionToken(foundKey, u.username);
                             u.sessionToken = sessionToken;
-                            saveDatabase(database, foundKey);
+                            saveDatabase(database);
                         }
                         res.writeHead(200, {
                             'Content-Type': 'application/json; charset=utf-8',
@@ -1316,11 +1370,10 @@ const server = http.createServer((req, res) => {
                             bannerUrl: u.bannerUrl || null,
                             coins: u.coins || 0,
                             hwid: u.hwid || null,
-                            clientLinked: !!u.clientLinked || !!u.hwid,
                             hwid_last_reset: u.hwid_last_reset || null,
                             expires: u.expires,
                             active: u.active && !u.banned,
-                            cosmetics: u.cosmetics || []
+                            cosmetics: u.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
                         }));
                     }
                     if (!data.query && !data.username && !data.email) {
@@ -1365,7 +1418,7 @@ const server = http.createServer((req, res) => {
                 // Выдаем долговечный подписанный сессионный токен при успешном логине
                 const sessionToken = createSessionToken(foundKey, u.username);
                 u.sessionToken = sessionToken;
-                saveDatabase(database, foundKey);
+                saveDatabase(database);
 
                 res.writeHead(200, {
                     'Content-Type': 'application/json; charset=utf-8',
@@ -1382,11 +1435,10 @@ const server = http.createServer((req, res) => {
                     bannerUrl: u.bannerUrl || null,
                     coins: u.coins || 0,
                     hwid: u.hwid || null,
-                    clientLinked: !!u.clientLinked || !!u.hwid,
                     hwid_last_reset: u.hwid_last_reset || null,
                     expires: u.expires,
                     active: u.active && !u.banned,
-                    cosmetics: u.cosmetics || []
+                    cosmetics: u.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
                 }));
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1403,136 +1455,6 @@ const server = http.createServer((req, res) => {
             'Set-Cookie': getSessionCookieHeader(req, null)
         });
         return res.end(JSON.stringify({ success: true }));
-    }
-
-    // 3.66 SUN Connect API: Запрос кода сопряжения (вызывается клиентом Minecraft)
-    if (parsedUrl.pathname === '/api/auth/pair/request' && (req.method === 'POST' || req.method === 'GET')) {
-        cleanupPairRequests();
-        const requestId = crypto.randomBytes(16).toString('hex');
-        // Генерируем 6-значный пин-код (например, 749218)
-        const codeNum = crypto.randomInt(100000, 999999).toString();
-        const code = `${codeNum.substring(0, 3)}-${codeNum.substring(3)}`;
-        const now = Date.now();
-        const expiresAt = now + 5 * 60 * 1000; // 5 минут
-
-        activePairRequests.set(requestId, {
-            id: requestId,
-            code: code,
-            cleanCode: codeNum,
-            createdAt: now,
-            expiresAt: expiresAt,
-            status: 'pending',
-            token: null,
-            userKey: null,
-            user: null
-        });
-
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        return res.end(JSON.stringify({
-            success: true,
-            requestId: requestId,
-            code: code,
-            expiresInSeconds: 300
-        }));
-    }
-
-    // 3.67 SUN Connect API: Подтверждение кода сопряжения на сайте (пользователь вводит код в ЛК)
-    if (parsedUrl.pathname === '/api/auth/pair/link' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk;
-            if (body.length > 1024 * 64) req.destroy();
-        });
-        req.on('end', () => {
-            try {
-                cleanupPairRequests();
-                const data = JSON.parse(body || '{}');
-                const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
-                const inputCode = (data.code || '').trim().replace(/[^0-9]/g, '');
-
-                const auth = getUserBySessionToken(sessionToken);
-                if (!auth) {
-                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: "Авторизуйтесь на сайте перед привязкой игры" }));
-                }
-
-                if (!inputCode || inputCode.length !== 6) {
-                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: "Введите 6-значный код сопряжения из игры" }));
-                }
-
-                let foundPair = null;
-                for (const pair of activePairRequests.values()) {
-                    if (pair.cleanCode === inputCode && pair.status === 'pending') {
-                        foundPair = pair;
-                        break;
-                    }
-                }
-
-                if (!foundPair) {
-                    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: "Код не найден или срок его действия истек" }));
-                }
-
-                const u = auth.user;
-                const foundKey = auth.key;
-                const newClientToken = createSessionToken(foundKey, u.username);
-
-                // Фиксируем статус привязки клиента в базе данных навсегда
-                u.hwid = u.hwid || 'SUN-CONNECTED';
-                u.clientLinked = true;
-                u.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
-                saveDatabase(database, foundKey);
-
-                foundPair.status = 'linked';
-                foundPair.token = newClientToken;
-                foundPair.userKey = foundKey;
-                foundPair.user = {
-                    uid: u.uid || 10,
-                    username: u.username,
-                    coins: u.coins || 0,
-                    cosmetics: u.cosmetics || []
-                };
-
-                console.log(`[SUN-CONNECT] Игрок ${u.username} успешно связал клиент через код ${foundPair.code}!`);
-
-                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-                return res.end(JSON.stringify({
-                    success: true,
-                    message: "Клиент игры успешно привязан к вашему аккаунту SUN!",
-                    username: u.username
-                }));
-            } catch (e) {
-                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-                return res.end(JSON.stringify({ error: e.message || "Ошибка привязки" }));
-            }
-        });
-        return;
-    }
-
-    // 3.68 SUN Connect API: Опрос статуса клиентом игры (poll раз в 2 сек)
-    if (parsedUrl.pathname === '/api/auth/pair/poll' && (req.method === 'GET' || req.method === 'POST')) {
-        cleanupPairRequests();
-        const requestId = (parsedUrl.query.id || parsedUrl.query.requestId || '').trim();
-        if (!requestId || !activePairRequests.has(requestId)) {
-            res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-            return res.end(JSON.stringify({ error: "Сессия сопряжения не найдена или истекла" }));
-        }
-
-        const pair = activePairRequests.get(requestId);
-        if (pair.status === 'linked') {
-            const resultData = {
-                linked: true,
-                token: pair.token,
-                user: pair.user
-            };
-            activePairRequests.delete(requestId);
-            res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-            return res.end(JSON.stringify(resultData));
-        }
-
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        return res.end(JSON.stringify({ linked: false, status: 'pending' }));
     }
 
     // 3.7 API САЙТА: Сброс привязки HWID пользователем (с кулдауном 3 дня и защитой авторизацией)
@@ -1583,7 +1505,7 @@ const server = http.createServer((req, res) => {
 
                 user.hwid = null;
                 user.hwid_last_reset = new Date().toISOString();
-                saveDatabase(database, foundKey);
+                saveDatabase(database);
                 console.log(`[SUN-API] [RESET-HWID] Сброс HWID для пользователя ${user.username} (${foundKey})`);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1635,7 +1557,7 @@ const server = http.createServer((req, res) => {
                 user.password = hashPassword(newPassword);
                 const newSessionToken = createSessionToken(foundKey, user.username);
                 user.sessionToken = newSessionToken;
-                saveDatabase(database, foundKey);
+                saveDatabase(database);
 
                 res.writeHead(200, {
                     'Content-Type': 'application/json; charset=utf-8',
@@ -1687,7 +1609,7 @@ const server = http.createServer((req, res) => {
                 user.expires = currentExp.toISOString().split('T')[0];
                 user.coins = (user.coins || 0) + 50;
                 user.active = true;
-                saveDatabase(database, foundKey);
+                saveDatabase(database);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
                 return res.end(JSON.stringify({
@@ -1756,7 +1678,7 @@ const server = http.createServer((req, res) => {
 
                 const avatarUrl = `/uploads/avatars/${fileName}`;
                 user.avatarUrl = avatarUrl;
-                saveDatabase(database, foundKey);
+                saveDatabase(database);
                 console.log(`[SUN-API] [AVATAR] Пользователь ${user.username} обновил аватарку -> ${avatarUrl}`);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1821,7 +1743,7 @@ const server = http.createServer((req, res) => {
 
                 const bannerUrl = `/uploads/banners/${fileName}`;
                 user.bannerUrl = bannerUrl;
-                saveDatabase(database, foundKey);
+                saveDatabase(database);
                 console.log(`[SUN-API] [BANNER] Пользователь ${user.username} обновил баннер -> ${bannerUrl}`);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1874,26 +1796,21 @@ const server = http.createServer((req, res) => {
         }));
     }
 
-    // 4. API КЛИЕНТА: Проверка подписки и валидация токена/ключа/HWID (Майнкрафт)
+    // 4. API КЛИЕНТА: Проверка подписки и валидация HWID (Майнкрафт)
     if (parsedUrl.pathname === '/api/check') {
         const hwid = parsedUrl.query.hwid;
         const key = parsedUrl.query.key;
-        const token = parsedUrl.query.token;
+
+        if (!hwid && !key) {
+            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+            return res.end(JSON.stringify({ valid: false, message: "HWID или Ключ не передан" }));
+        }
 
         let user = null;
         let userKey = null;
 
-        // Поиск по токену сессии SUN Connect (приоритетно)
-        if (token) {
-            const auth = getUserBySessionToken(token);
-            if (auth) {
-                user = auth.user;
-                userKey = auth.key;
-            }
-        }
-
-        // Поиск по ключу (если передан)
-        if (!user && key) {
+        // Поиск по ключу (приоритетно)
+        if (key) {
             userKey = Object.keys(database).find(k => 
                 k.toUpperCase() === key.toUpperCase() || 
                 (database[k].key && database[k].key.toUpperCase() === key.toUpperCase())
@@ -1919,12 +1836,41 @@ const server = http.createServer((req, res) => {
             }));
         }
 
-        // Freemium: HWID Lock removed
-        if (hwid) {
-            user.hwid = hwid;
-            user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
-            saveDatabase(database, userKey);
+        const isBanned = !!user.banned;
+        const isExpired = new Date(user.expires) < new Date();
+
+        if (isBanned) {
+            console.log(`[SUN-API] [BAN] Заблокированный пользователь: ${user.username}`);
+            res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+            return res.end(JSON.stringify({ valid: false, message: "Ваш аккаунт заблокирован!" }));
         }
+
+        if (isExpired) {
+            console.log(`[SUN-API] [EXP] Истекшая подписка: ${user.username}`);
+            res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+            return res.end(JSON.stringify({ valid: false, message: "Срок действия бета-теста истек!" }));
+        }
+
+        // Проверка и аппаратная привязка (HWID Lock)
+        if (hwid) {
+            if (!user.hwid) {
+                user.hwid = hwid;
+                user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
+                saveDatabase(database);
+                console.log(`[SUN-API] [HWID] Ключ ${userKey} (${user.username}) успешно ПРИВЯЗАН к ПК HWID: ${hwid}`);
+            } else if (user.hwid.toUpperCase() !== hwid.toUpperCase()) {
+                console.log(`[SUN-API] [HWID-MISMATCH] Несовпадение HWID для ${user.username}! База: ${user.hwid}, Клиент: ${hwid}`);
+                res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ 
+                    valid: false, 
+                    message: "Ключ привязан к другому компьютеру! Сбросьте привязку HWID в Личном кабинете на сайте." 
+                }));
+            } else {
+                user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
+                saveDatabase(database);
+            }
+        }
+
         console.log(`[SUN-API] [OK] Доступ разрешен: ${user.username} (HWID: ${user.hwid || 'проверен'})`);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         return res.end(JSON.stringify({
@@ -1933,8 +1879,7 @@ const server = http.createServer((req, res) => {
             key: key ? userKey : undefined, // Не раскрываем лицензионный ключ, если запрос был только по HWID
             coins: user.coins || 0,
             expires: user.expires,
-            cosmetics: user.cosmetics || [],
-            clientLinked: !!user.hwid || !!user.clientLinked
+            cosmetics: user.cosmetics || ["wings_fire", "crown_gold", "cape_sun"]
         }));
     }
 
@@ -1965,7 +1910,39 @@ const server = http.createServer((req, res) => {
         return res.end(JSON.stringify(versionData));
     }
 
-    // 6. СТАТИЧЕСКИЙ САЙТ-ВИЗИТКА (site/)
+    
+    // 6. API ANNOUNCEMENT
+    if (parsedUrl.pathname === '/api/announcement') {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify(announcement));
+    }
+
+    if (parsedUrl.pathname === '/api/admin/announcement' && req.method === 'POST') {
+        if (!isAdminAuthorized(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+            return res.end(JSON.stringify({ error: 'Unauthorized' }));
+        }
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        return req.on('end', () => {
+            try {
+                const data = JSON.parse(body);
+                announcement.active = !!data.active;
+                announcement.type = data.type || 'info';
+                announcement.title = data.title || '';
+                announcement.message = data.message || '';
+                announcement.url = data.url || '';
+                saveAnnouncement();
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                res.end(JSON.stringify({ success: true }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                res.end(JSON.stringify({ error: 'Invalid JSON' }));
+            }
+        });
+    }
+
+    // 7. СТАТИЧЕСКИЙ САЙТ-ВИЗИТКА (site/)
     const safeBaseDir = SITE_DIR.endsWith(path.sep) ? SITE_DIR : SITE_DIR + path.sep;
     let reqPath = parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname;
     if (parsedUrl.pathname === '/profile') {
@@ -1988,7 +1965,6 @@ const server = http.createServer((req, res) => {
             '.png': 'image/png',
             '.jpg': 'image/jpeg',
             '.jpeg': 'image/jpeg',
-            '.jfif': 'image/jpeg',
             '.webp': 'image/webp',
             '.gif': 'image/gif',
             '.svg': 'image/svg+xml',

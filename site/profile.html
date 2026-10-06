@@ -59,6 +59,16 @@
   <!-- Правая колонка: Основной контент -->
   <main class="kimiko-content">
 
+<div id="sun-global-announcement" style="display: none; background: linear-gradient(135deg, #8b5cf6, #3b82f6); padding: 16px 24px; border-radius: 12px; margin-bottom: 24px; position: relative; color: white; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+  <div style="position: absolute; right: 16px; top: 16px; cursor: pointer; opacity: 0.8;" onclick="this.parentElement.style.display='none'">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+  </div>
+  <h3 id="ann-title" style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700;"></h3>
+  <p id="ann-message" style="margin: 0; font-size: 14px; opacity: 0.95; line-height: 1.5;"></p>
+  <a id="ann-url" href="#" target="_blank" style="display: none; display: inline-block; margin-top: 12px; background: rgba(0,0,0,0.2); color: white; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; transition: background 0.2s;">Подробнее</a>
+</div>
+
+
     <!-- Вкладка 1: Аккаунт -->
     <div class="kimiko-tab-pane active" id="pane-account">
       <div class="kimiko-pane-head">
@@ -710,5 +720,25 @@ function doLogout() {
 const logoutBtn = $('#btn-kimiko-logout');
 if (logoutBtn) logoutBtn.onclick = doLogout;
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/announcement')
+        .then(r => r.json())
+        .then(data => {
+            if (data.active) {
+                document.getElementById('sun-global-announcement').style.display = 'block';
+                document.getElementById('ann-title').textContent = data.title;
+                document.getElementById('ann-message').textContent = data.message;
+                if (data.url) {
+                    const btn = document.getElementById('ann-url');
+                    btn.style.display = 'inline-block';
+                    btn.href = data.url;
+                }
+            }
+        }).catch(e => console.error('Error fetching announcement:', e));
+});
+</script>
 </body>
+
 </html>

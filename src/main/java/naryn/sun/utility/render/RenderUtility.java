@@ -36,15 +36,17 @@ public final class RenderUtility implements IMinecraft, IWindow {
    public static void prepareMatrices(MatrixStack matrices) {
       Camera camera = mc.gameRenderer.getCamera();
       Vec3d cameraPos = camera.getPos();
-      Vec3d renderPos = Vec3d.ZERO.subtract(cameraPos);
-      matrices.translate(renderPos.getX(), renderPos.getY(), renderPos.getZ());
+      matrices.translate(-cameraPos.getX(), -cameraPos.getY(), -cameraPos.getZ());
    }
 
    public static void prepareMatrices(MatrixStack matrices, Vec3d pos) {
+      prepareMatrices(matrices, pos.getX(), pos.getY(), pos.getZ());
+   }
+
+   public static void prepareMatrices(MatrixStack matrices, double x, double y, double z) {
       Camera camera = mc.gameRenderer.getCamera();
       Vec3d cameraPos = camera.getPos();
-      Vec3d renderPos = pos.subtract(cameraPos);
-      matrices.translate(renderPos.getX(), renderPos.getY(), renderPos.getZ());
+      matrices.translate(x - cameraPos.getX(), y - cameraPos.getY(), z - cameraPos.getZ());
    }
 
    public static void setupRender3D(boolean bloomColor) {

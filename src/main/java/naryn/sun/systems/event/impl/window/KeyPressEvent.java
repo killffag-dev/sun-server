@@ -1,9 +1,9 @@
 package naryn.sun.systems.event.impl.window;
 
 import lombok.Generated;
-import naryn.sun.systems.event.Event;
+import naryn.sun.systems.event.EventCancellable;
 
-public class KeyPressEvent extends Event {
+public class KeyPressEvent extends EventCancellable {
    private final int action;
    private final int key;
 

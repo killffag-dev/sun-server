@@ -15,7 +15,6 @@ import naryn.sun.systems.modules.impl.BaseModule;
 import naryn.sun.systems.modules.modules.visuals.skyentity.SkyEntityGeometry;
 import naryn.sun.systems.modules.modules.visuals.skyentity.SkyEntityModel;
 import naryn.sun.systems.modules.modules.visuals.skyentity.models.BlimpModel;
-import naryn.sun.systems.modules.modules.visuals.skyentity.models.DragonModel;
 import naryn.sun.systems.modules.modules.visuals.skyentity.models.FakeCowModel;
 import naryn.sun.systems.modules.modules.visuals.skyentity.models.UfoModel;
 import naryn.sun.systems.setting.settings.ModeSetting;
@@ -49,34 +48,33 @@ public class SkyEntityModule extends BaseModule {
     private final ModeSetting.Value kiteMode = new ModeSetting.Value(entityType, "modules.settings.sky_entity.type.kite");
 
     // --- Настройки поведения ---
-    private final SliderSetting count = new SliderSetting(this, "modules.settings.sky_entity.count")
+    private final naryn.sun.systems.setting.settings.GroupSetting generalGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.sky_entity.group.general");
+    private final SliderSetting count = new SliderSetting(this.generalGroup, "modules.settings.sky_entity.count")
         .min(1F).max(3F).step(1F).currentValue(1F);
-    private final SliderSetting speed = new SliderSetting(this, "modules.settings.sky_entity.speed")
+    private final SliderSetting speed = new SliderSetting(this.generalGroup, "modules.settings.sky_entity.speed")
         .min(0.2F).max(3.0F).step(0.1F).currentValue(1.0F);
-    private final SliderSetting size = new SliderSetting(this, "modules.settings.sky_entity.size")
+    private final SliderSetting size = new SliderSetting(this.generalGroup, "modules.settings.sky_entity.size")
         .min(0.5F).max(3.0F).step(0.1F).currentValue(1.0F);
-    private final SliderSetting height = new SliderSetting(this, "modules.settings.sky_entity.height")
+    private final SliderSetting height = new SliderSetting(this.generalGroup, "modules.settings.sky_entity.height")
         .min(60F).max(160F).step(1F).currentValue(110F);
 
     // --- Модели (процедурные, общий POSITION_COLOR-конвейер) ---
-    private final DragonModel dragonModel = new DragonModel();
     private final UfoModel ufoModel = new UfoModel();
     private final BlimpModel blimpModel = new BlimpModel();
     private final FakeCowModel cowModel = new FakeCowModel();
 
-    // --- Кит (.bbmodel, текстурированный, отдельный конвейер BbModelRenderer) ---
-    private static final Identifier KITE_RESOURCE = Identifier.of("sun", "bbmodels/whale.bbmodel");
-    // Впиши сюда имя анимации ровно как в Blockbench (вкладка Animations), если она есть.
-    // Если анимации нет/не нужна — оставь null, кит будет рисоваться в статичной позе.
-    private static final String KITE_ANIMATION_NAME = "animation.unknown.kivok";
-	private static final float KITE_SIZE_MULTIPLIER = 10F; // подбери под свою модель
-    private static final float KITE_YAW_OFFSET_DEGREES = -90F; // 0/90/-90/180 — пока не встанет носом по ходу
-    private BbModel kiteModel;
-    private boolean kiteLoadFailed = false;
+    // --- Текстурированные сущности (.bbmodel, конвейер BbModelRenderer) ---
+    private final BbEntityState kiteState = new BbEntityState(
+        Identifier.of("sun", "bbmodels/whale.bbmodel"), "animation.unknown.kivok", 10F, -90F
+    );
+    private final BbEntityState dragonState = new BbEntityState(
+        Identifier.of("sun", "bbmodels/dragon.bbmodel"), "animation.dragon.fly", 6.0F, -90F
+    );
 
     @Override
     public void onEnable() {
-        kiteLoadFailed = false;
+        kiteState.reset();
+        dragonState.reset();
         moduleStartTime = -1L;
     }
 
@@ -183,10 +181,12 @@ public class SkyEntityModule extends BaseModule {
         n = Math.max(1, Math.min(3, n));
 
         if (entityType.is(kiteMode)) {
-            // Кит — свой рендер-путь (текстурированный, шейдер сам выставляется внутри
-            // BbModelRenderer), не завязан на общий POSITION_COLOR-буфер процедурных моделей
-            // и не участвует в похищении коровы.
-            renderKites(matrices, now, n);
+            renderBbEntity(matrices, now, n, kiteState);
+            return;
+        }
+
+        if (entityType.is(dragonMode)) {
+            renderBbEntity(matrices, now, n, dragonState);
             return;
         }
 
@@ -226,46 +226,64 @@ public class SkyEntityModule extends BaseModule {
     };
 
     private SkyEntityModel getCurrentModel() {
-        if (entityType.is(dragonMode)) return dragonModel;
         if (entityType.is(ufoMode)) return ufoModel;
         if (entityType.is(blimpMode)) return blimpModel;
         return null;
     }
 
-    private void renderKites(MatrixStack matrices, long now, int n) {
-        if (kiteLoadFailed) return;
-        if (kiteModel == null) {
+    private boolean renderBbEntity(MatrixStack matrices, long now, int n, BbEntityState state) {
+        if (!state.loadFailed && state.model == null) {
             try {
-                kiteModel = BbModelLoader.loadFromResource(KITE_RESOURCE);
+                state.model = BbModelLoader.loadFromResource(state.resource);
             } catch (Exception e) {
-                kiteLoadFailed = true;
-                return;
+                state.loadFailed = true;
             }
         }
+        if (state.loadFailed || state.model == null) return false;
 
         float t = (now - moduleStartTime) / 1000F;
-
         for (int i = 0; i < n; i++) {
             OrbitPose pose = computeOrbitPose(now, i);
-            float s = size.getCurrentValue() * KITE_SIZE_MULTIPLIER * (1F - i * 0.12F);
+            float s = size.getCurrentValue() * state.sizeMultiplier * (1F - i * 0.12F);
 
             matrices.push();
             matrices.translate(pose.lx, pose.ly, pose.lz);
             matrices.multiply(RotationAxis.POSITIVE_Y.rotation(-pose.yaw));
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(KITE_YAW_OFFSET_DEGREES));
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(state.yawOffsetDegrees));
             matrices.multiply(RotationAxis.POSITIVE_X.rotation(pose.roll));
             matrices.scale(s, s, s);
 
             Map<String, BbBoneAnimator.Pose> animPose = Collections.emptyMap();
-            if (KITE_ANIMATION_NAME != null) {
-                BbAnimation anim = kiteModel.animation(KITE_ANIMATION_NAME);
+            if (state.animationName != null) {
+                BbAnimation anim = state.model.animation(state.animationName);
                 if (anim != null) {
                     animPose = anim.sampleAll(t);
                 }
             }
 
-            BbModelRenderer.render(kiteModel, matrices, animPose, 1.0F, 1.0F, 1.0F, 1.0F);
+            BbModelRenderer.render(state.model, matrices, animPose, 1.0F, 1.0F, 1.0F, 1.0F);
             matrices.pop();
+        }
+        return true;
+    }
+
+    private static class BbEntityState {
+        final Identifier resource;
+        final String animationName;
+        final float sizeMultiplier;
+        final float yawOffsetDegrees;
+        BbModel model;
+        boolean loadFailed;
+
+        BbEntityState(Identifier resource, String animationName, float sizeMultiplier, float yawOffsetDegrees) {
+            this.resource = resource;
+            this.animationName = animationName;
+            this.sizeMultiplier = sizeMultiplier;
+            this.yawOffsetDegrees = yawOffsetDegrees;
+        }
+
+        void reset() {
+            loadFailed = false;
         }
     }
 

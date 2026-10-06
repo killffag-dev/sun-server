@@ -311,3 +311,17 @@ menu.gui_settings.credits.entityculling.desc=Culls entity rendering behind opaqu
 menu.gui_settings.credits.iris.desc=Shaderpack support and custom pipeline compatibility
 menu.gui_settings.credits.krypton.desc=Netty network stack and packet serialization optimization
 menu.gui_settings.credits.modernfix.desc=Memory leak fixes, world loading and launch acceleration
+
+mods.screen.title=Mod Manager
+mods.screen.subtitle=Enable and disable mods by moving them between lists
+mods.screen.available=Available Mods (Disabled)
+mods.screen.active=Selected Mods (Active)
+mods.screen.empty_available=No disabled mods
+mods.screen.empty_active=No active mods
+mods.screen.open_folder=Open Mods Folder
+mods.screen.refresh=Refresh
+mods.screen.done=Done
+mods.screen.restart_title=Restart Client
+mods.screen.restart_desc=Changes saved! A client restart is required to apply changes.
+mods.screen.restart_now=Restart Now
+mods.screen.restart_later=Later

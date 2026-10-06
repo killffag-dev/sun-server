@@ -59,11 +59,11 @@ public class TargetHud extends PositionableHudModule implements IMinecraft {
     private static final ColorRGBA EMPTY_HEART_TINT = new ColorRGBA(20.0F, 20.0F, 20.0F, 255.0F);
     private static final ColorRGBA HEART_OUTLINE_COLOR = new ColorRGBA(0.0F, 0.0F, 0.0F, 255.0F);
 
-    private final BooleanSetting hideBackground = new BooleanSetting(this, "modules.settings.target_hud.hide_background");
-
     private final ModeSetting visibility = new ModeSetting(this, "modules.settings.target_hud.visibility");
     private final ModeSetting.Value visibilityAlways = new ModeSetting.Value(this.visibility, "modules.settings.target_hud.visibility.always").select();
     private final ModeSetting.Value visibilityHover = new ModeSetting.Value(this.visibility, "modules.settings.target_hud.visibility.hover");
+
+    private final BooleanSetting hideBackground = new BooleanSetting(this, "modules.settings.target_hud.hide_background");
 
     private final SliderSetting hideDelay = new SliderSetting(this, "modules.settings.target_hud.hidedelay", () -> !this.visibilityHover.isSelected())
         .min(1.0F).max(5.0F).step(1.0F).currentValue(3.0F);

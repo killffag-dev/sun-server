@@ -15,8 +15,8 @@ public class TPSHandler {
       if (event.getPacket() instanceof WorldTimeUpdateS2CPacket) {
          if (this.timeLastTimeUpdate != -1L) {
             float timeElapsed = (float)(System.nanoTime() - this.timeLastTimeUpdate) / 1.0E9F;
-            this.tickRates[this.nextIndex % this.tickRates.length] = MathHelper.clamp(20.0F / timeElapsed, 0.0F, 20.0F);
-            this.nextIndex++;
+            this.tickRates[this.nextIndex] = MathHelper.clamp(20.0F / timeElapsed, 0.0F, 20.0F);
+            this.nextIndex = (this.nextIndex + 1) % this.tickRates.length;
          }
 
          this.timeLastTimeUpdate = System.nanoTime();

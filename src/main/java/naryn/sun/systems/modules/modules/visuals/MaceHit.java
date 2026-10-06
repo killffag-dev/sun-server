@@ -29,11 +29,11 @@ import org.joml.Matrix4f;
 @ModuleInfo(name = "Mace Hit", category = ModuleCategory.VISUALS, desc = "modules.descriptions.mace_hit")
 public class MaceHit extends BaseModule {
 
-   // --- Настройки ---
+   // --- Настройки (Booleans then Sliders) ---
    private final BooleanSetting blackout = new BooleanSetting(this, "modules.settings.mace_hit.blackout").enable();
+   private final BooleanSetting throughWalls = new BooleanSetting(this, "modules.settings.mace_hit.through_walls").enable();
    private final SliderSetting starSize = new SliderSetting(this, "modules.settings.mace_hit.star_size")
       .min(0.5F).max(3.0F).step(0.1F).currentValue(1.0F);
-   private final BooleanSetting throughWalls = new BooleanSetting(this, "modules.settings.mace_hit.through_walls").enable();
    private final SliderSetting minFall = new SliderSetting(this, "modules.settings.mace_hit.min_fall")
       .min(0.5F).max(5.0F).step(0.1F).currentValue(1.5F);
 

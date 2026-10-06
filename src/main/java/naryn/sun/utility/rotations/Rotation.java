@@ -51,6 +51,11 @@ public class Rotation implements IMinecraft {
       this.pitch = pitch;
    }
 
+   public void set(float yaw, float pitch) {
+      this.yaw = yaw;
+      this.pitch = pitch;
+   }
+
    @Generated
    @Override
    public boolean equals(Object o) {

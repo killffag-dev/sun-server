@@ -311,3 +311,17 @@ menu.gui_settings.credits.entityculling.desc=Отсечение невидимы
 menu.gui_settings.credits.iris.desc=Совместимость с шейдерпаками и кастомный пайплайн
 menu.gui_settings.credits.krypton.desc=Оптимизация сетевого стека Netty и сериализации пакетов
 menu.gui_settings.credits.modernfix.desc=Устранение утечек памяти, ускорение запуска и загрузки мира
+
+mods.screen.title=Управление модами
+mods.screen.subtitle=Включайте и отключайте моды перемещением между списками
+mods.screen.available=Доступные моды (отключенные)
+mods.screen.active=Выбранные моды (активные)
+mods.screen.empty_available=Нет отключенных модов
+mods.screen.empty_active=Нет активных модов
+mods.screen.open_folder=Папка с модами
+mods.screen.refresh=Обновить
+mods.screen.done=Готово
+mods.screen.restart_title=Перезапуск клиента
+mods.screen.restart_desc=Изменения сохранены! Для их применения необходим перезапуск.
+mods.screen.restart_now=Перезапустить
+mods.screen.restart_later=Позже

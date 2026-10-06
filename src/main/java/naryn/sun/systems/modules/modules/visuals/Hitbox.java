@@ -37,38 +37,40 @@ public class Hitbox extends BaseModule {
 
     private static final double OUTLINE_EXPAND = 0.002;
 
-    // ===== Цвет (общий для обводки и статичной заливки) =====
-    private final ModeSetting colorMode = new ModeSetting(this, "modules.settings.hitbox.color_mode");
-    private final ModeSetting.Value colorSolid = new ModeSetting.Value(this.colorMode, "modules.settings.hitbox.color_mode.solid").select();
-    private final ModeSetting.Value colorGradient = new ModeSetting.Value(this.colorMode, "modules.settings.hitbox.color_mode.gradient");
-    private final ModeSetting.Value colorRainbow = new ModeSetting.Value(this.colorMode, "modules.settings.hitbox.color_mode.rainbow");
-
-    private final ColorSetting solidColor = new ColorSetting(this, "modules.settings.hitbox.solid_color", () -> !this.colorMode.is(this.colorSolid)).color(Colors.ACCENT);
-    private final ColorSetting gradientColorA = new ColorSetting(this, "modules.settings.hitbox.gradient_color_a", () -> !this.colorMode.is(this.colorGradient)).color(Colors.ACCENT);
-    private final ColorSetting gradientColorB = new ColorSetting(this, "modules.settings.hitbox.gradient_color_b", () -> !this.colorMode.is(this.colorGradient)).color(Colors.WHITE);
-    private final SliderSetting rainbowSpeed = new SliderSetting(this, "modules.settings.hitbox.rainbow_speed", () -> !this.colorMode.is(this.colorRainbow))
-        .min(0.1F).max(5.0F).step(0.1F).currentValue(1.0F).suffix("x");
-
-    // ===== Обводка =====
-    private final BooleanSetting outline = new BooleanSetting(this, "modules.settings.hitbox.outline").enabled(true);
-    private final SliderSetting outlineWidth = new SliderSetting(this, "modules.settings.hitbox.outline_width", () -> !this.outline.isEnabled())
+    // ===== Box 1: Обводка =====
+    private final naryn.sun.systems.setting.settings.GroupSetting outlineGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.hitbox.group.outline");
+    private final BooleanSetting outline = new BooleanSetting(this.outlineGroup, "modules.settings.hitbox.outline").enabled(true);
+    private final BooleanSetting cornersOnly = new BooleanSetting(this.outlineGroup, "modules.settings.hitbox.corners_only", () -> !this.outline.isEnabled() || this.outlineWidth.getCurrentValue() <= 0.0F).enabled(false);
+    private final SliderSetting outlineWidth = new SliderSetting(this.outlineGroup, "modules.settings.hitbox.outline_width", () -> !this.outline.isEnabled())
         .min(0.0F).max(100.0F).step(1.0F).currentValue(50.0F);
-    private final BooleanSetting cornersOnly = new BooleanSetting(this, "modules.settings.hitbox.corners_only", () -> !this.outline.isEnabled() || this.outlineWidth.getCurrentValue() <= 0.0F).enabled(false);
-    private final SliderSetting cornerSize = new SliderSetting(this, "modules.settings.hitbox.corner_size", () -> !this.outline.isEnabled() || this.outlineWidth.getCurrentValue() <= 0.0F || !this.cornersOnly.isEnabled())
+    private final SliderSetting cornerSize = new SliderSetting(this.outlineGroup, "modules.settings.hitbox.corner_size", () -> !this.outline.isEnabled() || this.outlineWidth.getCurrentValue() <= 0.0F || !this.cornersOnly.isEnabled())
         .min(0.05F).max(0.5F).step(0.01F).currentValue(0.2F);
 
-    // ===== Заливка =====
-    private final BooleanSetting fill = new BooleanSetting(this, "modules.settings.hitbox.fill").enabled(false);
-    private final SliderSetting fillOpacity = new SliderSetting(this, "modules.settings.hitbox.fill_opacity", () -> !this.fill.isEnabled())
-        .min(0.0F).max(100.0F).step(5.0F).currentValue(50.0F).suffix("%");
-    private final ModeSetting fillStyle = new ModeSetting(this, "modules.settings.hitbox.fill_style", () -> !this.fill.isEnabled());
+    // ===== Box 2: Заливка =====
+    private final naryn.sun.systems.setting.settings.GroupSetting fillGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.hitbox.group.fill");
+    private final BooleanSetting fill = new BooleanSetting(this.fillGroup, "modules.settings.hitbox.fill").enabled(false);
+    private final ModeSetting fillStyle = new ModeSetting(this.fillGroup, "modules.settings.hitbox.fill_style", () -> !this.fill.isEnabled());
     private final ModeSetting.Value fillStatic = new ModeSetting.Value(this.fillStyle, "modules.settings.hitbox.fill_style.static").select();
     private final ModeSetting.Value fillAnimated = new ModeSetting.Value(this.fillStyle, "modules.settings.hitbox.fill_style.animated");
-    private final ModeSetting fillEffect = new ModeSetting(this, "modules.settings.hitbox.fill_effect", () -> !this.fill.isEnabled() || !this.fillStyle.is(this.fillAnimated));
+    private final ModeSetting fillEffect = new ModeSetting(this.fillGroup, "modules.settings.hitbox.fill_effect", () -> !this.fill.isEnabled() || !this.fillStyle.is(this.fillAnimated));
     private final ModeSetting.Value spaceEffectMode = new ModeSetting.Value(this.fillEffect, "modules.settings.hitbox.fill_effect.space").select();
     private final ModeSetting.Value aquaEffectMode = new ModeSetting.Value(this.fillEffect, "modules.settings.hitbox.fill_effect.aqua");
     private final ModeSetting.Value sunsetEffectMode = new ModeSetting.Value(this.fillEffect, "modules.settings.hitbox.fill_effect.sunset");
     private final ModeSetting.Value auroraEffectMode = new ModeSetting.Value(this.fillEffect, "modules.settings.hitbox.fill_effect.aurora");
+    private final SliderSetting fillOpacity = new SliderSetting(this.fillGroup, "modules.settings.hitbox.fill_opacity", () -> !this.fill.isEnabled())
+        .min(0.0F).max(100.0F).step(5.0F).currentValue(50.0F).suffix("%");
+
+    // ===== Box 3: Цвета (в самом низу) =====
+    private final naryn.sun.systems.setting.settings.GroupSetting colorGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.hitbox.group.color");
+    private final ModeSetting colorMode = new ModeSetting(this.colorGroup, "modules.settings.hitbox.color_mode");
+    private final ModeSetting.Value colorSolid = new ModeSetting.Value(this.colorMode, "modules.settings.hitbox.color_mode.solid").select();
+    private final ModeSetting.Value colorGradient = new ModeSetting.Value(this.colorMode, "modules.settings.hitbox.color_mode.gradient");
+    private final ModeSetting.Value colorRainbow = new ModeSetting.Value(this.colorMode, "modules.settings.hitbox.color_mode.rainbow");
+    private final SliderSetting rainbowSpeed = new SliderSetting(this.colorGroup, "modules.settings.hitbox.rainbow_speed", () -> !this.colorMode.is(this.colorRainbow))
+        .min(0.1F).max(5.0F).step(0.1F).currentValue(1.0F).suffix("x");
+    private final ColorSetting solidColor = new ColorSetting(this.colorGroup, "modules.settings.hitbox.solid_color", () -> !this.colorMode.is(this.colorSolid)).color(Colors.ACCENT);
+    private final ColorSetting gradientColorA = new ColorSetting(this.colorGroup, "modules.settings.hitbox.gradient_color_a", () -> !this.colorMode.is(this.colorGradient)).color(Colors.ACCENT);
+    private final ColorSetting gradientColorB = new ColorSetting(this.colorGroup, "modules.settings.hitbox.gradient_color_b", () -> !this.colorMode.is(this.colorGradient)).color(Colors.WHITE);
 
     private final SpaceEffect spaceEffect = new SpaceEffect();
     private final AquaEffect aquaEffect = new AquaEffect();

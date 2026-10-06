@@ -3,7 +3,7 @@ package naryn.sun.systems.modules.modules.visuals.targetesp;
 import com.mojang.blaze3d.systems.RenderSystem;
 import naryn.sun.utility.colors.ColorRGBA;
 import naryn.sun.utility.interfaces.IMinecraft;
-import naryn.sun.utility.math.pool.MathPool;
+import naryn.sun.utility.math.MathPool;
 import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
@@ -45,30 +45,25 @@ public final class TargetSpheresRenderer implements IMinecraft {
         Vec3d camPos = camera.getPos();
         float tickTime = (System.currentTimeMillis() % 1000000L) / 50.0F;
 
-        Vector3f right = MathPool.vec3(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
-        Vector3f up = MathPool.vec3(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f right = MathPool.vec3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f up = MathPool.vec3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
 
         RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
-        try {
-            for (int i = 0; i < 3; i++) {
-                float phase = (float) (i * 2.0 * Math.PI / 3.0);
-                double angle = Math.toRadians(tickTime * rotSpeed) + phase;
-                double ox = Math.cos(angle) * orbitRad;
-                double oz = Math.sin(angle) * orbitRad;
-                double bob = Math.sin(Math.toRadians(tickTime * bobSpeed) + phase) * bobHeight;
-                Vec3d pos = new Vec3d(cx + ox, cy + bob, cz + oz);
+        for (int i = 0; i < 3; i++) {
+            float phase = (float) (i * 2.0 * Math.PI / 3.0);
+            double angle = Math.toRadians(tickTime * rotSpeed) + phase;
+            double ox = Math.cos(angle) * orbitRad;
+            double oz = Math.sin(angle) * orbitRad;
+            double bob = Math.sin(Math.toRadians(tickTime * bobSpeed) + phase) * bobHeight;
+            Vec3d pos = new Vec3d(cx + ox, cy + bob, cz + oz);
 
-                trails[i].add(0, pos);
-                if (trails[i].size() > trailLength) {
-                    trails[i].remove(trails[i].size() - 1);
-                }
-                renderTrail(ms, camPos, trails[i], sphereColor, animVal);
-                renderGlowSphere(ms, camPos, pos, right, up, sphereColor, size, glow, animVal);
+            trails[i].add(0, pos);
+            if (trails[i].size() > trailLength) {
+                trails[i].remove(trails[i].size() - 1);
             }
-        } finally {
-            MathPool.release(right);
-            MathPool.release(up);
+            renderTrail(ms, camPos, trails[i], sphereColor, animVal);
+            renderGlowSphere(ms, camPos, pos, right, up, sphereColor, size, glow, animVal);
         }
     }
 

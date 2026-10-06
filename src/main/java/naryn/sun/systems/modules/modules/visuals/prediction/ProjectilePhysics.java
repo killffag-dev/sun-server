@@ -43,11 +43,46 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.RaycastContext.FluidHandling;
 import net.minecraft.world.RaycastContext.ShapeType;
 
 public final class ProjectilePhysics {
+
+    private static final class MutableRaycastContext extends RaycastContext {
+        private Vec3d mutableStart = Vec3d.ZERO;
+        private Vec3d mutableEnd = Vec3d.ZERO;
+
+        public MutableRaycastContext() {
+            super(Vec3d.ZERO, Vec3d.ZERO, ShapeType.COLLIDER, FluidHandling.NONE, ShapeContext.absent());
+        }
+
+        public void set(Vec3d start, Vec3d end) {
+            this.mutableStart = start;
+            this.mutableEnd = end;
+        }
+
+        @Override
+        public Vec3d getStart() {
+            return this.mutableStart;
+        }
+
+        @Override
+        public Vec3d getEnd() {
+            return this.mutableEnd;
+        }
+    }
+
+    private static final ThreadLocal<MutableRaycastContext> RAYCAST_CONTEXT =
+        ThreadLocal.withInitial(MutableRaycastContext::new);
+
+    private static final java.util.function.Predicate<Entity> ENTITY_COLLISION_FILTER = entity ->
+        entity.isAlive()
+        && !(entity instanceof ItemEntity)
+        && !(entity instanceof ExperienceOrbEntity)
+        && !(entity instanceof AreaEffectCloudEntity);
 
     private ProjectilePhysics() {
     }
@@ -140,8 +175,7 @@ public final class ProjectilePhysics {
                 }
             }
         }
-        String compStr = stack.getComponents().toString().toLowerCase();
-        return compStr.contains("multishot");
+        return false;
     }
 
     private static boolean isSupportedHandItem(ItemStack stack, AbstractClientPlayerEntity player) {
@@ -210,6 +244,7 @@ public final class ProjectilePhysics {
                     "Оседающее зелье",
                     false,
                     null,
+                    null,
                     Math.max(1.0F, cloud.getRadius())
                 ));
                 continue;
@@ -250,15 +285,15 @@ public final class ProjectilePhysics {
         Entity collidedEntity = null;
         BlockHitResult blockHitResult = null;
         int ticks = 0;
+        MutableRaycastContext raycastContext = RAYCAST_CONTEXT.get();
 
         for (int i = 0; i < 150; i++) {
             currentMotion = currentMotion.multiply(drag).add(0.0, -gravity, 0.0);
             Vec3d nextPos = currentPos.add(currentMotion);
             ticks = i + 1;
 
-            BlockHitResult bHit = MCWorldAccess.get().raycast(new RaycastContext(
-                currentPos, nextPos, ShapeType.COLLIDER, FluidHandling.NONE, sourceEntity
-            ));
+            raycastContext.set(currentPos, nextPos);
+            BlockHitResult bHit = MCWorldAccess.get().raycast(raycastContext);
 
             Entity eHit = checkEntityCollision(currentPos, nextPos, sourceEntity);
             if (eHit != null) {
@@ -278,8 +313,22 @@ public final class ProjectilePhysics {
         }
 
         if (!positions.isEmpty()) {
-            String displayName = baseName + String.format(" (%s сек)", TextUtility.formatNumber(ticks / 20.0F));
+            String displayName = baseName + " (" + TextUtility.formatNumber(ticks / 20.0F) + " сек)";
             List<StatusEffectInstance> effects = PotionUtility.effects(stack);
+            List<String> effectLabels = null;
+            if (effects != null && !effects.isEmpty()) {
+                effectLabels = new ArrayList<>(effects.size());
+                for (StatusEffectInstance effect : effects) {
+                    String effName = ((StatusEffect) effect.getEffectType().value()).getName().getString();
+                    int amp = effect.getAmplifier();
+                    String effLevel = amp > 0 ? " " + (amp + 1) : "";
+                    int seconds = effect.getDuration() / 20;
+                    int minutes = seconds / 60;
+                    int rem = seconds % 60;
+                    String effTime = minutes + (rem < 10 ? ":0" : ":") + rem;
+                    effectLabels.add(effName + effLevel + " (" + effTime + ")");
+                }
+            }
             output.add(new TrajectoryData(
                 sourceEntity,
                 positions,
@@ -290,6 +339,7 @@ public final class ProjectilePhysics {
                 displayName,
                 inHand,
                 effects,
+                effectLabels,
                 splashRadius
             ));
         }
@@ -315,22 +365,29 @@ public final class ProjectilePhysics {
     }
 
     private static Entity checkEntityCollision(Vec3d currentPos, Vec3d nextPos, Entity ignoreEntity) {
-        Vec3d direction = nextPos.subtract(currentPos);
-        if (direction.lengthSquared() == 0.0) return null;
+        double dx = nextPos.x - currentPos.x;
+        double dy = nextPos.y - currentPos.y;
+        double dz = nextPos.z - currentPos.z;
+        double distSq = dx * dx + dy * dy + dz * dz;
+        if (distSq == 0.0) return null;
 
-        Box box = new Box(currentPos, nextPos).expand(0.5);
+        double minX = Math.min(currentPos.x, nextPos.x) - 0.5;
+        double minY = Math.min(currentPos.y, nextPos.y) - 0.5;
+        double minZ = Math.min(currentPos.z, nextPos.z) - 0.5;
+        double maxX = Math.max(currentPos.x, nextPos.x) + 0.5;
+        double maxY = Math.max(currentPos.y, nextPos.y) + 0.5;
+        double maxZ = Math.max(currentPos.z, nextPos.z) + 0.5;
+        Box box = new Box(minX, minY, minZ, maxX, maxY, maxZ);
+
+        Entity player = MCPlayerAccess.get();
+        Entity shooter = ignoreEntity != null ? ignoreEntity : player;
         EntityHitResult hitResult = ProjectileUtil.raycast(
-            ignoreEntity != null ? ignoreEntity : MCPlayerAccess.get(),
+            shooter,
             currentPos,
             nextPos,
             box,
-            entity -> entity.isAlive()
-                && !(entity instanceof ItemEntity)
-                && !(entity instanceof ExperienceOrbEntity)
-                && !(entity instanceof AreaEffectCloudEntity)
-                && entity != ignoreEntity
-                && entity != MCPlayerAccess.get(),
-            direction.lengthSquared()
+            entity -> ENTITY_COLLISION_FILTER.test(entity) && entity != ignoreEntity && entity != player,
+            distSq
         );
         return hitResult != null ? hitResult.getEntity() : null;
     }

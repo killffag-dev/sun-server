@@ -25,7 +25,7 @@ public abstract class KeyboardInputMixin {
       boolean jumping = accessor.getInput().jump();
       boolean sneaking = accessor.getInput().sneak();
       boolean sprint = accessor.getInput().sprint();
-      InputEvent event = new InputEvent(movementForward, movementSideways, jumping, sneaking, sprint);
+      InputEvent event = InputEvent.INSTANCE.set(movementForward, movementSideways, jumping, sneaking, sprint);
       Sun.getInstance().getEventManager().triggerEvent(event);
       accessor.setMovementForward(event.getForward());
       accessor.setMovementSideways(event.getStrafe());
@@ -33,7 +33,14 @@ public abstract class KeyboardInputMixin {
       boolean backwardKey = event.getForward() < 0.0F;
       boolean leftKey = event.getStrafe() > 0.0F;
       boolean rightKey = event.getStrafe() < 0.0F;
-      accessor.setInput(new PlayerInput(forwardKey, backwardKey, leftKey, rightKey, event.isJump(), event.isSneak(),
-            event.isSprint()));
+      boolean jmp = event.isJump();
+      boolean snk = event.isSneak();
+      boolean spr = event.isSprint();
+
+      if (forwardKey != keys.forward() || backwardKey != keys.backward()
+            || leftKey != keys.left() || rightKey != keys.right()
+            || jmp != keys.jump() || snk != keys.sneak() || spr != keys.sprint()) {
+         accessor.setInput(new PlayerInput(forwardKey, backwardKey, leftKey, rightKey, jmp, snk, spr));
+      }
    }
 }

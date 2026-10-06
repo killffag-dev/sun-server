@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -15,6 +16,7 @@ import naryn.sun.utility.game.MessageUtility;
 import net.minecraft.text.Text;
 
 public class ConfigManager {
+   private static final String ACTIVE_CONFIG_FILENAME = "active_config.txt";
    private final List<ConfigFile> configFiles = new ArrayList<>();
    private ConfigFile current;
    private boolean initialized = false;
@@ -25,11 +27,53 @@ public class ConfigManager {
          this.initialized = true;
       }
 
-      ConfigFile autosave = this.getConfig("autosave", false);
-      if (autosave == null) {
-         this.createConfig("autosave");
+      String savedActive = this.getActiveConfigName();
+      ConfigFile target = null;
+      if (savedActive != null && !savedActive.isBlank() && !savedActive.equalsIgnoreCase("autosave")) {
+         target = this.getConfig(savedActive, false);
+      }
+
+      if (target != null) {
+         this.current = target;
+         target.load();
+         this.current = target;
+         Sun.LOGGER.info("Restored active config: {}", target.getFileName());
       } else {
-         autosave.load();
+         ConfigFile autosave = this.getConfig("autosave", false);
+         if (autosave == null) {
+            autosave = this.createConfig("autosave");
+         } else {
+            autosave.load();
+         }
+         this.current = null;
+      }
+   }
+
+   public String getActiveConfigName() {
+      try {
+         File configFile = new File(FileManager.DIRECTORY, ACTIVE_CONFIG_FILENAME);
+         if (configFile.exists()) {
+            String name = Files.readString(configFile.toPath()).trim();
+            if (!name.isEmpty()) {
+               return name;
+            }
+         }
+      } catch (Exception e) {
+         Sun.LOGGER.warn("Failed to read active config file: {}", e.getMessage());
+      }
+      return null;
+   }
+
+   public void saveActiveConfigName(String name) {
+      try {
+         if (!FileManager.DIRECTORY.exists()) {
+            FileManager.DIRECTORY.mkdirs();
+         }
+         File configFile = new File(FileManager.DIRECTORY, ACTIVE_CONFIG_FILENAME);
+         Files.writeString(configFile.toPath(), name != null ? name : "autosave",
+            StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+      } catch (Exception e) {
+         Sun.LOGGER.error("Failed to write active config file: {}", e.getMessage());
       }
    }
 
@@ -101,6 +145,14 @@ public class ConfigManager {
                .filter(c -> c.getFileName().equalsIgnoreCase(this.current.getFileName()))
                .findFirst()
                .orElse(this.current);
+      } else {
+         String saved = this.getActiveConfigName();
+         if (saved != null && !saved.isBlank() && !saved.equalsIgnoreCase("autosave")) {
+            this.configFiles.stream()
+                  .filter(c -> c.getFileName().equalsIgnoreCase(saved))
+                  .findFirst()
+                  .ifPresent(c -> this.current = c);
+         }
       }
    }
 
@@ -149,5 +201,9 @@ public class ConfigManager {
    @Generated
    public void setCurrent(ConfigFile current) {
       this.current = current;
+      String name = (current != null && !current.getFileName().equalsIgnoreCase("autosave"))
+         ? current.getFileName()
+         : "autosave";
+      this.saveActiveConfigName(name);
    }
 }

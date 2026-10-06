@@ -245,22 +245,21 @@ public final class PerformanceReportGenerator implements IMinecraft {
             List<ModuleSnapshot> activeModules = new ArrayList<>();
             try {
                 if (Sun.getInstance().getModuleManager() != null) {
-                    for (naryn.sun.systems.modules.Module module : Sun.getInstance().getModuleManager().getModules()) {
-                        if (module.isEnabled()) {
-                            Map<String, String> settingsMap = new LinkedHashMap<>();
-                            for (Setting setting : module.getSettings()) {
-                                try {
-                                    String val = setting.save().isJsonPrimitive() ? setting.save().getAsString() : setting.save().toString();
-                                    settingsMap.put(setting.getName(), val);
-                                } catch (Throwable ignored) {
-                                }
+                    for (naryn.sun.systems.modules.Module module : Sun.getInstance().getModuleManager().getActiveModules()) {
+                        Map<String, String> settingsMap = new LinkedHashMap<>();
+                        for (Setting setting : module.getSettings()) {
+                            try {
+                                com.google.gson.JsonElement saved = setting.save();
+                                String val = saved != null ? (saved.isJsonPrimitive() ? saved.getAsString() : saved.toString()) : "";
+                                settingsMap.put(setting.getName(), val);
+                            } catch (Throwable ignored) {
                             }
-                            activeModules.add(new ModuleSnapshot(
-                                    module.getName(),
-                                    module.getCategory() != null ? module.getCategory().name() : "OTHER",
-                                    settingsMap
-                            ));
                         }
+                        activeModules.add(new ModuleSnapshot(
+                                module.getName(),
+                                module.getCategory() != null ? module.getCategory().name() : "OTHER",
+                                settingsMap
+                        ));
                     }
                 }
             } catch (Throwable ignored) {

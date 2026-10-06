@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import naryn.sun.Sun;
-import naryn.sun.systems.modules.modules.utility.NameProtect;
+import naryn.sun.systems.modules.modules.visuals.NameUtility;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.texture.AbstractTexture;
@@ -75,11 +75,7 @@ public final class MsdfFont {
       int prevChar = -1;
       float width = 0.0F;
       boolean skipNext = false;
-      NameProtect nameProtectModule = Sun.getInstance().getModuleManager().getModule(NameProtect.class);
-      if (nameProtectModule != null && nameProtectModule.isEnabled()) {
-         text = nameProtectModule.patchName(text);
-      }
-      naryn.sun.systems.modules.modules.visuals.NameUtility nameUtility = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.visuals.NameUtility.class);
+      NameUtility nameUtility = Sun.getInstance().getModuleManager().getModule(NameUtility.class);
       if (nameUtility != null && nameUtility.isEnabled() && nameUtility.getHideNick().isEnabled()) {
          text = nameUtility.patchName(text);
       }
@@ -114,18 +110,13 @@ public final class MsdfFont {
 
    public float getWidth(String text, float size) {
       text = text.replace("і", "i").replace("І", "I");
-      NameProtect nameProtectModule = Sun.getInstance().getModuleManager().getModule(NameProtect.class);
-      boolean np = nameProtectModule != null && nameProtectModule.isEnabled();
-      if (np) {
-         text = nameProtectModule.patchName(text);
-      }
-      naryn.sun.systems.modules.modules.visuals.NameUtility nameUtility = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.visuals.NameUtility.class);
+      NameUtility nameUtility = Sun.getInstance().getModuleManager().getModule(NameUtility.class);
       boolean nu = nameUtility != null && nameUtility.isEnabled() && nameUtility.getHideNick().isEnabled();
       if (nu) {
          text = nameUtility.patchName(text);
       }
 
-      long key = widthKey(text, size, np || nu);
+      long key = widthKey(text, size, nu);
       Float cached = this.widthCache.get(key);
       if (cached != null) {
          return cached;

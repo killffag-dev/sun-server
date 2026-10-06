@@ -18,13 +18,13 @@ import net.minecraft.item.PickaxeItem;
 
 @ModuleInfo(name = "Mine Helper", category = ModuleCategory.UTILITY, desc = "modules.descriptions.mine_helper")
 public class MineHelper extends BaseModule {
+   private final BooleanSetting autoReplace = new BooleanSetting(this, this.getSettingName("auto_replace"));
    private final SliderSetting percent = new SliderSetting(this, this.getSettingName("percent"))
       .step(1.0F)
       .min(1.0F)
       .max(70.0F)
       .currentValue(10.0F)
       .suffix("%");
-   private final BooleanSetting autoReplace = new BooleanSetting(this, this.getSettingName("auto_replace"));
 
    private final Timer timer = new Timer();
 

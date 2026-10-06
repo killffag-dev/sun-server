@@ -52,8 +52,13 @@ public class ClientDataFile extends ClientFile implements IMinecraft {
       json.add("palette", naryn.sun.systems.theme.PaletteConfig.getInstance().toJson());
       json.add("background", naryn.sun.ui.menu.background.MenuBackgroundConfig.getInstance().toJson());
       ConfigFile currentConfig = Sun.getInstance().getConfigManager().getCurrent();
-      if (currentConfig != null) {
+      if (currentConfig != null && !currentConfig.getFileName().equalsIgnoreCase("autosave")) {
          json.addProperty("lastConfig", currentConfig.getFileName());
+      } else {
+         String activeName = Sun.getInstance().getConfigManager().getActiveConfigName();
+         if (activeName != null && !activeName.isBlank() && !activeName.equalsIgnoreCase("autosave")) {
+            json.addProperty("lastConfig", activeName);
+         }
       }
 
       try (FileWriter writer = new FileWriter(this.file)) {
@@ -126,7 +131,7 @@ public class ClientDataFile extends ClientFile implements IMinecraft {
             try {
                ClientAppearance.setMode(ClientAppearance.Mode.valueOf(object.get("appearanceMode").getAsString()));
             } catch (IllegalArgumentException ignored) {
-               ClientAppearance.setMode(ClientAppearance.Mode.FACET_DARK);
+               ClientAppearance.setMode(ClientAppearance.Mode.FACET_FROST);
             }
          }
 
@@ -208,9 +213,12 @@ public class ClientDataFile extends ClientFile implements IMinecraft {
 
          if (object.has("lastConfig")) {
             String configName = object.get("lastConfig").getAsString();
-            ConfigFile config = Sun.getInstance().getConfigManager().getConfig(configName);
-            if (config != null) {
-               config.load();
+            ConfigFile current = Sun.getInstance().getConfigManager().getCurrent();
+            if (current == null || !current.getFileName().equalsIgnoreCase(configName)) {
+               ConfigFile config = Sun.getInstance().getConfigManager().getConfig(configName);
+               if (config != null) {
+                  config.load();
+               }
             }
          }
       } catch (Exception var18) {

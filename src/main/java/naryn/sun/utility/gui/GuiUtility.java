@@ -18,7 +18,11 @@ import naryn.sun.systems.setting.settings.CommandBindEntrySetting;
 import naryn.sun.systems.setting.settings.FriendListSetting;
 import naryn.sun.systems.setting.settings.TargetListSetting;
 import naryn.sun.systems.setting.settings.GroupSetting;
+import naryn.sun.systems.setting.settings.WaypointListSetting;
+import naryn.sun.systems.setting.settings.BlockSlotSetting;
 import naryn.sun.ui.menu.dropdown.components.settings.MenuSettingComponent;
+import naryn.sun.ui.menu.dropdown.components.settings.impl.WaypointListComponent;
+import naryn.sun.ui.menu.dropdown.components.settings.impl.BlockSlotComponent;
 import naryn.sun.ui.menu.dropdown.components.settings.impl.GroupSettingComponent;
 import naryn.sun.ui.menu.dropdown.components.settings.impl.BezierSettingComponent;
 import naryn.sun.ui.menu.dropdown.components.settings.impl.BindSettingComponent;
@@ -116,6 +120,10 @@ public final class GuiUtility {
          settingComponent = new TargetListComponent(s, parent);
       } else if (setting instanceof GroupSetting s) {
          settingComponent = new GroupSettingComponent(s, parent);
+      } else if (setting instanceof BlockSlotSetting s) {
+         settingComponent = new BlockSlotComponent(s, parent);
+      } else if (setting instanceof WaypointListSetting s) {
+         settingComponent = new WaypointListComponent(s, parent);
       }
 
       if (settingComponent != null) {

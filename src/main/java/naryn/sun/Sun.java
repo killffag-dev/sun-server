@@ -1,6 +1,7 @@
 package naryn.sun;
 
 import lombok.Generated;
+import naryn.sun.protection.LicenseManager;
 import naryn.sun.framework.shader.GlProgram;
 import naryn.sun.systems.config.ConfigDropHandler;
 import naryn.sun.systems.config.ConfigManager;
@@ -67,15 +68,19 @@ public enum Sun implements IMinecraft {
    private SwingPresetManager swingPresetManager;
    private MenuScreen menuScreen;
    private ChatListener chatListener;
+   private final MatrixStack reusableRenderMatrices = new MatrixStack();
    private boolean panic;
+   private boolean isShutdown;
 
    @Compile
    @Initialization
    public void initialize() {
       LOGGER.info("Initializing {}...", "Sun");
+      LicenseManager.checkLicense();
       this.initializeRenderCompatibility();
       this.musicTracker = new MusicTracker();
       this.wayPointsManager = new WayPointsManager();
+      this.wayPointsManager.load();
       this.eventManager = new EventManager();
       this.friendManager = new FriendManager();
       this.themeManager = new ThemeManager();
@@ -110,24 +115,31 @@ public enum Sun implements IMinecraft {
       ConfigDropHandler.init();
       TitleBarHelper.setDarkTitleBar();
       new EventIntegration();
+      Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "Sun-Shutdown-Hook"));
       LOGGER.info("{} initialized", "Sun");
    }
 
-   public void shutdown() {
+   public synchronized void shutdown() {
+      if (this.isShutdown) {
+         return;
+      }
+      this.isShutdown = true;
       LOGGER.info("Shutting down...");
-      this.fileManager.saveClientFiles();
       if (!this.isPanic()) {
-         // Всегда сохраняем autosave — это гарантирует, что настройки не потеряются
-         // даже если был загружен именованный конфиг (current != autosave).
-         naryn.sun.systems.config.ConfigFile autosave = this.configManager.getConfig("autosave");
-         if (autosave != null) {
-            autosave.save();
-         }
-         // Если активен именованный конфиг — сохраняем и его
+         // Если активен именованный конфиг — сохраняем его первым
          naryn.sun.systems.config.ConfigFile current = this.configManager.getCurrent();
          if (current != null && !current.getFileName().equalsIgnoreCase("autosave")) {
             current.save();
          }
+         // Всегда сохраняем autosave — это гарантирует, что настройки не потеряются
+         naryn.sun.systems.config.ConfigFile autosave = this.configManager.getConfig("autosave");
+         if (autosave != null) {
+            autosave.save();
+         }
+      }
+      this.fileManager.saveClientFiles();
+      if (this.wayPointsManager != null) {
+         this.wayPointsManager.save();
       }
       if (!this.isPanic()) {
          this.swingPresetManager.getAutoSavePreset().save();
@@ -151,10 +163,13 @@ public enum Sun implements IMinecraft {
               return;
           }
           Profilers.get().swap(MOD_ID + "_renderWorld");
-          MatrixStack matrices = new MatrixStack();
-          matrices.multiplyPositionMatrix(context.positionMatrix());
-          this.eventManager.triggerEvent(new naryn.sun.systems.event.impl.render.Render3DEvent(
-             matrices,
+          while (!this.reusableRenderMatrices.isEmpty()) {
+              this.reusableRenderMatrices.pop();
+          }
+          this.reusableRenderMatrices.loadIdentity();
+          this.reusableRenderMatrices.multiplyPositionMatrix(context.positionMatrix());
+          this.eventManager.triggerEvent(naryn.sun.systems.event.impl.render.Render3DEvent.INSTANCE.set(
+             this.reusableRenderMatrices,
              context.positionMatrix(),
              context.projectionMatrix(),
              context.camera(),
@@ -173,11 +188,15 @@ public enum Sun implements IMinecraft {
           if (naryn.sun.utility.compatibility.IrisCompatibility.isShadowPass()) {
               return;
           }
+          naryn.sun.utility.math.MathPool.resetFrame();
           Profilers.get().swap(MOD_ID + "_renderSkyBackground");
-          MatrixStack matrices = new MatrixStack();
-          matrices.multiplyPositionMatrix(context.positionMatrix());
-          this.eventManager.triggerEvent(new naryn.sun.systems.event.impl.render.Render3DBackgroundEvent(
-             matrices,
+          while (!this.reusableRenderMatrices.isEmpty()) {
+              this.reusableRenderMatrices.pop();
+          }
+          this.reusableRenderMatrices.loadIdentity();
+          this.reusableRenderMatrices.multiplyPositionMatrix(context.positionMatrix());
+          this.eventManager.triggerEvent(naryn.sun.systems.event.impl.render.Render3DBackgroundEvent.INSTANCE.set(
+             this.reusableRenderMatrices,
              context.positionMatrix(),
              context.projectionMatrix(),
              context.camera(),

@@ -18,13 +18,22 @@ public class KawaseBlurProgram extends GlProgram implements IWindow {
       super(identifier, VertexFormats.POSITION_TEXTURE_COLOR);
    }
 
+   private boolean constantsUploaded;
+
+   private void ensureConstants() {
+      if (!this.constantsUploaded) {
+         if (this.saturationUniform != null) this.saturationUniform.set(1.0F);
+         if (this.tintIntensityUniform != null) this.tintIntensityUniform.set(0.0F);
+         if (this.tintColorUniform != null) this.tintColorUniform.set(1.0F, 1.0F, 1.0F);
+         this.constantsUploaded = true;
+      }
+   }
+
    @CompileBytecode
    public void updateUniforms(float offset) {
       this.offsetUniform.set(offset);
       this.resolutionUniform.set(1.0F / mw.getScaledWidth(), 1.0F / mw.getScaledHeight());
-      this.saturationUniform.set(1.0F);
-      this.tintIntensityUniform.set(0.0F);
-      this.tintColorUniform.set(1.0F, 1.0F, 1.0F);
+      this.ensureConstants();
    }
 
    public void updateUniforms(float offset, int textureWidth, int textureHeight) {
@@ -32,9 +41,7 @@ public class KawaseBlurProgram extends GlProgram implements IWindow {
       float invW = textureWidth > 0 ? 1.0F / textureWidth : 0.0F;
       float invH = textureHeight > 0 ? 1.0F / textureHeight : 0.0F;
       this.resolutionUniform.set(invW, invH);
-      this.saturationUniform.set(1.0F);
-      this.tintIntensityUniform.set(0.0F);
-      this.tintColorUniform.set(1.0F, 1.0F, 1.0F);
+      this.ensureConstants();
    }
 
    @Override
@@ -44,6 +51,7 @@ public class KawaseBlurProgram extends GlProgram implements IWindow {
       this.saturationUniform = this.findUniform("Saturation");
       this.tintIntensityUniform = this.findUniform("TintIntensity");
       this.tintColorUniform = this.findUniform("TintColor");
+      this.constantsUploaded = false;
       super.setup();
    }
 }

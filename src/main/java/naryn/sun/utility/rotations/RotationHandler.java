@@ -15,7 +15,7 @@ public class RotationHandler implements IMinecraft {
    private Rotation currentRotation = Rotation.ZERO;
    private final Rotation serverRotation = Rotation.ZERO;
    private Rotation prevRotation = Rotation.ZERO;
-   private Rotation renderRotation = Rotation.ZERO;
+   private final Rotation renderRotation = new Rotation(0.0F, 0.0F);
    private RotationState state = RotationState.IDLE;
    @Nullable
    private RotationTask currentTask;
@@ -23,7 +23,6 @@ public class RotationHandler implements IMinecraft {
 
    public RotationHandler(RotationUpdateListener rotationUpdateListener) {
       this.rotationUpdateListener = rotationUpdateListener;
-      Sun.getInstance().getEventManager().subscribe(this);
    }
 
    public boolean isIdling() {
@@ -68,9 +67,7 @@ public class RotationHandler implements IMinecraft {
             pitch = 0.0F;
          }
 
-         this.renderRotation = new Rotation(yaw, pitch);
-         if (Sun.getInstance().getTargetManager().getCurrentTarget() != null) {
-         }
+         this.renderRotation.set(yaw, pitch);
       }
    }
 
@@ -173,7 +170,9 @@ public class RotationHandler implements IMinecraft {
 
    @Generated
    public void setRenderRotation(Rotation renderRotation) {
-      this.renderRotation = renderRotation;
+      if (renderRotation != null) {
+         this.renderRotation.set(renderRotation.getYaw(), renderRotation.getPitch());
+      }
    }
 
    @Generated

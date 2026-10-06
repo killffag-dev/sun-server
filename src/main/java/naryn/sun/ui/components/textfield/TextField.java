@@ -570,6 +570,19 @@ public class TextField extends CustomComponent implements IMinecraft {
       this.focused = focused;
    }
 
+   public int getCursor() {
+      return this.cursor;
+   }
+
+   public int getTextLength() {
+      return this.texts.size();
+   }
+
+   public void setCursor(int cursor) {
+      this.cursor = MathHelper.clamp(cursor, 0, this.texts.size());
+      this.typingTimer.reset();
+   }
+
    @Generated
    public String getPreview() {
       return this.preview;

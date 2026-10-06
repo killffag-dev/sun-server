@@ -67,10 +67,19 @@ public class ItemEntityRendererMixin {
             return;
         }
         // 2D: фиксированный поворот на 90° по X
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(90.0F));
+        matrices.multiply(ROT_90_X);
     }
 
+    @org.spongepowered.asm.mixin.Unique
+    private static final Quaternionf ROT_90_X = RotationAxis.POSITIVE_X.rotationDegrees(90.0F);
+
+    @org.spongepowered.asm.mixin.Unique
+    private static ItemPhysics sun$itemPhysics;
+
     private static ItemPhysics getItemPhysics() {
-        return Sun.getInstance().getModuleManager().getModule(ItemPhysics.class);
+        if (sun$itemPhysics == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+            sun$itemPhysics = Sun.getInstance().getModuleManager().getModule(ItemPhysics.class);
+        }
+        return sun$itemPhysics;
     }
 }

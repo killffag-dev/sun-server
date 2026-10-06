@@ -11,9 +11,26 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class SoundSystemMixinProtection {
    private static final String SUN_NAMESPACE = "sun";
 
+   private static AntiOverlay sun$antiOverlay;
+   private static naryn.sun.systems.modules.modules.utility.HitSound sun$hitSound;
+
+   private static AntiOverlay sun$getAntiOverlay() {
+      if (sun$antiOverlay == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$antiOverlay = Sun.getInstance().getModuleManager().getModule(AntiOverlay.class);
+      }
+      return sun$antiOverlay;
+   }
+
+   private static naryn.sun.systems.modules.modules.utility.HitSound sun$getHitSound() {
+      if (sun$hitSound == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$hitSound = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.utility.HitSound.class);
+      }
+      return sun$hitSound;
+   }
+
    public static void playSound(SoundInstance sound, CallbackInfo ci) {
       if (sound != null && sound.getId() != null) {
-         AntiOverlay antiOverlay = Sun.getInstance().getModuleManager().getModule(AntiOverlay.class);
+         AntiOverlay antiOverlay = sun$getAntiOverlay();
          if (antiOverlay != null && antiOverlay.isEnabled()) {
             String path = sound.getId().getPath();
 
@@ -60,7 +77,7 @@ public class SoundSystemMixinProtection {
          }
       }
 
-      naryn.sun.systems.modules.modules.utility.HitSound hitSound = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.utility.HitSound.class);
+      naryn.sun.systems.modules.modules.utility.HitSound hitSound = sun$getHitSound();
       if (hitSound != null && hitSound.isEnabled() && sound != null && sound.getId() != null) {
          boolean isOwnSound = sound.getId().getNamespace().equals(SUN_NAMESPACE);
 
@@ -90,7 +107,7 @@ public class SoundSystemMixinProtection {
          }
       }
 
-      Sun.getInstance().getEventManager().triggerEvent(new SoundEvent(sound));
+      Sun.getInstance().getEventManager().triggerEvent(SoundEvent.INSTANCE.set(sound));
    }
 
    private static void applyVolume(SoundInstance sound, float volumePercent, CallbackInfo ci) {

@@ -16,7 +16,12 @@ public class KeyboardMixin implements IMinecraft {
    @Inject(method = "onKey", at = @At("HEAD"), cancellable = true)
    public void triggerKeyEvent(long window, int key, int scancode, int action, int modifiers, CallbackInfo ci) {
       if (key != -1) {
-         Sun.getInstance().getEventManager().triggerEvent(new KeyPressEvent(action, key));
+         KeyPressEvent event = new KeyPressEvent(action, key);
+         Sun.getInstance().getEventManager().triggerEvent(event);
+         if (event.isCancelled()) {
+            ci.cancel();
+            return;
+         }
 
          // Пока активен режим свободного курсора (Ctrl+Shift, только во время
          // проигрывания музыки — см. MusicModule) — повторный ESC просто

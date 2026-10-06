@@ -27,6 +27,12 @@ public final class TextureDrawUtility {
       RenderSystem.texParameter(3553, 10240, 9729);
    }
 
+   public static void bindTextureNearest(Identifier identifier) {
+      RenderSystem.setShaderTexture(0, identifier);
+      RenderSystem.texParameter(3553, 10241, 9728);
+      RenderSystem.texParameter(3553, 10240, 9728);
+   }
+
    public static void drawTexture(MatrixStack matrices, Identifier identifier, float x, float y, float width, float height, ColorRGBA textureColor) {
       if (Batching.getActive() instanceof IconBatching batching) {
          BufferBuilder builder = batching.getBuilder();
@@ -101,7 +107,7 @@ public final class TextureDrawUtility {
    public static void drawSprite(MatrixStack matrices, CustomSprite sprite, float x, float y, float width, float height, ColorRGBA color) {
       drawTexture(
          matrices,
-         Sun.id(sprite.getTexture().getTexture()),
+         sprite.getTexture().getIdentifier(),
          x,
          y,
          width,
@@ -138,28 +144,70 @@ public final class TextureDrawUtility {
       float u2,
       float v2
    ) {
+      drawRoundedTextureWithUV(matrices, identifier, x, y, width, height, borderRadius, color, u1, v1, u2, v2, false);
+   }
+
+   public static void drawRoundedTextureWithUV(
+      MatrixStack matrices,
+      Identifier identifier,
+      float x,
+      float y,
+      float width,
+      float height,
+      BorderRadius borderRadius,
+      ColorRGBA color,
+      float u1,
+      float v1,
+      float u2,
+      float v2,
+      boolean nearest
+   ) {
       matrices.push();
       Matrix4f matrix4f = matrices.peek().getPositionMatrix();
       float smoothness = 0.5F;
       DrawUtility.roundedTextureProgram.use();
-      bindTexture(identifier);
+      if (nearest) {
+         bindTextureNearest(identifier);
+      } else {
+         bindTexture(identifier);
+      }
       DrawUtility.roundedTextureProgram.findUniform("Size").set(width, height);
       DrawUtility.roundedTextureProgram.findUniform("Radius")
          .set(borderRadius.topLeftRadius(), borderRadius.bottomLeftRadius(), borderRadius.topRightRadius(), borderRadius.bottomRightRadius());
       DrawUtility.roundedTextureProgram.findUniform("Smoothness").set(smoothness);
       DrawUtility.drawSetup();
-      emitTexturedQuad(matrix4f, x, y, width, height, smoothness, color.getRGB(), u1, v1, u2, v2);
+      if (nearest) {
+         emitExactTexturedQuad(matrix4f, x, y, width, height, color.getRGB(), u1, v1, u2, v2);
+      } else {
+         emitTexturedQuad(matrix4f, x, y, width, height, smoothness, color.getRGB(), u1, v1, u2, v2);
+      }
       DrawUtility.drawEnd();
       RenderSystem.setShaderTexture(0, 0);
       matrices.pop();
    }
 
+   private static void emitExactTexturedQuad(
+      Matrix4f matrix, float x, float y, float width, float height, int color,
+      float u1, float v1, float u2, float v2
+   ) {
+      BufferBuilder builder = RenderSystem.renderThreadTesselator().begin(DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+      builder.vertex(matrix, x, y, 0.0F).texture(u1, v1).color(color);
+      builder.vertex(matrix, x, y + height, 0.0F).texture(u1, v2).color(color);
+      builder.vertex(matrix, x + width, y + height, 0.0F).texture(u2, v2).color(color);
+      builder.vertex(matrix, x + width, y, 0.0F).texture(u2, v1).color(color);
+      BufferRenderer.drawWithGlobalProgram(builder.end());
+   }
+
    public static void drawImage(MatrixStack matrices, BufferBuilder builder, double x, double y, double z, double width, double height, ColorRGBA color) {
+      drawImage(matrices, builder, x, y, z, width, height, color.getRGB());
+   }
+
+   public static void drawImage(MatrixStack matrices, BufferBuilder builder, double x, double y, double z, double width, double height, int colorRGB) {
       Matrix4f matrix = matrices.peek().getPositionMatrix();
-      builder.vertex(matrix, (float) x, (float) (y + height), (float) z).texture(0.0F, 1.0F).color(color.getRGB());
-      builder.vertex(matrix, (float) (x + width), (float) (y + height), (float) z).texture(1.0F, 1.0F).color(color.getRGB());
-      builder.vertex(matrix, (float) (x + width), (float) y, (float) z).texture(1.0F, 0.0F).color(color.getRGB());
-      builder.vertex(matrix, (float) x, (float) y, (float) z).texture(0.0F, 0.0F).color(color.getRGB());
+      builder.vertex(matrix, (float) x, (float) (y + height), (float) z).texture(0.0F, 1.0F).color(colorRGB);
+      builder.vertex(matrix, (float) (x + width), (float) (y + height), (float) z).texture(1.0F, 1.0F).color(colorRGB);
+      builder.vertex(matrix, (float) (x + width), (float) y, (float) z).texture(1.0F, 0.0F).color(colorRGB);
+      builder.vertex(matrix, (float) x, (float) y, (float) z).texture(0.0F, 0.0F).color(colorRGB);
    }
 
    public static void drawImage(MatrixStack matrices, Identifier identifier, double x, double y, double z, double width, double height, ColorRGBA color) {

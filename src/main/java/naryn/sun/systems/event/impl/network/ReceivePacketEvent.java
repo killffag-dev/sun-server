@@ -5,15 +5,26 @@ import naryn.sun.systems.event.EventCancellable;
 import net.minecraft.network.packet.Packet;
 
 public class ReceivePacketEvent extends EventCancellable {
-   private final Packet<?> packet;
+   public static final ReceivePacketEvent INSTANCE = new ReceivePacketEvent();
 
-   @Generated
-   public Packet<?> getPacket() {
-      return this.packet;
+   private Packet<?> packet;
+
+   public ReceivePacketEvent() {
    }
 
    @Generated
    public ReceivePacketEvent(Packet<?> packet) {
+      this.set(packet);
+   }
+
+   public ReceivePacketEvent set(Packet<?> packet) {
       this.packet = packet;
+      this.setCancelled(false);
+      return this;
+   }
+
+   @Generated
+   public Packet<?> getPacket() {
+      return this.packet;
    }
 }

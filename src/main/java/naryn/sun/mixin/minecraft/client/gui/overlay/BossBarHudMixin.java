@@ -1,6 +1,5 @@
 package naryn.sun.mixin.minecraft.client.gui.overlay;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -25,8 +24,17 @@ public class BossBarHudMixin implements IMinecraft {
    // (Version Adapter, Этап 3) — единая точка правки при смене маппингов.
    @Unique
    private static final Pattern PVP_TIME_PATTERN = Pattern.compile("(\\d+)\\s*[сc][еe][кk](?=$|\\s|\\p{Punct})", 66);
-   private static final String FILTERED_TEXT = "둅ꈣꈃ둄ꈣꈅ";
-   private final Map<UUID, String> lastProcessedNames = new HashMap<>();
+   @Unique private static String sun$lastBossBarText;
+   @Unique private static int sun$lastParsedCtTimer;
+   @Unique private static AntiOverlay sun$antiOverlay;
+
+   @Unique
+   private static AntiOverlay sun$getAntiOverlay() {
+      if (sun$antiOverlay == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$antiOverlay = Sun.getInstance().getModuleManager().getModule(AntiOverlay.class);
+      }
+      return sun$antiOverlay;
+   }
 
    @Inject(method = "render", at = @At("HEAD"))
    private void onRenderHead(DrawContext context, CallbackInfo ci) {
@@ -35,13 +43,22 @@ public class BossBarHudMixin implements IMinecraft {
 
       for (ClientBossBar bossBar : bossBars.values()) {
          if (bossBar.getName() != null) {
-            String name = bossBar.getName().getString().toLowerCase();
+            String rawName = bossBar.getName().getString();
+            if (rawName.equals(sun$lastBossBarText)) {
+               ctTimer = sun$lastParsedCtTimer;
+               break;
+            }
+            sun$lastBossBarText = rawName;
+            String name = rawName.toLowerCase();
             if (name.contains("бой") || name.contains("pvp")) {
-               Matcher matcher = PVP_TIME_PATTERN.matcher(bossBar.getName().getString());
+               Matcher matcher = PVP_TIME_PATTERN.matcher(rawName);
                if (matcher.find()) {
                   ctTimer = Integer.parseInt(matcher.group(1));
                }
+               sun$lastParsedCtTimer = ctTimer;
                break;
+            } else {
+               sun$lastParsedCtTimer = 0;
             }
          }
       }
@@ -52,7 +69,7 @@ public class BossBarHudMixin implements IMinecraft {
 
    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
    private void render(CallbackInfo ci) {
-      AntiOverlay antiOverlay = Sun.getInstance().getModuleManager().getModule(AntiOverlay.class);
+      AntiOverlay antiOverlay = sun$getAntiOverlay();
       if (antiOverlay != null && antiOverlay.isEnabled() && antiOverlay.getBossBar().isSelected()) {
          ci.cancel();
       }

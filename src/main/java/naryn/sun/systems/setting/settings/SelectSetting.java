@@ -55,6 +55,7 @@ public class SelectSetting extends AbstractSetting {
    public void select(SelectSetting.Value value) {
       if (!this.selectedValues.contains(value)) {
          this.selectedValues.add(value);
+         value.setSelected(true);
       }
    }
 
@@ -81,6 +82,10 @@ public class SelectSetting extends AbstractSetting {
    @Override
    public void load(JsonElement element) {
       this.selectedValues.clear();
+      for (SelectSetting.Value v : this.values) {
+         v.setSelected(false);
+      }
+
       if (element.isJsonObject()) {
          JsonObject object = element.getAsJsonObject();
          if (object.has("order")) {
@@ -105,24 +110,37 @@ public class SelectSetting extends AbstractSetting {
          if (object.has("selected")) {
             for (JsonElement selectedElement : object.getAsJsonArray("selected")) {
                String name = selectedElement.getAsString();
-               this.values.stream().filter(valuex -> valuex.getName().equalsIgnoreCase(name)).findFirst().ifPresent(this.selectedValues::add);
+               this.values.stream().filter(valuex -> valuex.getName().equalsIgnoreCase(name)).findFirst().ifPresent(v -> {
+                  this.selectedValues.add(v);
+                  v.setSelected(true);
+               });
             }
          }
       } else if (element.isJsonArray()) {
          for (JsonElement el : element.getAsJsonArray()) {
             String name = el.getAsString();
-            this.values.stream().filter(valuex -> valuex.getName().equalsIgnoreCase(name)).findFirst().ifPresent(this.selectedValues::add);
+            this.values.stream().filter(valuex -> valuex.getName().equalsIgnoreCase(name)).findFirst().ifPresent(v -> {
+               this.selectedValues.add(v);
+               v.setSelected(true);
+            });
          }
       }
 
       for (SelectSetting.Value valuex : this.values) {
          if (valuex.isAlwaysEnabled() && !this.selectedValues.contains(valuex)) {
             this.selectedValues.add(valuex);
+            valuex.setSelected(true);
          }
       }
 
       if (this.selectedValues.size() < this.min) {
-         this.values.stream().filter(v -> !this.selectedValues.contains(v)).limit(this.min - this.selectedValues.size()).forEach(this.selectedValues::add);
+         for (SelectSetting.Value v : this.values) {
+            if (this.selectedValues.size() >= this.min) break;
+            if (!this.selectedValues.contains(v)) {
+               this.selectedValues.add(v);
+               v.setSelected(true);
+            }
+         }
       }
    }
 
@@ -165,11 +183,12 @@ public class SelectSetting extends AbstractSetting {
       private final SelectSetting parent;
       private final String name;
       private final String description;
-      private final Animation hoverAnimation = new Animation(300L, Easing.FIGMA_EASE_IN_OUT);
-      private final Animation activeAnimation = new Animation(300L, Easing.FIGMA_EASE_IN_OUT);
-      private final Animation yAnim = new Animation(300L, Easing.BAKEK);
+      private Animation hoverAnimation;
+      private Animation activeAnimation;
+      private Animation yAnim;
       private float yFactor;
       private boolean alwaysEnabled;
+      private boolean selected;
       private final BooleanSupplier hideCondition;
       private PenisPlayer enablePenis;
       private PenisPlayer disablePenis;
@@ -197,8 +216,11 @@ public class SelectSetting extends AbstractSetting {
       }
 
       public SelectSetting.Value select() {
-         if (!this.parent.getSelectedValues().contains(this)) {
-            this.parent.getSelectedValues().add(this);
+         if (!this.selected) {
+            this.selected = true;
+            if (!this.parent.getSelectedValues().contains(this)) {
+               this.parent.getSelectedValues().add(this);
+            }
          }
 
          return this;
@@ -214,11 +236,13 @@ public class SelectSetting extends AbstractSetting {
          if (this.alwaysEnabled) {
             return this;
          } else {
-            if (this.parent.getSelectedValues().contains(this)) {
+            if (this.selected) {
                if (this.parent.getSelectedValues().size() > this.parent.getMin()) {
+                  this.selected = false;
                   this.parent.getSelectedValues().remove(this);
                }
             } else {
+               this.selected = true;
                this.parent.getSelectedValues().add(this);
             }
 
@@ -227,7 +251,11 @@ public class SelectSetting extends AbstractSetting {
       }
 
       public boolean isSelected() {
-         return this.parent.getSelectedValues().contains(this);
+         return this.selected;
+      }
+
+      public void setSelected(boolean selected) {
+         this.selected = selected;
       }
 
       @Override
@@ -267,18 +295,24 @@ public class SelectSetting extends AbstractSetting {
          return this.description;
       }
 
-      @Generated
       public Animation getHoverAnimation() {
+         if (this.hoverAnimation == null) {
+            this.hoverAnimation = new Animation(300L, Easing.FIGMA_EASE_IN_OUT);
+         }
          return this.hoverAnimation;
       }
 
-      @Generated
       public Animation getActiveAnimation() {
+         if (this.activeAnimation == null) {
+            this.activeAnimation = new Animation(300L, Easing.FIGMA_EASE_IN_OUT);
+         }
          return this.activeAnimation;
       }
 
-      @Generated
       public Animation getYAnim() {
+         if (this.yAnim == null) {
+            this.yAnim = new Animation(300L, Easing.BAKEK);
+         }
          return this.yAnim;
       }
 

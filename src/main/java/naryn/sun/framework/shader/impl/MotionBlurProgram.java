@@ -32,6 +32,13 @@ public class MotionBlurProgram extends GlProgram implements IMinecraft, IWindow 
    private GlUniform blurAlgorithmUniform;
    private GlUniform useDepthUniform;
 
+   private float lastWidth = -1.0F;
+   private float lastHeight = -1.0F;
+   private float lastBlendFactor = -1.0F;
+   private int lastSamples = -1;
+   private int lastAlgorithm = -1;
+   private int lastUseDepth = -1;
+
    private final Matrix4f invModelView = new Matrix4f();
    private final Matrix4f invProjection = new Matrix4f();
 
@@ -52,6 +59,12 @@ public class MotionBlurProgram extends GlProgram implements IMinecraft, IWindow 
       this.motionBlurSamplesUniform = this.findUniform("MotionBlurSamples");
       this.blurAlgorithmUniform = this.findUniform("BlurAlgorithm");
       this.useDepthUniform = this.findUniform("UseDepth");
+      this.lastWidth = -1.0F;
+      this.lastHeight = -1.0F;
+      this.lastBlendFactor = -1.0F;
+      this.lastSamples = -1;
+      this.lastAlgorithm = -1;
+      this.lastUseDepth = -1;
       super.setup();
    }
 
@@ -105,20 +118,27 @@ public class MotionBlurProgram extends GlProgram implements IMinecraft, IWindow 
       if (this.prevCameraPosUniform != null) {
          this.prevCameraPosUniform.set(prevCameraPos.x, prevCameraPos.y, prevCameraPos.z);
       }
-      if (this.viewResUniform != null) {
+      if (this.viewResUniform != null && (this.lastWidth != targetWidth || this.lastHeight != targetHeight)) {
          this.viewResUniform.set((float) targetWidth, (float) targetHeight);
+         this.lastWidth = targetWidth;
+         this.lastHeight = targetHeight;
       }
-      if (this.blendFactorUniform != null) {
+      if (this.blendFactorUniform != null && this.lastBlendFactor != blendFactor) {
          this.blendFactorUniform.set(blendFactor);
+         this.lastBlendFactor = blendFactor;
       }
-      if (this.motionBlurSamplesUniform != null) {
+      if (this.motionBlurSamplesUniform != null && this.lastSamples != samples) {
          this.motionBlurSamplesUniform.set(samples);
+         this.lastSamples = samples;
       }
-      if (this.blurAlgorithmUniform != null) {
+      if (this.blurAlgorithmUniform != null && this.lastAlgorithm != algorithmOrdinal) {
          this.blurAlgorithmUniform.set(algorithmOrdinal);
+         this.lastAlgorithm = algorithmOrdinal;
       }
-      if (this.useDepthUniform != null) {
-         this.useDepthUniform.set(useDepth ? 1 : 0);
+      int depthVal = useDepth ? 1 : 0;
+      if (this.useDepthUniform != null && this.lastUseDepth != depthVal) {
+         this.useDepthUniform.set(depthVal);
+         this.lastUseDepth = depthVal;
       }
 
       RenderSystem.disableDepthTest();

@@ -44,7 +44,12 @@ public abstract class MouseMixin implements IMinecraft {
    @Inject(method = "onMouseButton", at = @At("HEAD"), cancellable = true)
    private void onMouseButton(long window, int button, int action, int mods, CallbackInfo ci) {
       if (action == 1 || action == 0) {
-         Sun.getInstance().getEventManager().triggerEvent(new MouseEvent(button, action));
+         MouseEvent event = new MouseEvent(button, action);
+         Sun.getInstance().getEventManager().triggerEvent(event);
+         if (event.isCancelled()) {
+            ci.cancel();
+            return;
+         }
       }
 
       // Пока свободный курсор активен (Ctrl+Shift) и никакой реальный Screen не
@@ -56,12 +61,31 @@ public abstract class MouseMixin implements IMinecraft {
       }
    }
 
+   @Unique private static Zoom sun$zoom;
+   @Unique private static Freelook sun$freelook;
+
+   @Unique
+   private static Zoom sun$getZoom() {
+      if (sun$zoom == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$zoom = Sun.getInstance().getModuleManager().getModule(Zoom.class);
+      }
+      return sun$zoom;
+   }
+
+   @Unique
+   private static Freelook sun$getFreelook() {
+      if (sun$freelook == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$freelook = Sun.getInstance().getModuleManager().getModule(Freelook.class);
+      }
+      return sun$freelook;
+   }
+
    @Inject(method = "onMouseScroll", at = @At("HEAD"), cancellable = true)
    private void onMouseScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
       if (vertical != 0.0) {
          Sun.getInstance().getEventManager().triggerEvent(new MouseScrollEvent(vertical));
 
-         Zoom zoom = Sun.getInstance().getModuleManager().getModule(Zoom.class);
+         Zoom zoom = sun$getZoom();
          if (zoom != null && zoom.isEnabled()) {
             ci.cancel();
          }
@@ -70,7 +94,7 @@ public abstract class MouseMixin implements IMinecraft {
 
    @Inject(method = "onCursorPos", at = @At("HEAD"), cancellable = true)
    private void onCursorPos(long window, double x, double y, CallbackInfo ci) {
-      Freelook freelook = Sun.getInstance().getModuleManager().getModule(Freelook.class);
+      Freelook freelook = sun$getFreelook();
       MouseAccessor accessor = (MouseAccessor) (Object) this;
       if (freelook != null && freelook.isEnabled() && mc.currentScreen == null) {
          double deltaX = x - this.sun$lastX;

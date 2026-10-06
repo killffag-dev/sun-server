@@ -1,5 +1,6 @@
 package naryn.sun.systems.modules.modules.visuals;
 
+import naryn.sun.Sun;
 import naryn.sun.framework.base.CustomDrawContext;
 import naryn.sun.framework.objects.BorderRadius;
 import naryn.sun.systems.event.EventListener;
@@ -7,8 +8,10 @@ import naryn.sun.systems.event.impl.render.HudRenderEvent;
 import naryn.sun.systems.modules.api.ModuleCategory;
 import naryn.sun.systems.modules.api.ModuleInfo;
 import naryn.sun.systems.modules.impl.BaseModule;
+import naryn.sun.systems.modules.modules.utility.minigames.MiniGames;
 import naryn.sun.systems.setting.settings.BooleanSetting;
 import naryn.sun.systems.setting.settings.ColorSetting;
+import naryn.sun.systems.setting.settings.GroupSetting;
 import naryn.sun.systems.setting.settings.ModeSetting;
 import naryn.sun.systems.setting.settings.SliderSetting;
 import naryn.sun.utility.colors.ColorRGBA;
@@ -18,33 +21,39 @@ import naryn.sun.utility.interfaces.IMinecraft;
 @ModuleInfo(name = "Crosshair", category = ModuleCategory.VISUALS, desc = "modules.descriptions.crosshair")
 public class Crosshair extends BaseModule implements IMinecraft {
 
+    // ===== Top-level: Режим прицела =====
     private final ModeSetting mode = new ModeSetting(this, "modules.settings.crosshair.mode");
     private final ModeSetting.Value modeCross = new ModeSetting.Value(this.mode, "modules.settings.crosshair.mode.cross").select();
     private final ModeSetting.Value modeDot = new ModeSetting.Value(this.mode, "modules.settings.crosshair.mode.dot");
     private final ModeSetting.Value modeCircle = new ModeSetting.Value(this.mode, "modules.settings.crosshair.mode.circle");
 
-    private final SliderSetting length = new SliderSetting(this, "modules.settings.crosshair.length", () -> this.modeDot.isSelected())
+    // ===== Box 1: Форма и размеры =====
+    private final GroupSetting shapeGroup = new GroupSetting(this, "modules.settings.crosshair.group.shape");
+    private final BooleanSetting dynamicSpread = new BooleanSetting(this.shapeGroup, "modules.settings.crosshair.dynamic_spread");
+    private final SliderSetting length = new SliderSetting(this.shapeGroup, "modules.settings.crosshair.length", () -> this.modeDot.isSelected())
             .min(1.0F).max(20.0F).step(0.5F).currentValue(4.0F);
-
-    private final SliderSetting gap = new SliderSetting(this, "modules.settings.crosshair.gap", () -> this.modeDot.isSelected())
+    private final SliderSetting gap = new SliderSetting(this.shapeGroup, "modules.settings.crosshair.gap", () -> this.modeDot.isSelected())
             .min(0.0F).max(15.0F).step(0.5F).currentValue(2.5F);
-
-    private final SliderSetting thickness = new SliderSetting(this, "modules.settings.crosshair.thickness")
+    private final SliderSetting thickness = new SliderSetting(this.shapeGroup, "modules.settings.crosshair.thickness")
             .min(0.5F).max(4.0F).step(0.5F).currentValue(1.0F);
-
-    private final SliderSetting dotSize = new SliderSetting(this, "modules.settings.crosshair.dot_size", () -> !this.modeDot.isSelected())
+    private final SliderSetting dotSize = new SliderSetting(this.shapeGroup, "modules.settings.crosshair.dot_size", () -> !this.modeDot.isSelected())
             .min(0.5F).max(5.0F).step(0.5F).currentValue(1.5F);
 
-    private final BooleanSetting outline = new BooleanSetting(this, "modules.settings.crosshair.outline").enable();
-    private final BooleanSetting dynamicSpread = new BooleanSetting(this, "modules.settings.crosshair.dynamic_spread");
-
-    private final ColorSetting color = new ColorSetting(this, "modules.settings.crosshair.color")
+    // ===== Box 2: Внешний вид =====
+    private final GroupSetting appearanceGroup = new GroupSetting(this, "modules.settings.crosshair.group.appearance");
+    private final BooleanSetting outline = new BooleanSetting(this.appearanceGroup, "modules.settings.crosshair.outline").enable();
+    private final ColorSetting color = new ColorSetting(this.appearanceGroup, "modules.settings.crosshair.color")
             .color(Colors.WHITE);
 
     private final EventListener<HudRenderEvent> onHudRender = event -> this.draw(event.getContext());
 
     private void draw(CustomDrawContext context) {
         if (mc.options.hudHidden || mc.currentScreen != null) {
+            return;
+        }
+
+        MiniGames miniGames = Sun.getInstance().getModuleManager().getModule(MiniGames.class);
+        if (miniGames != null && miniGames.isAimingAtBoard()) {
             return;
         }
 

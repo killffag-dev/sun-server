@@ -3,10 +3,8 @@ package naryn.sun.mixin.minecraft.client.network;
 import naryn.sun.Sun;
 import naryn.sun.systems.event.impl.game.PickupEvent;
 import naryn.sun.systems.event.impl.game.WorldChangeEvent;
-import naryn.sun.utility.game.WorldUtility;
 import naryn.sun.utility.interfaces.IMinecraft;
 import naryn.sun.utility.rotations.Rotation;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientCommonNetworkHandler;
 import net.minecraft.client.network.ClientConnectionState;
@@ -14,14 +12,10 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
 import net.minecraft.network.packet.s2c.play.ItemPickupAnimationS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.chunk.WorldChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -49,33 +43,8 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
       }
    }
 
-   @Inject(method = "onBlockEntityUpdate", at = @At("TAIL"))
-   private void onBlockEntityUpdate(BlockEntityUpdateS2CPacket packet, CallbackInfo ci) {
-      if (mc.world != null) {
-         BlockPos pos = packet.getPos();
-         BlockEntity blockEntity = mc.world.getBlockEntity(pos);
-         if (blockEntity != null && !WorldUtility.blockEntities.contains(blockEntity)) {
-            WorldUtility.blockEntities.add(blockEntity);
-         }
-      }
-   }
-
-   @Inject(method = "onChunkData", at = @At("TAIL"))
-   private void onChunkData(ChunkDataS2CPacket packet, CallbackInfo ci) {
-      if (ClientPlayNetworkHandlerMixin.mc.world != null) {
-         WorldChunk chunk = ClientPlayNetworkHandlerMixin.mc.world.getChunk(packet.getChunkX(), packet.getChunkZ());
-         chunk.getBlockEntities().values().forEach(be -> {
-            if (!WorldUtility.blockEntities.contains(be)) {
-               WorldUtility.blockEntities.add(be);
-            }
-         });
-
-      }
-   }
-
    @Inject(method = "onGameJoin", at = @At("TAIL"))
    private void onGameJoin(GameJoinS2CPacket packet, CallbackInfo ci) {
-      WorldUtility.blockEntities.clear();
       Sun.getInstance().getEventManager().triggerEvent(new WorldChangeEvent());
    }
 
@@ -83,13 +52,6 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
    public void savePlayerRotation(PlayerPositionLookS2CPacket packet, CallbackInfo ci) {
       if (mc.player != null) {
          this.oldRotation = new Rotation(mc.player.getYaw(), mc.player.getPitch());
-      }
-   }
-
-   @Inject(method = "onPlayerPositionLook", at = @At("RETURN"))
-   public void modifyPlayerRotation(PlayerPositionLookS2CPacket packet, CallbackInfo ci) {
-      if (mc.player != null) {
-         new Rotation(packet.change().yaw(), packet.change().pitch());
       }
    }
 
@@ -102,6 +64,10 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
          if (isFromMe || isOpponentCombat) {
             hitSound.onDamageConfirmed(hitSound.isRecentCrit());
          }
+      }
+      naryn.sun.systems.modules.modules.visuals.hitpoint.HitPoint hitPoint = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.visuals.hitpoint.HitPoint.class);
+      if (hitPoint != null && hitPoint.isEnabled()) {
+         hitPoint.onDamagePacket(packet.entityId());
       }
    }
 }

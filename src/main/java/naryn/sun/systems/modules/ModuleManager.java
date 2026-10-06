@@ -12,6 +12,8 @@ import naryn.sun.systems.event.impl.window.MouseEvent;
 import naryn.sun.systems.modules.exception.UnknownModuleException;
 import naryn.sun.systems.modules.impl.BaseModule;
 import naryn.sun.systems.modules.modules.utility.AutoSprint;
+import naryn.sun.systems.modules.modules.utility.AntiAFK;
+import naryn.sun.systems.modules.modules.utility.BlockSlot;
 import naryn.sun.systems.modules.modules.utility.Zoom;
 import naryn.sun.systems.modules.modules.utility.Freelook;
 import naryn.sun.systems.modules.modules.visuals.Fullbright;
@@ -42,12 +44,14 @@ import naryn.sun.systems.modules.modules.utility.DeathCords;
 import naryn.sun.systems.modules.modules.utility.LayoutFix;
 import naryn.sun.systems.modules.modules.utility.FakePlayer;
 import naryn.sun.systems.modules.modules.utility.CommandBind;
+import naryn.sun.systems.modules.modules.utility.minigames.MiniGames;
+import naryn.sun.systems.modules.modules.utility.aimtrainer.AimTrainer;
 import naryn.sun.systems.modules.modules.visuals.Crosshair;
-import naryn.sun.systems.modules.modules.utility.NameProtect;
 import naryn.sun.systems.modules.modules.optimization.NoRender;
 import naryn.sun.systems.modules.modules.optimization.Optimizer;
 import naryn.sun.systems.modules.modules.optimization.PacketFilter;
 import naryn.sun.systems.modules.modules.optimization.Profiler;
+import naryn.sun.systems.modules.modules.optimization.SmartCull;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -71,10 +75,14 @@ import naryn.sun.systems.modules.modules.visuals.MotionBlur;
 import naryn.sun.systems.modules.modules.visuals.BlockOutline;
 import naryn.sun.systems.modules.modules.visuals.Hitbox;
 import naryn.sun.systems.modules.modules.visuals.HitParticles;
+import naryn.sun.systems.modules.modules.visuals.hitpoint.HitPoint;
+import naryn.sun.systems.modules.modules.visuals.Waypoints;
 import naryn.sun.systems.modules.modules.utility.HitSound;
 
 public class ModuleManager {
    private final List<Module> modules = new ArrayList<>();
+   private final List<Module> activeModules = new java.util.concurrent.CopyOnWriteArrayList<>();
+   private final it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<List<Module>> keyBindMap = new it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<>();
    private final java.util.Map<Class<? extends Module>, Module> moduleByClass = new java.util.concurrent.ConcurrentHashMap<>();
    private final java.util.Map<String, Module> moduleByName = new java.util.concurrent.ConcurrentHashMap<>();
    private final EventListener<ClientPlayerTickEvent> tickListener;
@@ -108,20 +116,26 @@ public class ModuleManager {
    }
 
    private final EventListener<KeyPressEvent> onKeyPress = event -> {
+      if (event.isCancelled()) return;
+      int key = event.getKey();
+      if (key == -1) return;
+      List<Module> bound = this.keyBindMap.get(key);
+      if (bound == null || bound.isEmpty()) return;
       var screen = MinecraftClient.getInstance().currentScreen;
-      for (Module module : this.getModules()) {
-         if (module.getKey() == event.getKey() && module.getKey() != -1) {
-            this.handleModuleInput(module, event.getAction(), screen);
-         }
+      for (int i = 0; i < bound.size(); i++) {
+         this.handleModuleInput(bound.get(i), event.getAction(), screen);
       }
    };
 
    private final EventListener<MouseEvent> onMouseButtonPress = event -> {
+      if (event.isCancelled()) return;
+      int btn = event.getButton();
+      if (btn == -1) return;
+      List<Module> bound = this.keyBindMap.get(btn);
+      if (bound == null || bound.isEmpty()) return;
       var screen = MinecraftClient.getInstance().currentScreen;
-      for (Module module : this.getModules()) {
-         if (module.getKey() == event.getButton() && module.getKey() != -1) {
-            this.handleModuleInput(module, event.getAction(), screen);
-         }
+      for (int i = 0; i < bound.size(); i++) {
+         this.handleModuleInput(bound.get(i), event.getAction(), screen);
       }
    };
 
@@ -134,9 +148,12 @@ public class ModuleManager {
    @CompileBytecode
    public void registerModules() {
       this.register(new AutoSprint());
-this.register(new Zoom());
+      this.register(new BlockSlot());
+      this.register(new Zoom());
 this.register(new Freelook());
       this.register(new Fullbright());
+      this.register(new MiniGames());
+      this.register(new AimTrainer());
       this.register(new CustomFog());
       this.register(new Friends());
       this.register(new Target());
@@ -154,12 +171,12 @@ this.register(new Freelook());
       this.register(new AutoEat());
       this.register(new AutoInvisible());
       this.register(new AutoLeave());
+      this.register(new AntiAFK());
       this.register(new MineHelper());
       this.register(new NoInteract());
       this.register(new AutoAccept());
       this.register(new AutoAuth());
       this.register(new DeathCords());
-      this.register(new NameProtect());
 	  this.register(new Keystrokes());
       this.register(new ArmorStatus());
       this.register(new FpsPing());
@@ -187,9 +204,12 @@ this.register(new Freelook());
       this.register(new PacketFilter());
       this.register(new Optimizer());
       this.register(new Profiler());
+      this.register(new SmartCull());
       this.register(new Crosshair());
       this.register(new HitParticles());
+      this.register(new HitPoint());
       this.register(new BlockOutline());
+      this.register(new Waypoints());
       this.captureDefaultSnapshot();
    }
 
@@ -261,6 +281,44 @@ this.register(new Freelook());
       this.modules.add(module);
       this.moduleByClass.put(module.getClass(), module);
       this.moduleByName.put(module.getName().toLowerCase().replace(" ", ""), module);
+      if (module.getKey() != -1) {
+         this.updateKeyBind(module, -1, module.getKey());
+      }
+      if (module.isEnabled()) {
+         this.onModuleEnabled(module);
+      }
+   }
+
+   public void updateKeyBind(Module module, int oldKey, int newKey) {
+      if (oldKey != -1) {
+         List<Module> list = this.keyBindMap.get(oldKey);
+         if (list != null) {
+            list.remove(module);
+            if (list.isEmpty()) {
+               this.keyBindMap.remove(oldKey);
+            }
+         }
+      }
+      if (newKey != -1) {
+         List<Module> list = this.keyBindMap.computeIfAbsent(newKey, k -> new ArrayList<>());
+         if (!list.contains(module)) {
+            list.add(module);
+         }
+      }
+   }
+
+   public void onModuleEnabled(Module module) {
+      if (!this.activeModules.contains(module)) {
+         this.activeModules.add(module);
+      }
+   }
+
+   public void onModuleDisabled(Module module) {
+      this.activeModules.remove(module);
+   }
+
+   public List<Module> getActiveModules() {
+      return this.activeModules;
    }
 
    @SuppressWarnings("unchecked")

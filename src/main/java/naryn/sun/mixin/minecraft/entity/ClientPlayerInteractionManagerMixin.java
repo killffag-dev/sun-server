@@ -74,4 +74,12 @@ public class ClientPlayerInteractionManagerMixin {
          }
       }
    }
+
+   @Inject(method = "clickSlot", at = @At("HEAD"), cancellable = true)
+   private void onSlotClick(int syncId, int slotId, int button, net.minecraft.screen.slot.SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
+      naryn.sun.systems.modules.modules.utility.BlockSlot blockSlot = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.utility.BlockSlot.class);
+      if (blockSlot != null && blockSlot.isEnabled() && blockSlot.shouldBlockSlotClick(player, syncId, slotId, button, actionType)) {
+         ci.cancel();
+      }
+   }
 }

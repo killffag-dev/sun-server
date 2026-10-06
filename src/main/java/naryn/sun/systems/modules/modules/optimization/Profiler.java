@@ -21,21 +21,16 @@ import org.lwjgl.util.tinyfd.TinyFileDialogs;
 @ModuleInfo(name = "Profiler", category = ModuleCategory.OPTIMIZATION)
 public class Profiler extends BaseModule {
 
-    private final SliderSetting spikeThreshold = new SliderSetting(this, "modules.settings.profiler.spike_threshold")
-            .min(15.0F)
-            .max(100.0F)
-            .step(5.0F)
-            .currentValue(30.0F);
-
     private final ModeSetting saveLocation = new ModeSetting(this, "modules.settings.profiler.save_location");
     private final ModeSetting.Value modeDesktop = new ModeSetting.Value(this.saveLocation, "modules.settings.profiler.save_location.desktop");
     private final ModeSetting.Value modeClient = new ModeSetting.Value(this.saveLocation, "modules.settings.profiler.save_location.client");
     private final ModeSetting.Value modeCustom = new ModeSetting.Value(this.saveLocation, "modules.settings.profiler.save_location.custom");
 
-    private final StringSetting customPath = new StringSetting(this, "modules.settings.profiler.custom_path", () -> !this.saveLocation.is(this.modeCustom))
+    private final naryn.sun.systems.setting.settings.GroupSetting saveGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.profiler.group.save");
+    private final StringSetting customPath = new StringSetting(this.saveGroup, "modules.settings.profiler.custom_path", () -> !this.saveLocation.is(this.modeCustom))
             .text("");
 
-    private final ButtonSetting selectFolder = new ButtonSetting(this, "modules.settings.profiler.select_folder")
+    private final ButtonSetting selectFolder = new ButtonSetting(this.saveGroup, "modules.settings.profiler.select_folder")
             .action(() -> {
                 new Thread(() -> {
                     try {
@@ -62,7 +57,7 @@ public class Profiler extends BaseModule {
                 }, "SUN-Folder-Chooser").start();
             });
 
-    private final ButtonSetting openFolder = new ButtonSetting(this, "modules.settings.profiler.open_folder")
+    private final ButtonSetting openFolder = new ButtonSetting(this.saveGroup, "modules.settings.profiler.open_folder")
             .action(() -> {
                 File dir = getTargetDirectory();
                 if (!dir.exists()) {
@@ -71,7 +66,13 @@ public class Profiler extends BaseModule {
                 Util.getOperatingSystem().open(dir);
             });
 
-    private final BooleanSetting autoOpenReport = new BooleanSetting(this, "modules.settings.profiler.auto_open_report").enable();
+    private final naryn.sun.systems.setting.settings.GroupSetting generalGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.profiler.group.general");
+    private final BooleanSetting autoOpenReport = new BooleanSetting(this.generalGroup, "modules.settings.profiler.auto_open_report").enable();
+    private final SliderSetting spikeThreshold = new SliderSetting(this.generalGroup, "modules.settings.profiler.spike_threshold")
+            .min(15.0F)
+            .max(100.0F)
+            .step(5.0F)
+            .currentValue(30.0F);
 
     @Override
     public void onEnable() {

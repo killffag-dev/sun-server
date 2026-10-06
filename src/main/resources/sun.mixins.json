@@ -39,6 +39,8 @@
     "minecraft.client.gui.screen.HandledScreenMixin",
     "minecraft.client.gui.screen.InventoryScreenMixin",
     "minecraft.client.gui.screen.multiplayer.ConnectScreenMixin",
+    "minecraft.client.gui.screen.TitleScreenMixin",
+    "minecraft.client.gui.screen.GameMenuScreenMixin",
     "minecraft.client.input.InputAccessor",
     "minecraft.client.input.KeyboardInputMixin",
     "minecraft.client.network.ClientPlayerEntityMixin",
@@ -51,7 +53,6 @@
     "minecraft.client.render.block.entity.BlockEntityRenderDispatcherMixin",
     "minecraft.client.render.entity.EntityRenderDispatcherMixin",
     "minecraft.client.render.entity.LivingEntityRendererMixin",
-    "minecraft.client.util.WindowMixin",
     "minecraft.render.EntityRendererMixin",
     "minecraft.render.ItemEntityRendererMixin",
     "minecraft.render.entity.ArmorFeatureRendererMixin",
@@ -59,7 +60,6 @@
     "minecraft.render.entity.EquipmentRendererMixin",
     "minecraft.render.entity.HeadCosmeticsNameLabelMixin",
     "minecraft.render.entity.PlayerEntityRendererMixin",
-    "minecraft.render.entity.feature.FeatureRendererMixin",
     "minecraft.render.item.HeldItemRendererMixin",
     "minecraft.render.item.ItemRendererMixin",
     "minecraft.client.texture.SpriteMixin",
@@ -82,9 +82,9 @@
     "minecraft.text.TextVisitFactoryMixin",
     "minecraft.world.AbstractBlockStateMixin",
     "minecraft.world.BlockCollisionSpliteratorMixin",
-    "minecraft.world.MixinLightmapTextureManager",
-    "minecraft.world.chunk.WorldChunkMixin",
-    "minecraft.world.explosion.ExplosionImplMixin"
+    "minecraft.world.explosion.ExplosionImplMixin",
+    "minecraft.screen.ScreenHandlerMixin",
+    "minecraft.screen.SlotMixin"
   ],
   "refmap": "sun-refmap.json"
 }

@@ -24,6 +24,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import naryn.sun.utility.math.MathPool;
 
 import java.util.Random;
 
@@ -135,8 +136,8 @@ public final class EffectDrawUtility implements IMinecraft, IWindow {
          float adjustedY = y - verticalPadding / 2.0F;
          float adjustedWidth = width + horizontalPadding;
          float adjustedHeight = height + verticalPadding;
-         Vector3f p0 = matrix4f.transformPosition(adjustedX, adjustedY, 0.0F, new Vector3f());
-         Vector3f p1 = matrix4f.transformPosition(adjustedX + adjustedWidth, adjustedY + adjustedHeight, 0.0F, new Vector3f());
+         Vector3f p0 = matrix4f.transformPosition(adjustedX, adjustedY, 0.0F, MathPool.vec3f());
+         Vector3f p1 = matrix4f.transformPosition(adjustedX + adjustedWidth, adjustedY + adjustedHeight, 0.0F, MathPool.vec3f());
          int screenWidth = mc.getWindow().getScaledWidth();
          int screenHeight = mc.getWindow().getScaledHeight();
          float u0 = p0.x / screenWidth;
@@ -168,8 +169,8 @@ public final class EffectDrawUtility implements IMinecraft, IWindow {
             .set(borderRadius.topLeftRadius(), borderRadius.bottomLeftRadius(), borderRadius.topRightRadius(), borderRadius.bottomRightRadius());
          DrawUtility.roundedTextureProgram.findUniform("Smoothness").set(0.01F);
          DrawUtility.drawSetup();
-         Vector3f p0 = matrix4f.transformPosition(x, y, 0.0F, new Vector3f());
-         Vector3f p1 = matrix4f.transformPosition(x + width, y + height, 0.0F, new Vector3f());
+         Vector3f p0 = matrix4f.transformPosition(x, y, 0.0F, MathPool.vec3f());
+         Vector3f p1 = matrix4f.transformPosition(x + width, y + height, 0.0F, MathPool.vec3f());
          int screenWidth = mc.getWindow().getScaledWidth();
          int screenHeight = mc.getWindow().getScaledHeight();
          float u0 = p0.x / screenWidth;
@@ -217,15 +218,16 @@ public final class EffectDrawUtility implements IMinecraft, IWindow {
          .set(borderRadius.topLeftRadius(), borderRadius.bottomLeftRadius(), borderRadius.topRightRadius(), borderRadius.bottomRightRadius());
       DrawUtility.glassProgram.findUniform("Smoothness").set(0.5F);
       DrawUtility.glassProgram.findUniform("FresnelPower").set(fresnelPower);
-      DrawUtility.glassProgram.findUniform("FresnelColor").set(ColorUtility.getRGBf(fresnelColor.getRGB()));
-      DrawUtility.glassProgram.findUniform("FresnelAlpha").set(ColorUtility.alphaf(fresnelColor.getRGB()));
+      int fRgb = fresnelColor.getRGB();
+      DrawUtility.glassProgram.findUniform("FresnelColor").set(ColorUtility.redf(fRgb), ColorUtility.greenf(fRgb), ColorUtility.bluef(fRgb));
+      DrawUtility.glassProgram.findUniform("FresnelAlpha").set(ColorUtility.alphaf(fRgb));
       DrawUtility.glassProgram.findUniform("BaseAlpha").set(baseAlpha);
       DrawUtility.glassProgram.findUniform("FresnelInvert").set(fresnelInvert ? 1 : 0);
       DrawUtility.glassProgram.findUniform("FresnelMix").set(fresnelMix);
       DrawUtility.glassProgram.findUniform("DistortStrength").set(distortStrength);
       DrawUtility.glassProgram.findUniform("CornerSmoothness").set(squirt);
-      Vector3f p0 = matrix.transformPosition(x, y, 0.0F, new Vector3f());
-      Vector3f p1 = matrix.transformPosition(x + width, y + height, 0.0F, new Vector3f());
+      Vector3f p0 = matrix.transformPosition(x, y, 0.0F, MathPool.vec3f());
+      Vector3f p1 = matrix.transformPosition(x + width, y + height, 0.0F, MathPool.vec3f());
       int screenWidth = mw.getScaledWidth();
       int screenHeight = mw.getScaledHeight();
       float u0 = p0.x / screenWidth;

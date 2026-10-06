@@ -23,9 +23,55 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = ParticleManager.class, priority = 1100)
 public abstract class ParticleManagerMixin {
+   @org.spongepowered.asm.mixin.Unique private static NoRender sun$noRender;
+   @org.spongepowered.asm.mixin.Unique private static PacketFilter sun$packetFilter;
+   @org.spongepowered.asm.mixin.Unique private static AntiOverlay sun$antiOverlay;
+   @org.spongepowered.asm.mixin.Unique private static Optimizer sun$optimizer;
+   @org.spongepowered.asm.mixin.Unique private static KillEffects sun$killEffects;
+
+   @org.spongepowered.asm.mixin.Unique
+   private static NoRender sun$getNoRender() {
+      if (sun$noRender == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$noRender = Sun.getInstance().getModuleManager().getModule(NoRender.class);
+      }
+      return sun$noRender;
+   }
+
+   @org.spongepowered.asm.mixin.Unique
+   private static PacketFilter sun$getPacketFilter() {
+      if (sun$packetFilter == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$packetFilter = Sun.getInstance().getModuleManager().getModule(PacketFilter.class);
+      }
+      return sun$packetFilter;
+   }
+
+   @org.spongepowered.asm.mixin.Unique
+   private static AntiOverlay sun$getAntiOverlay() {
+      if (sun$antiOverlay == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$antiOverlay = Sun.getInstance().getModuleManager().getModule(AntiOverlay.class);
+      }
+      return sun$antiOverlay;
+   }
+
+   @org.spongepowered.asm.mixin.Unique
+   private static Optimizer sun$getOptimizer() {
+      if (sun$optimizer == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$optimizer = Sun.getInstance().getModuleManager().getModule(Optimizer.class);
+      }
+      return sun$optimizer;
+   }
+
+   @org.spongepowered.asm.mixin.Unique
+   private static KillEffects sun$getKillEffects() {
+      if (sun$killEffects == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$killEffects = Sun.getInstance().getModuleManager().getModule(KillEffects.class);
+      }
+      return sun$killEffects;
+   }
+
    @Inject(method = "addBlockBreakParticles", at = @At("HEAD"), cancellable = true)
    private void onAddBlockBreakParticles(BlockPos blockPos, BlockState state, CallbackInfo info) {
-      NoRender noRender = Sun.getInstance().getModuleManager().getModule(NoRender.class);
+      NoRender noRender = sun$getNoRender();
       if (noRender != null && noRender.isEnabled() && noRender.getBlockBreak().isSelected()) {
          info.cancel();
       }
@@ -33,7 +79,7 @@ public abstract class ParticleManagerMixin {
 
    @Inject(method = "addBlockBreakingParticles", at = @At("HEAD"), cancellable = true)
    private void onAddBlockBreakingParticles(BlockPos blockPos, Direction direction, CallbackInfo info) {
-      NoRender noRender = Sun.getInstance().getModuleManager().getModule(NoRender.class);
+      NoRender noRender = sun$getNoRender();
       if (noRender != null && noRender.isEnabled() && noRender.getBlockBreak().isSelected()) {
          info.cancel();
       }
@@ -47,14 +93,14 @@ public abstract class ParticleManagerMixin {
       ParticleType<?> type = parameters.getType();
 
       // PacketFilter: Троттлинг и дроп частиц за препятствиями
-      PacketFilter packetFilter = Sun.getInstance().getModuleManager().getModule(PacketFilter.class);
+      PacketFilter packetFilter = sun$getPacketFilter();
       if (packetFilter != null && packetFilter.shouldDropParticle(x, y, z)) {
          cir.cancel();
          return;
       }
 
       // NoRender: Глубокая фильтрация частиц
-      NoRender noRender = Sun.getInstance().getModuleManager().getModule(NoRender.class);
+      NoRender noRender = sun$getNoRender();
       if (noRender != null && noRender.isEnabled()) {
          if (noRender.getTotem().isSelected() && type == ParticleTypes.TOTEM_OF_UNDYING) {
             cir.cancel();
@@ -102,13 +148,13 @@ public abstract class ParticleManagerMixin {
          }
       }
 
-      AntiOverlay antiOverlay = Sun.getInstance().getModuleManager().getModule(AntiOverlay.class);
+      AntiOverlay antiOverlay = sun$getAntiOverlay();
       if (antiOverlay != null && antiOverlay.isEnabled() && antiOverlay.getWeather().isSelected() && type == ParticleTypes.RAIN) {
          cir.cancel();
          return;
       }
 
-      Optimizer optimizer = Sun.getInstance().getModuleManager().getModule(Optimizer.class);
+      Optimizer optimizer = sun$getOptimizer();
       if (optimizer != null && optimizer.isEnabled()) {
          if (optimizer.getDisableFireworks().isEnabled() && (type == ParticleTypes.FIREWORK || type == ParticleTypes.FLASH)) {
             cir.cancel();
@@ -123,7 +169,7 @@ public abstract class ParticleManagerMixin {
          }
       }
 
-      KillEffects killEffects = Sun.getInstance().getModuleManager().getModule(KillEffects.class);
+      KillEffects killEffects = sun$getKillEffects();
       if (killEffects != null && killEffects.isEnabled()) {
          if (type == ParticleTypes.POOF || type == ParticleTypes.EXPLOSION_EMITTER || type == ParticleTypes.SMOKE || type == ParticleTypes.LARGE_SMOKE) {
             cir.cancel();

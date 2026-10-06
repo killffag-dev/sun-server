@@ -3,6 +3,7 @@ package naryn.sun.mixin.minecraft.entity;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import naryn.sun.Sun;
+import naryn.sun.systems.event.impl.game.EntityDamageEvent;
 import naryn.sun.systems.event.impl.game.EntityDeathEvent;
 import naryn.sun.systems.event.impl.game.EntityJumpEvent;
 import naryn.sun.systems.modules.modules.visuals.SwingAnimation;
@@ -74,6 +75,20 @@ public abstract class LivingEntityMixin {
    public void triggerEntityDeathEvent(DamageSource damageSource, CallbackInfo ci) {
       LivingEntity entity = (LivingEntity) (Object) this;
       Sun.getInstance().getEventManager().triggerEvent(new EntityDeathEvent(entity, damageSource));
+   }
+
+   @Inject(method = "onDamaged", at = @At("HEAD"))
+   public void triggerEntityDamageOnDamaged(DamageSource damageSource, CallbackInfo ci) {
+      LivingEntity entity = (LivingEntity) (Object) this;
+      Sun.getInstance().getEventManager().triggerEvent(new EntityDamageEvent(entity, damageSource));
+   }
+
+   @Inject(method = "animateDamage", at = @At("HEAD"))
+   public void triggerEntityDamageOnAnimate(float yaw, CallbackInfo ci) {
+      LivingEntity entity = (LivingEntity) (Object) this;
+      if (entity.hurtTime == 0) {
+         Sun.getInstance().getEventManager().triggerEvent(new EntityDamageEvent(entity, null));
+      }
    }
 
    @Redirect(method = "calcGlidingVelocity(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;getPitch()F"))

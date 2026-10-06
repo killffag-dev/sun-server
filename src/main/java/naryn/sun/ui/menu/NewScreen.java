@@ -226,6 +226,8 @@ public class NewScreen extends MenuScreen implements IMinecraft, IScaledResoluti
 
     @Override
     public void render(UIContext context) {
+        net.minecraft.client.render.DiffuseLighting.disableGuiDepthLighting();
+        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         naryn.sun.systems.theme.PaletteConfig.getInstance().updatePerFrame();
         menuAnimation.update(!closing);
         if (closing && menuAnimation.getValue() == 0.0F) {

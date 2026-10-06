@@ -14,6 +14,8 @@ public class InputEvent extends Event implements IMinecraft {
    private boolean sprint;
    private double sneakSlowDownMultiplier;
 
+   public static final InputEvent INSTANCE = new InputEvent(0.0F, 0.0F, false, false, false);
+
    public InputEvent(float moveForward, float moveStrafe, boolean jump, boolean sneak, boolean sprint) {
       this.forward = moveForward;
       this.strafe = moveStrafe;
@@ -21,6 +23,16 @@ public class InputEvent extends Event implements IMinecraft {
       this.sneak = sneak;
       this.sprint = sprint;
       this.sneakSlowDownMultiplier = 0.3;
+   }
+
+   public InputEvent set(float moveForward, float moveStrafe, boolean jump, boolean sneak, boolean sprint) {
+      this.forward = moveForward;
+      this.strafe = moveStrafe;
+      this.jump = jump;
+      this.sneak = sneak;
+      this.sprint = sprint;
+      this.sneakSlowDownMultiplier = 0.3;
+      return this;
    }
 
    public void setYaw(float yaw, float direction) {

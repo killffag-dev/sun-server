@@ -9,6 +9,10 @@ public class EventCancellable extends Event {
       this.cancelled = true;
    }
 
+   public void setCancelled(boolean cancelled) {
+      this.cancelled = cancelled;
+   }
+
    @Generated
    public boolean isCancelled() {
       return this.cancelled;

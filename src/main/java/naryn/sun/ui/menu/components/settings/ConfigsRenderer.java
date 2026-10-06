@@ -360,6 +360,7 @@ public class ConfigsRenderer extends SettingRenderer implements ConfigItemRow.Ro
             current.save();
         }
         cfg.load();
+        Sun.getInstance().getFileManager().saveClientFiles();
         ClientSoundManager.getInstance().playButtonClick();
     }
 
@@ -446,6 +447,7 @@ public class ConfigsRenderer extends SettingRenderer implements ConfigItemRow.Ro
                 manager().setCurrent(newCfg);
             }
         }
+        Sun.getInstance().getFileManager().saveClientFiles();
 
         createField.clear();
         creatingNew = false;

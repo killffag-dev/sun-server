@@ -9,6 +9,7 @@ import naryn.sun.systems.modules.modules.visuals.blockoutline.BlockOutlineRender
 import naryn.sun.systems.modules.modules.visuals.blockoutline.BlockOutlineState;
 import naryn.sun.systems.setting.settings.BooleanSetting;
 import naryn.sun.systems.setting.settings.ColorSetting;
+import naryn.sun.systems.setting.settings.GroupSetting;
 import naryn.sun.systems.setting.settings.ModeSetting;
 import naryn.sun.systems.setting.settings.SliderSetting;
 import naryn.sun.utility.colors.ColorRGBA;
@@ -17,35 +18,32 @@ import naryn.sun.utility.colors.Colors;
 @ModuleInfo(name = "Block Outline", category = ModuleCategory.VISUALS, desc = "modules.descriptions.block_outline")
 public class BlockOutline extends BaseModule {
 
-    // ===== 1. Выбор режимов =====
+    // ===== Top-level: Режим =====
     private final ModeSetting mode = new ModeSetting(this, "modules.settings.block_outline.mode");
     private final ModeSetting.Value modeOutline = new ModeSetting.Value(this.mode, "modules.settings.block_outline.mode.outline").select();
     private final ModeSetting.Value modeFill = new ModeSetting.Value(this.mode, "modules.settings.block_outline.mode.fill");
     private final ModeSetting.Value modeOutlineFill = new ModeSetting.Value(this.mode, "modules.settings.block_outline.mode.outline_fill");
     private final ModeSetting.Value modeCorners = new ModeSetting.Value(this.mode, "modules.settings.block_outline.mode.corners");
 
-    private final ModeSetting shape = new ModeSetting(this, "modules.settings.block_outline.shape");
+    // ===== Box 1: Геометрия и буфер =====
+    private final GroupSetting geometryGroup = new GroupSetting(this, "modules.settings.block_outline.group.geometry");
+    private final ModeSetting shape = new ModeSetting(this.geometryGroup, "modules.settings.block_outline.shape");
     private final ModeSetting.Value shapeVoxel = new ModeSetting.Value(this.shape, "modules.settings.block_outline.shape.voxel").select();
     private final ModeSetting.Value shapeBox = new ModeSetting.Value(this.shape, "modules.settings.block_outline.shape.box");
+    private final BooleanSetting smooth = new BooleanSetting(this.geometryGroup, "modules.settings.block_outline.smooth").enabled(true);
+    private final BooleanSetting depthBuffer = new BooleanSetting(this.geometryGroup, "modules.settings.block_outline.depth_buffer").enabled(true);
 
-    private final ModeSetting colorMode = new ModeSetting(this, "modules.settings.block_outline.color_mode");
+    // ===== Box 2: Цвет и линии =====
+    private final GroupSetting appearanceGroup = new GroupSetting(this, "modules.settings.block_outline.group.appearance");
+    private final SliderSetting lineWidth = new SliderSetting(this.appearanceGroup, "modules.settings.block_outline.line_width", () -> this.mode.is(this.modeFill))
+        .min(1.0F).max(10.0F).step(0.5F).currentValue(2.5F);
+    private final SliderSetting fillAlpha = new SliderSetting(this.appearanceGroup, "modules.settings.block_outline.fill_alpha", () -> this.mode.is(this.modeOutline) || this.mode.is(this.modeCorners))
+        .min(5.0F).max(100.0F).step(5.0F).currentValue(30.0F).suffix("%");
+    private final ModeSetting colorMode = new ModeSetting(this.appearanceGroup, "modules.settings.block_outline.color_mode");
     private final ModeSetting.Value colorCustom = new ModeSetting.Value(this.colorMode, "modules.settings.block_outline.color_mode.custom").select();
     private final ModeSetting.Value colorRainbow = new ModeSetting.Value(this.colorMode, "modules.settings.block_outline.color_mode.rainbow");
-
-    // ===== 2. Цвет =====
-    private final ColorSetting customColor = new ColorSetting(this, "modules.settings.block_outline.custom_color", () -> !this.colorMode.is(this.colorCustom))
+    private final ColorSetting customColor = new ColorSetting(this.appearanceGroup, "modules.settings.block_outline.custom_color", () -> !this.colorMode.is(this.colorCustom))
         .color(Colors.ACCENT);
-
-    // ===== 3. Тумблеры =====
-    private final BooleanSetting depthBuffer = new BooleanSetting(this, "modules.settings.block_outline.depth_buffer").enabled(true);
-    private final BooleanSetting smooth = new BooleanSetting(this, "modules.settings.block_outline.smooth").enabled(true);
-
-    // ===== 4. Ползунки =====
-    private final SliderSetting lineWidth = new SliderSetting(this, "modules.settings.block_outline.line_width", () -> this.mode.is(this.modeFill))
-        .min(1.0F).max(10.0F).step(0.5F).currentValue(2.5F);
-
-    private final SliderSetting fillAlpha = new SliderSetting(this, "modules.settings.block_outline.fill_alpha", () -> this.mode.is(this.modeOutline) || this.mode.is(this.modeCorners))
-        .min(5.0F).max(100.0F).step(5.0F).currentValue(30.0F).suffix("%");
 
     private static final float SMOOTH_SPEED = 20.0F;
 

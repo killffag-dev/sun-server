@@ -25,7 +25,12 @@ public final class OcclusionCuller {
     // Кэш блочных сущностей: BlockPos.asLong() -> (timestamp | (isOccluded ? 1 : 0))
     private static final Long2LongOpenHashMap BLOCK_ENTITY_CACHE = new Long2LongOpenHashMap(512);
 
-    private static final BlockPos.Mutable MUTABLE_POS = new BlockPos.Mutable();
+    static {
+        ENTITY_CACHE.defaultReturnValue(0L);
+        BLOCK_ENTITY_CACHE.defaultReturnValue(0L);
+    }
+
+    private static final ThreadLocal<BlockPos.Mutable> MUTABLE_POS = ThreadLocal.withInitial(BlockPos.Mutable::new);
 
     private OcclusionCuller() {
     }
@@ -74,11 +79,17 @@ public final class OcclusionCuller {
             return false;
         }
 
+        FrustumCuller.update(camera);
+        double radius = Math.max(entity.getWidth(), entity.getHeight()) * 0.85 + 0.75;
+        if (!FrustumCuller.isRelativeInside(dx, dy, dz, radius)) {
+            return true;
+        }
+
         int entityId = entity.getId();
         long now = System.currentTimeMillis();
 
-        if (ENTITY_CACHE.containsKey(entityId)) {
-            long packed = ENTITY_CACHE.get(entityId);
+        long packed = ENTITY_CACHE.get(entityId);
+        if (packed != 0L) {
             long time = packed >>> 1;
             if (now - time < ENTITY_CACHE_TTL_MS) {
                 return (packed & 1L) == 1L;
@@ -93,6 +104,9 @@ public final class OcclusionCuller {
 
         boolean isOccluded = !visible;
         long packedValue = (now << 1) | (isOccluded ? 1L : 0L);
+        if (ENTITY_CACHE.size() > 2048) {
+            ENTITY_CACHE.clear();
+        }
         ENTITY_CACHE.put(entityId, packedValue);
 
         return isOccluded;
@@ -129,11 +143,16 @@ public final class OcclusionCuller {
             return false;
         }
 
+        FrustumCuller.update(camera);
+        if (!FrustumCuller.isRelativeInside(dx, dy, dz, 1.25)) {
+            return true;
+        }
+
         long posKey = pos.asLong();
         long now = System.currentTimeMillis();
 
-        if (BLOCK_ENTITY_CACHE.containsKey(posKey)) {
-            long packed = BLOCK_ENTITY_CACHE.get(posKey);
+        long packed = BLOCK_ENTITY_CACHE.get(posKey);
+        if (packed != 0L) {
             long time = packed >>> 1;
             if (now - time < BLOCK_CACHE_TTL_MS) {
                 return (packed & 1L) == 1L;
@@ -144,6 +163,9 @@ public final class OcclusionCuller {
         boolean isOccluded = !visible;
 
         long packedValue = (now << 1) | (isOccluded ? 1L : 0L);
+        if (BLOCK_ENTITY_CACHE.size() > 4096) {
+            BLOCK_ENTITY_CACHE.clear();
+        }
         BLOCK_ENTITY_CACHE.put(posKey, packedValue);
 
         return isOccluded;
@@ -193,6 +215,7 @@ public final class OcclusionCuller {
 
         int maxSteps = 96;
         int steps = 0;
+        BlockPos.Mutable mutablePos = MUTABLE_POS.get();
 
         while (steps++ < maxSteps) {
             if (tMaxX < tMaxY) {
@@ -217,12 +240,12 @@ public final class OcclusionCuller {
                 return true;
             }
 
-            MUTABLE_POS.set(x, y, z);
+            mutablePos.set(x, y, z);
             if (!world.isChunkLoaded(x >> 4, z >> 4)) {
                 return false;
             }
 
-            BlockState state = world.getBlockState(MUTABLE_POS);
+            BlockState state = world.getBlockState(mutablePos);
             if (state.isOpaqueFullCube()) {
                 return false;
             }

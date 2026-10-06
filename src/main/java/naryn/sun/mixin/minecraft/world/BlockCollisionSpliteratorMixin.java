@@ -31,7 +31,7 @@ public abstract class BlockCollisionSpliteratorMixin {
       if (collisionView != MinecraftClient.getInstance().world) {
          return shape;
       } else {
-         CollisionShapeEvent event = new CollisionShapeEvent(blockState, blockPos, shape);
+         CollisionShapeEvent event = CollisionShapeEvent.INSTANCE.set(blockState, blockPos, shape);
          Sun.getInstance().getEventManager().triggerEvent(event);
          return event.isCancelled() ? VoxelShapes.empty() : event.getShape();
       }

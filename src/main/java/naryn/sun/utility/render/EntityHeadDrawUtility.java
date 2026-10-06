@@ -1,6 +1,8 @@
 package naryn.sun.utility.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Generated;
 import naryn.sun.framework.objects.BorderRadius;
 import naryn.sun.utility.colors.ColorRGBA;
@@ -16,6 +18,8 @@ import net.minecraft.util.Identifier;
 
 public final class EntityHeadDrawUtility implements IMinecraft {
 
+   private static final Map<Class<?>, LivingEntityRenderState> RENDER_STATE_CACHE = new HashMap<>();
+
    public static void drawPlayerHeadWithHat(
       MatrixStack matrices, AbstractClientPlayerEntity player, float x, float y, float size, BorderRadius borderRadius, ColorRGBA color
    ) {
@@ -24,13 +28,15 @@ public final class EntityHeadDrawUtility implements IMinecraft {
       drawPlayerHatLayerWithRoundedShader(matrices, skinTexture, x, y, size, borderRadius, color);
    }
 
+   @SuppressWarnings("unchecked")
    public static <T extends LivingEntity, S extends LivingEntityRenderState, M extends EntityModel<? super S>> void drawEntityHeadWithHat(
       MatrixStack matrices, T entity, float x, float y, float size, BorderRadius borderRadius, ColorRGBA color
    ) {
       EntityRenderer<? super T, ?> renderer = mc.getEntityRenderDispatcher().getRenderer(entity);
-      if (renderer instanceof LivingEntityRenderer<?, ?, ?> renderer1) {
-         LivingEntityRenderer<T, S, M> livingRenderer = (LivingEntityRenderer<T, S, M>) renderer;
-         S state = (S) livingRenderer.createRenderState();
+      if (renderer instanceof LivingEntityRenderer<?, ?, ?> livingRendererRaw) {
+         LivingEntityRenderer<T, S, M> livingRenderer = (LivingEntityRenderer<T, S, M>) livingRendererRaw;
+         S state = (S) RENDER_STATE_CACHE.computeIfAbsent(livingRenderer.getClass(), k -> livingRenderer.createRenderState());
+         livingRenderer.updateRenderState(entity, state, 0.0F);
          Identifier skinTexture = livingRenderer.getTexture(state);
          drawPlayerHeadWithRoundedShader(matrices, skinTexture, x, y, size, borderRadius, color);
          drawPlayerHatLayerWithRoundedShader(matrices, skinTexture, x, y, size, borderRadius, color);
@@ -40,7 +46,7 @@ public final class EntityHeadDrawUtility implements IMinecraft {
    public static void drawPlayerHeadWithRoundedShader(
       MatrixStack matrices, Identifier skinTexture, float x, float y, float size, BorderRadius borderRadius, ColorRGBA color
    ) {
-      TextureDrawUtility.drawRoundedTextureWithUV(matrices, skinTexture, x, y, size, size, borderRadius, color, 0.125F, 0.125F, 0.25F, 0.25F);
+      TextureDrawUtility.drawRoundedTextureWithUV(matrices, skinTexture, x, y, size, size, borderRadius, color, 0.125F, 0.125F, 0.25F, 0.25F, true);
    }
 
    public static void drawPlayerHatLayerWithRoundedShader(
@@ -48,7 +54,7 @@ public final class EntityHeadDrawUtility implements IMinecraft {
    ) {
       RenderSystem.enableBlend();
       RenderSystem.defaultBlendFunc();
-      TextureDrawUtility.drawRoundedTextureWithUV(matrices, skinTexture, x, y, size, size, borderRadius, color, 0.625F, 0.125F, 0.75F, 0.25F);
+      TextureDrawUtility.drawRoundedTextureWithUV(matrices, skinTexture, x, y, size, size, borderRadius, color, 0.625F, 0.125F, 0.75F, 0.25F, true);
       RenderSystem.disableBlend();
    }
 

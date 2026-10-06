@@ -10,7 +10,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import naryn.sun.systems.event.EventListener;
-import naryn.sun.systems.event.impl.game.PostAttackEvent;
+import naryn.sun.systems.event.impl.game.EntityDamageEvent;
 import naryn.sun.systems.event.impl.player.ClientPlayerTickEvent;
 import naryn.sun.systems.event.impl.render.Render3DEvent;
 import naryn.sun.systems.modules.api.ModuleCategory;
@@ -41,7 +41,7 @@ public class HitParticles extends BaseModule {
 
    private static final int MAX_PARTICLES = 300;
 
-   // --- Настройки формы ---
+   // --- 1. Modes First (Top-Level Root) ---
    private final ModeSetting shape = new ModeSetting(this, "modules.settings.particles.shape");
    private final ModeSetting.Value stars = new ModeSetting.Value(this.shape, "modules.settings.particles.shape.stars").select();
    private final ModeSetting.Value hearts = new ModeSetting.Value(this.shape, "modules.settings.particles.shape.hearts");
@@ -53,32 +53,28 @@ public class HitParticles extends BaseModule {
    private final ModeSetting.Value sakura = new ModeSetting.Value(this.shape, "modules.settings.particles.shape.sakura");
    private final ModeSetting.Value randomMode = new ModeSetting.Value(this.shape, "modules.settings.particles.shape.random");
 
-   // --- Настройки цвета ---
-   private final ModeSetting colorMode = new ModeSetting(this, "modules.settings.particles.color_mode");
-   private final ModeSetting.Value customColor = new ModeSetting.Value(this.colorMode, "modules.settings.particles.color_mode.custom").select();
-   private final ModeSetting.Value rainbowColor = new ModeSetting.Value(this.colorMode, "modules.settings.particles.color_mode.rainbow");
-
-   // Color Picker скрывается при режиме Радуга и отображается только при режиме Свой
-   private final ColorSetting color = new ColorSetting(this, "modules.settings.particles.color", () -> !this.customColor.isSelected())
-      .color(new ColorRGBA(255.0F, 120.0F, 210.0F, 255.0F));
-
-   // --- Физические параметры ---
-   private final SliderSetting amount = new SliderSetting(this, "modules.settings.particles.amount")
+   // --- 2. General & Logic Box ---
+   private final naryn.sun.systems.setting.settings.GroupSetting generalGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.particles.group.general");
+   private final BooleanSetting gravity = new BooleanSetting(this.generalGroup, "modules.settings.particles.gravity").enable();
+   private final BooleanSetting physics = new BooleanSetting(this.generalGroup, "modules.settings.particles.physics").enable();
+   private final BooleanSetting glow = new BooleanSetting(this.generalGroup, "modules.settings.particles.glow").enable();
+   private final BooleanSetting throughWalls = new BooleanSetting(this.generalGroup, "modules.settings.particles.through_walls").enabled(false);
+   private final SliderSetting amount = new SliderSetting(this.generalGroup, "modules.settings.particles.amount")
       .min(5.0F).max(40.0F).step(1.0F).currentValue(16.0F);
-
-   private final SliderSetting size = new SliderSetting(this, "modules.settings.particles.size")
+   private final SliderSetting size = new SliderSetting(this.generalGroup, "modules.settings.particles.size")
       .min(0.05F).max(0.40F).step(0.01F).currentValue(0.15F);
-
-   private final SliderSetting speed = new SliderSetting(this, "modules.settings.particles.speed")
+   private final SliderSetting speed = new SliderSetting(this.generalGroup, "modules.settings.particles.speed")
       .min(0.05F).max(0.60F).step(0.01F).currentValue(0.22F);
-
-   private final SliderSetting lifetime = new SliderSetting(this, "modules.settings.particles.lifetime")
+   private final SliderSetting lifetime = new SliderSetting(this.generalGroup, "modules.settings.particles.lifetime")
       .min(300.0F).max(2000.0F).step(50.0F).currentValue(850.0F);
 
-   private final BooleanSetting gravity = new BooleanSetting(this, "modules.settings.particles.gravity").enable();
-   private final BooleanSetting physics = new BooleanSetting(this, "modules.settings.particles.physics").enable();
-   private final BooleanSetting glow = new BooleanSetting(this, "modules.settings.particles.glow").enable();
-   private final BooleanSetting throughWalls = new BooleanSetting(this, "modules.settings.particles.through_walls").enabled(false);
+   // --- 3. Colors at the Very Bottom ---
+   private final naryn.sun.systems.setting.settings.GroupSetting colorGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.particles.group.color");
+   private final ModeSetting colorMode = new ModeSetting(this.colorGroup, "modules.settings.particles.color_mode");
+   private final ModeSetting.Value customColor = new ModeSetting.Value(this.colorMode, "modules.settings.particles.color_mode.custom").select();
+   private final ModeSetting.Value rainbowColor = new ModeSetting.Value(this.colorMode, "modules.settings.particles.color_mode.rainbow");
+   private final ColorSetting color = new ColorSetting(this.colorGroup, "modules.settings.particles.color", () -> !this.customColor.isSelected())
+      .color(new ColorRGBA(255.0F, 120.0F, 210.0F, 255.0F));
 
    // --- Список активных частиц (потокобезопасная очередь для спавна + синхронизированный список) ---
    private static final long HIT_DEBOUNCE_MS = 400L;
@@ -97,8 +93,8 @@ public class HitParticles extends BaseModule {
       }
    }
 
-   // --- Спавн частиц при атаке (одна анимация на один прошедший удар, без спама) ---
-   private final EventListener<PostAttackEvent> onPostAttack = event -> {
+   // --- Спавн частиц только при получении сущностью реального урона (не срабатывает при блоке щитом) ---
+   private final EventListener<EntityDamageEvent> onEntityDamage = event -> {
       if (event.getEntity() != null) {
          this.spawnParticles(event.getEntity());
       }
@@ -108,10 +104,12 @@ public class HitParticles extends BaseModule {
       if (!this.isEnabled()) return;
       if (mc.player == null || mc.world == null || target == null) return;
       if (target.isRemoved()) return;
+      if (target == mc.player) return;
+      if (mc.player.squaredDistanceTo(target) > 48.0 * 48.0) return;
 
       if (target instanceof net.minecraft.entity.LivingEntity living) {
-         if (living.isDead() || living.getHealth() <= 0.0F) return;
-         if (living.hurtTime > 0) return;
+         if (living.isDead() && living.deathTime > 5) return;
+         if (living.isBlocking() && this.isShieldBlocked(living, mc.player)) return;
       }
 
       int targetId = target.getId();
@@ -297,4 +295,12 @@ public class HitParticles extends BaseModule {
          RenderSystem.disableBlend();
       }
    };
+
+   private boolean isShieldBlocked(net.minecraft.entity.LivingEntity target, net.minecraft.entity.player.PlayerEntity attacker) {
+      if (!target.isBlocking()) return false;
+      Vec3d targetFacing = target.getRotationVector();
+      Vec3d toAttacker = attacker.getPos().subtract(target.getPos()).normalize();
+      double dot = targetFacing.x * toAttacker.x + targetFacing.z * toAttacker.z;
+      return dot > 0.0;
+   }
 }

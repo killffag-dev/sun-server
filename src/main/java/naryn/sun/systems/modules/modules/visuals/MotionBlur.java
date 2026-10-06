@@ -22,17 +22,19 @@ import org.lwjgl.glfw.GLFWVidMode;
 
 @ModuleInfo(name = "Motion Blur", category = ModuleCategory.VISUALS, desc = "modules.descriptions.motion_blur")
 public class MotionBlur extends BaseModule {
-   private final SliderSetting strength = new SliderSetting(this, "modules.settings.motion_blur.strength")
+   private final ModeSetting algorithm = new ModeSetting(this, "modules.settings.motion_blur.algorithm");
+   private final ModeSetting.Value backwards = new ModeSetting.Value(this.algorithm, "modules.settings.motion_blur.algorithm.backwards");
+   private final ModeSetting.Value centered = new ModeSetting.Value(this.algorithm, "modules.settings.motion_blur.algorithm.centered");
+
+   private final naryn.sun.systems.setting.settings.GroupSetting generalGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.motion_blur.group.general");
+   private final BooleanSetting depthBlur = new BooleanSetting(this.generalGroup, "modules.settings.motion_blur.depth_blur").enable();
+   private final BooleanSetting refreshRateScaling = new BooleanSetting(this.generalGroup, "modules.settings.motion_blur.refresh_rate_scaling").enable();
+   private final BooleanSetting thirdPerson = new BooleanSetting(this.generalGroup, "modules.settings.motion_blur.third_person").enable();
+   private final SliderSetting strength = new SliderSetting(this.generalGroup, "modules.settings.motion_blur.strength")
       .min(0.0F)
       .max(3.0F)
       .step(0.05F)
       .currentValue(1.0F);
-   private final ModeSetting algorithm = new ModeSetting(this, "modules.settings.motion_blur.algorithm");
-   private final ModeSetting.Value backwards = new ModeSetting.Value(this.algorithm, "modules.settings.motion_blur.algorithm.backwards");
-   private final ModeSetting.Value centered = new ModeSetting.Value(this.algorithm, "modules.settings.motion_blur.algorithm.centered");
-   private final BooleanSetting depthBlur = new BooleanSetting(this, "modules.settings.motion_blur.depth_blur").enable();
-   private final BooleanSetting refreshRateScaling = new BooleanSetting(this, "modules.settings.motion_blur.refresh_rate_scaling").enable();
-   private final BooleanSetting thirdPerson = new BooleanSetting(this, "modules.settings.motion_blur.third_person").enable();
 
    {
       this.centered.select();

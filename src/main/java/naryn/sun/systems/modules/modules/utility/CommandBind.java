@@ -67,7 +67,7 @@ public class CommandBind extends BaseModule {
     private final List<CommandBindEntrySetting> entries = new ArrayList<>();
 
     private final EventListener<KeyPressEvent> onKeyPress = event -> {
-        if (event.getAction() != 1 || mc.currentScreen != null || mc.player == null) {
+        if (event.isCancelled() || event.getAction() != 1 || mc.currentScreen != null || mc.player == null) {
             return;
         }
 

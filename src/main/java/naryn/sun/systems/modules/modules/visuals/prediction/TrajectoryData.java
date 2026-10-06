@@ -17,6 +17,7 @@ public record TrajectoryData(
     String displayName,
     boolean inHand,
     List<StatusEffectInstance> potionEffects,
+    List<String> effectLabels,
     float splashRadius
 ) {
     public Vec3d getLandingPos() {

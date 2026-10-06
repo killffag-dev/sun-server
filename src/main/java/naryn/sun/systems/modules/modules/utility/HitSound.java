@@ -14,13 +14,16 @@ import java.util.Random;
 
 @ModuleInfo(name = "Hit Sound", category = ModuleCategory.UTILITY, desc = "modules.descriptions.hit_sound")
 public class HitSound extends BaseModule {
-   private final BooleanSetting missSound = new BooleanSetting(this, "modules.settings.hit_sound.miss_sound").enable();
+   // === 1. Mode First (Top-Level) ===
    private final ModeSetting pack = new ModeSetting(this, "modules.settings.hit_sound.pack");
    private final ModeSetting.Value crisp = new ModeSetting.Value(this.pack, "modules.settings.hit_sound.pack.crisp").select();
    private final ModeSetting.Value metal = new ModeSetting.Value(this.pack, "modules.settings.hit_sound.pack.metal");
    private final ModeSetting.Value asmr = new ModeSetting.Value(this.pack, "modules.settings.hit_sound.pack.asmr");
    private final ModeSetting.Value slap = new ModeSetting.Value(this.pack, "modules.settings.hit_sound.pack.slap");
    private final ModeSetting.Value crystal = new ModeSetting.Value(this.pack, "modules.settings.hit_sound.pack.crystal");
+
+   // === 2. General & Logic Box ===
+   private final BooleanSetting missSound = new BooleanSetting(this, "modules.settings.hit_sound.miss_sound").enable();
 
    private final Random random = new Random();
 

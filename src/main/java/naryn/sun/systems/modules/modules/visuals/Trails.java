@@ -43,7 +43,6 @@ import net.minecraft.item.Items;
 import net.minecraft.item.consume.UseAction;
 import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 
@@ -63,24 +62,27 @@ public class Trails extends BaseModule {
     private final ModeSetting.Value lineMode = new ModeSetting.Value(this.mode, "modules.settings.trails.mode.line");
     private final ModeSetting.Value projectionMode = new ModeSetting.Value(this.mode, "modules.settings.trails.mode.projection");
 
-    private final SliderSetting length = new SliderSetting(this, "modules.settings.trails.length", () -> !this.lineMode.isSelected())
+    private final naryn.sun.systems.setting.settings.GroupSetting paramsGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.trails.group.params");
+    private final SliderSetting length = new SliderSetting(this.paramsGroup, "modules.settings.trails.length", () -> !this.lineMode.isSelected())
         .min(5.0F).max(60.0F).step(1.0F).currentValue(20.0F);
-
-    private final SliderSetting cloneCount = new SliderSetting(this, "modules.settings.trails.clone_count", () -> !this.projectionMode.isSelected())
+    private final SliderSetting cloneCount = new SliderSetting(this.paramsGroup, "modules.settings.trails.clone_count", () -> !this.projectionMode.isSelected())
         .min(2.0F).max(15.0F).step(1.0F).currentValue(5.0F);
-
-    private final SliderSetting spawnDistance = new SliderSetting(this, "modules.settings.trails.spawn_distance", () -> !this.projectionMode.isSelected())
+    private final SliderSetting spawnDistance = new SliderSetting(this.paramsGroup, "modules.settings.trails.spawn_distance", () -> !this.projectionMode.isSelected())
         .min(0.5F).max(6.0F).step(0.1F).currentValue(2.0F);
-
-    private final SliderSetting fade = new SliderSetting(this, "modules.settings.trails.fade", () -> !this.projectionMode.isSelected())
+    private final SliderSetting fade = new SliderSetting(this.paramsGroup, "modules.settings.trails.fade", () -> !this.projectionMode.isSelected())
         .min(0.5F).max(10.0F).step(0.5F).suffix(" sec").currentValue(2.5F);
 
-    private final BooleanSetting onlyThirdPerson = new BooleanSetting(this, "modules.settings.trails.only_third_person");
+    private final naryn.sun.systems.setting.settings.GroupSetting generalGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.trails.group.general");
+    private final BooleanSetting onlyThirdPerson = new BooleanSetting(this.generalGroup, "modules.settings.trails.only_third_person");
 
-    private final ColorSetting color = new ColorSetting(this, "modules.settings.trails.color").color(Colors.ACCENT).alpha(true);
+    private final naryn.sun.systems.setting.settings.GroupSetting colorGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.trails.group.color");
+    private final ColorSetting color = new ColorSetting(this.colorGroup, "modules.settings.trails.color").color(Colors.ACCENT).alpha(true);
 
     private final Deque<Vec3d> points = new ArrayDeque<>();
     private final Deque<FakePlayerEntity> ghosts = new ArrayDeque<>();
+    private final List<Vec3d> rawBuffer = new ArrayList<>(128);
+    private double[] smoothCoords = new double[1024 * 3];
+    private int smoothCoordCount = 0;
     private Vec3d lastCapturePos;
 
     private final EventListener<Render3DEvent> on3DRender = event -> {
@@ -233,12 +235,12 @@ public class Trails extends BaseModule {
             return;
         }
 
-        List<Vec3d> raw = new ArrayList<>(this.points);
-        Vec3d headPos = MCPlayerAccess.get().getLerpedPos(event.getTickDelta());
-        raw.add(headPos);
+        this.rawBuffer.clear();
+        this.rawBuffer.addAll(this.points);
+        this.rawBuffer.add(MCPlayerAccess.get().getLerpedPos(event.getTickDelta()));
 
-        List<Vec3d> path = this.buildSmoothedPath(raw);
-        if (path.size() < 2) {
+        this.buildSmoothedCoords(this.rawBuffer);
+        if (this.smoothCoordCount < 6) {
             return;
         }
 
@@ -255,31 +257,39 @@ public class Trails extends BaseModule {
         RenderSystem.depthMask(false);
         RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
-        this.buildRibbon(path, cameraPos, matrix, height, base);
+        this.buildRibbon(cameraPos, matrix, height, base);
 
         RenderSystem.depthMask(true);
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
     }
 
-    private void buildRibbon(List<Vec3d> path, Vec3d cameraPos, Matrix4f matrix, float height, ColorRGBA base) {
-        int count = path.size();
+    private void buildRibbon(Vec3d cameraPos, Matrix4f matrix, float height, ColorRGBA base) {
+        int count = this.smoothCoordCount / 3;
         BufferBuilder buffer = RenderSystem.renderThreadTesselator().begin(DrawMode.TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
 
+        int r = (int) base.getRed();
+        int g = (int) base.getGreen();
+        int b = (int) base.getBlue();
+        float baseAlpha = base.getAlpha();
+
+        double camX = cameraPos.x;
+        double camY = cameraPos.y;
+        double camZ = cameraPos.z;
+
         for (int i = 0; i < count; i++) {
-            Vec3d relative = path.get(i).subtract(cameraPos);
+            int idx = i * 3;
+            float bx = (float) (this.smoothCoords[idx] - camX);
+            float by = (float) (this.smoothCoords[idx + 1] - camY);
+            float bz = (float) (this.smoothCoords[idx + 2] - camZ);
+            float ty = by + height;
 
             float lengthFraction = (float) i / (float) (count - 1);
-            float bottomAlpha = base.getAlpha() * lengthFraction;
-            float topAlpha = bottomAlpha * TOP_ALPHA_FACTOR;
+            int bottomA = Math.round(baseAlpha * lengthFraction);
+            int topA = Math.round(bottomA * TOP_ALPHA_FACTOR);
 
-            int bottomColor = base.withAlpha(bottomAlpha).getRGB();
-            int topColor = base.withAlpha(topAlpha).getRGB();
-
-            float bx = (float) relative.x;
-            float by = (float) relative.y;
-            float bz = (float) relative.z;
-            float ty = by + height;
+            int bottomColor = ((bottomA & 0xFF) << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+            int topColor = ((topA & 0xFF) << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
 
             buffer.vertex(matrix, bx, ty, bz).color(topColor);
             buffer.vertex(matrix, bx, by, bz).color(bottomColor);
@@ -291,11 +301,16 @@ public class Trails extends BaseModule {
         }
     }
 
-    private List<Vec3d> buildSmoothedPath(List<Vec3d> raw) {
+    private void buildSmoothedCoords(List<Vec3d> raw) {
         int n = raw.size();
-        List<Vec3d> smoothed = new ArrayList<>();
+        this.smoothCoordCount = 0;
         if (n < 2) {
-            return raw;
+            return;
+        }
+
+        int maxSteps = (n - 1) * (SUBDIVISIONS + 1) * 3;
+        if (this.smoothCoords.length < maxSteps) {
+            this.smoothCoords = new double[maxSteps * 2];
         }
 
         for (int i = 0; i < n - 1; i++) {
@@ -307,22 +322,18 @@ public class Trails extends BaseModule {
             int steps = (i == n - 2) ? SUBDIVISIONS + 1 : SUBDIVISIONS;
             for (int s = 0; s < steps; s++) {
                 float t = (float) s / (float) SUBDIVISIONS;
-                smoothed.add(this.catmullRom(p0, p1, p2, p3, t));
+                this.catmullRomToBuffer(p0, p1, p2, p3, t);
             }
         }
-
-        return smoothed;
     }
 
-    private Vec3d catmullRom(Vec3d p0, Vec3d p1, Vec3d p2, Vec3d p3, float t) {
+    private void catmullRomToBuffer(Vec3d p0, Vec3d p1, Vec3d p2, Vec3d p3, float t) {
         double t2 = t * t;
         double t3 = t2 * t;
 
-        double x = 0.5 * (2.0 * p1.x + (-p0.x + p2.x) * t + (2.0 * p0.x - 5.0 * p1.x + 4.0 * p2.x - p3.x) * t2 + (-p0.x + 3.0 * p1.x - 3.0 * p2.x + p3.x) * t3);
-        double y = 0.5 * (2.0 * p1.y + (-p0.y + p2.y) * t + (2.0 * p0.y - 5.0 * p1.y + 4.0 * p2.y - p3.y) * t2 + (-p0.y + 3.0 * p1.y - 3.0 * p2.y + p3.y) * t3);
-        double z = 0.5 * (2.0 * p1.z + (-p0.z + p2.z) * t + (2.0 * p0.z - 5.0 * p1.z + 4.0 * p2.z - p3.z) * t2 + (-p0.z + 3.0 * p1.z - 3.0 * p2.z + p3.z) * t3);
-
-        return new Vec3d(x, y, z);
+        this.smoothCoords[this.smoothCoordCount++] = 0.5 * (2.0 * p1.x + (-p0.x + p2.x) * t + (2.0 * p0.x - 5.0 * p1.x + 4.0 * p2.x - p3.x) * t2 + (-p0.x + 3.0 * p1.x - 3.0 * p2.x + p3.x) * t3);
+        this.smoothCoords[this.smoothCoordCount++] = 0.5 * (2.0 * p1.y + (-p0.y + p2.y) * t + (2.0 * p0.y - 5.0 * p1.y + 4.0 * p2.y - p3.y) * t2 + (-p0.y + 3.0 * p1.y - 3.0 * p2.y + p3.y) * t3);
+        this.smoothCoords[this.smoothCoordCount++] = 0.5 * (2.0 * p1.z + (-p0.z + p2.z) * t + (2.0 * p0.z - 5.0 * p1.z + 4.0 * p2.z - p3.z) * t2 + (-p0.z + 3.0 * p1.z - 3.0 * p2.z + p3.z) * t3);
     }
 
     // ==================== PROJECTION MODE (Frozen Ghosts) ====================
@@ -351,6 +362,12 @@ public class Trails extends BaseModule {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(false);
+        RenderSystem.setShaderColor(
+            base.getRed() / 255.0F,
+            base.getGreen() / 255.0F,
+            base.getBlue() / 255.0F,
+            HOLOGRAM_ALPHA * baseAlpha
+        );
 
         for (FakePlayerEntity ghost : this.ghosts) {
             Vec3d ghostPos = ghost.getPos();
@@ -359,36 +376,19 @@ public class Trails extends BaseModule {
                 continue;
             }
 
-            Box cullBox = new Box(
-                ghostPos.x - GHOST_CULL_HALF_WIDTH, ghostPos.y + GHOST_CULL_MIN_Y, ghostPos.z - GHOST_CULL_HALF_WIDTH,
-                ghostPos.x + GHOST_CULL_HALF_WIDTH, ghostPos.y + GHOST_CULL_MAX_Y, ghostPos.z + GHOST_CULL_HALF_WIDTH
-            );
-            if (cullBox.contains(cameraPos)) {
+            if (cameraPos.x >= ghostPos.x - GHOST_CULL_HALF_WIDTH && cameraPos.x <= ghostPos.x + GHOST_CULL_HALF_WIDTH
+                && cameraPos.y >= ghostPos.y + GHOST_CULL_MIN_Y && cameraPos.y <= ghostPos.y + GHOST_CULL_MAX_Y
+                && cameraPos.z >= ghostPos.z - GHOST_CULL_HALF_WIDTH && cameraPos.z <= ghostPos.z + GHOST_CULL_HALF_WIDTH) {
                 continue;
             }
-
-            long elapsed = now - ghost.spawnTime;
-            float timeFraction = Math.max(0.0F, Math.min(1.0F, 1.0F - (float) elapsed / (float) lifetimeMs));
-            float alpha = HOLOGRAM_ALPHA * timeFraction * baseAlpha;
-
-            if (alpha <= 0.001F) {
-                continue;
-            }
-
-            RenderSystem.setShaderColor(
-                base.getRed() / 255.0F,
-                base.getGreen() / 255.0F,
-                base.getBlue() / 255.0F,
-                alpha
-            );
 
             double x = ghostPos.x - cameraPos.x;
             double y = ghostPos.y - cameraPos.y;
             double z = ghostPos.z - cameraPos.z;
 
             dispatcher.render(ghost, x, y, z, 1.0F, matrices, immediate, light);
-            immediate.draw();
         }
+        immediate.draw();
 
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.depthMask(true);

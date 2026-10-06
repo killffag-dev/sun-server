@@ -12,10 +12,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(SoundSystem.class)
 public class SoundSystemMixin {
+   @org.spongepowered.asm.mixin.Unique private static PacketFilter sun$packetFilter;
+
+   @org.spongepowered.asm.mixin.Unique
+   private static PacketFilter sun$getPacketFilter() {
+      if (sun$packetFilter == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$packetFilter = Sun.getInstance().getModuleManager().getModule(PacketFilter.class);
+      }
+      return sun$packetFilter;
+   }
+
    @Inject(method = "play(Lnet/minecraft/client/sound/SoundInstance;)V", at = @At("HEAD"), cancellable = true)
    private void onPlaySound(SoundInstance sound, CallbackInfo ci) {
       if (sound != null && sound.getId() != null) {
-         PacketFilter packetFilter = Sun.getInstance().getModuleManager().getModule(PacketFilter.class);
+         PacketFilter packetFilter = sun$getPacketFilter();
          if (packetFilter != null && packetFilter.shouldDropSound(sound.getId().toString())) {
             ci.cancel();
             return;

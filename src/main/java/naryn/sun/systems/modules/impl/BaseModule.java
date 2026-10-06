@@ -68,9 +68,15 @@ public abstract class BaseModule implements Module {
          if (this.enabled) {
             Sun.getInstance().getEventManager().subscribe(this);
             this.onEnable();
+            if (Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+               Sun.getInstance().getModuleManager().onModuleEnabled(this);
+            }
          } else {
             Sun.getInstance().getEventManager().unsubscribe(this);
             this.onDisable();
+            if (Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+               Sun.getInstance().getModuleManager().onModuleDisabled(this);
+            }
          }
       }
    }
@@ -147,7 +153,11 @@ public abstract class BaseModule implements Module {
    @Generated
    @Override
    public void setKey(int key) {
+      int oldKey = this.key;
       this.key = key;
+      if (Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         Sun.getInstance().getModuleManager().updateKeyBind(this, oldKey, key);
+      }
    }
 
    @Generated
@@ -157,7 +167,7 @@ public abstract class BaseModule implements Module {
 
    @Generated
    public void setEnabled(boolean enabled) {
-      this.enabled = enabled;
+      this.setEnabled(enabled, false);
    }
 
    @Generated

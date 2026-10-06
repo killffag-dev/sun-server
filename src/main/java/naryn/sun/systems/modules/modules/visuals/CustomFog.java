@@ -6,6 +6,7 @@ import naryn.sun.systems.modules.api.ModuleInfo;
 import naryn.sun.systems.modules.impl.BaseModule;
 import naryn.sun.systems.setting.settings.BooleanSetting;
 import naryn.sun.systems.setting.settings.ColorSetting;
+import naryn.sun.systems.setting.settings.GroupSetting;
 import naryn.sun.systems.setting.settings.ModeSetting;
 import naryn.sun.systems.setting.settings.RangeSetting;
 import naryn.sun.utility.colors.ColorRGBA;
@@ -23,22 +24,29 @@ import net.minecraft.util.math.MathHelper;
 
 @ModuleInfo(name = "Custom Fog", category = ModuleCategory.VISUALS)
 public class CustomFog extends BaseModule {
+   // === 1. Mode First (Top-Level) ===
    private final ModeSetting mode = new ModeSetting(this, "modules.settings.custom_fog.mode");
    private final ModeSetting.Value custom = new ModeSetting.Value(this.mode, "modules.settings.custom_fog.mode.custom").select();
    private final ModeSetting.Value noFog = new ModeSetting.Value(this.mode, "modules.settings.custom_fog.mode.no_fog");
 
-   private final RangeSetting distance = new RangeSetting(this, "modules.settings.custom_fog.distance", () -> !this.custom.isSelected())
+   // === 2. Mode-Specific Settings Box ===
+   private final GroupSetting customGroup = new GroupSetting(this, "modules.settings.custom_fog.group.custom", () -> !this.custom.isSelected());
+   private final RangeSetting distance = new RangeSetting(this.customGroup, "modules.settings.custom_fog.distance")
       .min(1.0F)
       .max(100.0F)
       .step(1.0F)
       .firstValue(10.0F)
       .secondValue(50.0F);
 
-   private final ColorSetting fogColor = new ColorSetting(this, "modules.settings.custom_fog.color", () -> !this.custom.isSelected())
+   // === 3. General & Logic Box ===
+   private final GroupSetting generalGroup = new GroupSetting(this, "modules.settings.custom_fog.group.general");
+   private final BooleanSetting removeLiquidFog = new BooleanSetting(this.generalGroup, "modules.settings.custom_fog.remove_liquid_fog", () -> !this.noFog.isSelected());
+
+   // === 4. Colors at the Very Bottom ===
+   private final GroupSetting visualGroup = new GroupSetting(this, "modules.settings.custom_fog.group.visual", () -> !this.custom.isSelected());
+   private final ColorSetting fogColor = new ColorSetting(this.visualGroup, "modules.settings.custom_fog.color")
       .color(Colors.ACCENT)
       .alpha(true);
-
-   private final BooleanSetting removeLiquidFog = new BooleanSetting(this, "modules.settings.custom_fog.remove_liquid_fog", () -> !this.noFog.isSelected());
 
    public boolean isNoFog() {
       return this.isEnabled() && this.noFog.isSelected();

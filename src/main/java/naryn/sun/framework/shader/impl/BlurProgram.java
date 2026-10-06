@@ -25,6 +25,8 @@ public class BlurProgram implements IMinecraft, IWindow {
    private static KawaseBlurProgram kawaseUpProgram;
    private float blurOffset = 1.0F;
    private float blurDownscale = 0.5F;
+   private float lastDownscale = -1.0F;
+   private final CustomRenderTarget[] buffers = new CustomRenderTarget[2];
 
    @Compile
    public void initShaders() {
@@ -37,8 +39,11 @@ public class BlurProgram implements IMinecraft, IWindow {
          this.blurOffset = 1.0F;
          CustomRenderTarget cache = (CustomRenderTarget)CACHE.get();
          CustomRenderTarget buffer = (CustomRenderTarget)BUFFER.get();
-         cache.setDownscale(this.blurDownscale).setLinear();
-         buffer.setDownscale(this.blurDownscale).setLinear();
+         if (this.lastDownscale != this.blurDownscale) {
+            cache.setDownscale(this.blurDownscale).setLinear();
+            buffer.setDownscale(this.blurDownscale).setLinear();
+            this.lastDownscale = this.blurDownscale;
+         }
          RenderSystem.enableBlend();
          RenderSystem.defaultBlendFunc();
          kawaseDownProgram.use();
@@ -47,32 +52,33 @@ public class BlurProgram implements IMinecraft, IWindow {
          MAIN_FBO.beginRead();
          RenderSystem.setShaderTexture(0, MAIN_FBO.getColorAttachment());
          this.drawQuad(0.0F, 0.0F, mw.getScaledWidth(), mw.getScaledHeight());
-         cache.stop();
-         CustomRenderTarget[] buffers = new CustomRenderTarget[]{cache, buffer};
+         cache.endWrite();
+         this.buffers[0] = cache;
+         this.buffers[1] = buffer;
          int steps = 3;
 
          for (int i = 1; i < 3; i++) {
             int step = i % 2;
-            buffers[step].setup();
-            buffers[(step + 1) % 2].beginRead();
-            RenderSystem.setShaderTexture(0, buffers[(step + 1) % 2].getColorAttachment());
-            kawaseDownProgram.updateUniforms(this.blurOffset, buffers[(step + 1) % 2].textureWidth, buffers[(step + 1) % 2].textureHeight);
+            this.buffers[step].setup();
+            this.buffers[(step + 1) % 2].beginRead();
+            RenderSystem.setShaderTexture(0, this.buffers[(step + 1) % 2].getColorAttachment());
+            kawaseDownProgram.updateUniforms(this.blurOffset, this.buffers[(step + 1) % 2].textureWidth, this.buffers[(step + 1) % 2].textureHeight);
             this.drawQuad(0.0F, 0.0F, mw.getScaledWidth(), mw.getScaledHeight());
-            buffers[(step + 1) % 2].endRead();
-            buffers[step].stop();
+            this.buffers[(step + 1) % 2].endRead();
+            this.buffers[step].endWrite();
          }
 
          kawaseUpProgram.use();
 
          for (int i = 0; i < 3; i++) {
             int step = i % 2;
-            buffers[(step + 1) % 2].setup();
-            buffers[step].beginRead();
-            RenderSystem.setShaderTexture(0, buffers[step].getColorAttachment());
-            kawaseUpProgram.updateUniforms(this.blurOffset, buffers[step].textureWidth, buffers[step].textureHeight);
+            this.buffers[(step + 1) % 2].setup();
+            this.buffers[step].beginRead();
+            RenderSystem.setShaderTexture(0, this.buffers[step].getColorAttachment());
+            kawaseUpProgram.updateUniforms(this.blurOffset, this.buffers[step].textureWidth, this.buffers[step].textureHeight);
             this.drawQuad(0.0F, 0.0F, mw.getScaledWidth(), mw.getScaledHeight());
-            buffers[step].endRead();
-            buffers[step].stop();
+            this.buffers[step].endRead();
+            this.buffers[(step + 1) % 2].endWrite();
          }
 
          MAIN_FBO.endRead();

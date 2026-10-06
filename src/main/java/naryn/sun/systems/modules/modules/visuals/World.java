@@ -51,10 +51,13 @@ public class World extends BaseModule {
    private final ModeSetting.Value heart = new ModeSetting.Value(this.model, "modules.settings.world.model.heart");
    private final ModeSetting.Value random = new ModeSetting.Value(this.model, "modules.settings.world.model.random");
 
-   private final ColorSetting color = new ColorSetting(this, "modules.settings.world.color").color(Colors.ACCENT);
-   private final SliderSetting size = new SliderSetting(this, "modules.settings.world.size").min(0.1F).max(0.6F).step(0.05F).currentValue(0.25F);
-   private final SliderSetting count = new SliderSetting(this, "modules.settings.world.count").min(20.0F).max(120.0F).step(5.0F).currentValue(75.0F);
-   private final BooleanSetting bloom = new BooleanSetting(this, "modules.settings.world.bloom").enabled(true);
+   private final naryn.sun.systems.setting.settings.GroupSetting generalGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.world.group.general");
+   private final BooleanSetting bloom = new BooleanSetting(this.generalGroup, "modules.settings.world.bloom").enabled(true);
+   private final SliderSetting size = new SliderSetting(this.generalGroup, "modules.settings.world.size").min(0.1F).max(0.6F).step(0.05F).currentValue(0.25F);
+   private final SliderSetting count = new SliderSetting(this.generalGroup, "modules.settings.world.count").min(20.0F).max(120.0F).step(5.0F).currentValue(75.0F);
+
+   private final naryn.sun.systems.setting.settings.GroupSetting colorGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.world.group.color");
+   private final ColorSetting color = new ColorSetting(this.colorGroup, "modules.settings.world.color").color(Colors.ACCENT);
 
    private final EventListener<Render3DEvent> on3DRender = event -> {
       MatrixStack ms = event.getMatrices();

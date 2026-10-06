@@ -3,7 +3,7 @@ package naryn.sun.systems.modules.modules.visuals.targetesp;
 import com.mojang.blaze3d.systems.RenderSystem;
 import naryn.sun.utility.colors.ColorRGBA;
 import naryn.sun.utility.interfaces.IMinecraft;
-import naryn.sun.utility.math.pool.MathPool;
+import naryn.sun.utility.math.MathPool;
 import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
@@ -42,35 +42,30 @@ public final class TargetOrbitCrystalsRenderer implements IMinecraft {
         float speedDeg = speed * 0.3F;
         float tickTime = (System.currentTimeMillis() % 1000000L) / 50.0F;
 
-        Vector3f right = MathPool.vec3(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
-        Vector3f up = MathPool.vec3(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f right = MathPool.vec3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f up = MathPool.vec3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
 
         RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
-        try {
-            for (int i = 0; i < 6; i++) {
-                float phase = (float) (i * 2.0 * Math.PI / 6.0);
-                float angle = (float) Math.toRadians(tickTime * speedDeg) + phase;
-                float ox = (float) (Math.cos(angle) * radius);
-                float oz = (float) (Math.sin(angle) * radius);
-                float yOff = (float) (Math.sin(angle * 0.7 + phase) * 0.18);
+        for (int i = 0; i < 6; i++) {
+            float phase = (float) (i * 2.0 * Math.PI / 6.0);
+            float angle = (float) Math.toRadians(tickTime * speedDeg) + phase;
+            float ox = (float) (Math.cos(angle) * radius);
+            float oz = (float) (Math.sin(angle) * radius);
+            float yOff = (float) (Math.sin(angle * 0.7 + phase) * 0.18);
 
-                float px = (float) (targetPos.x - camPos.x) + ox;
-                float py = centerY + yOff;
-                float pz = (float) (targetPos.z - camPos.z) + oz;
+            float px = (float) (targetPos.x - camPos.x) + ox;
+            float py = centerY + yOff;
+            float pz = (float) (targetPos.z - camPos.z) + oz;
 
-                ms.push();
-                ms.translate(px, py, pz);
-                drawCrystalShape(ms, size, r, g, b, animVal * 0.90F);
-                ms.pop();
+            ms.push();
+            ms.translate(px, py, pz);
+            drawCrystalShape(ms, size, r, g, b, animVal * 0.90F);
+            ms.pop();
 
-                TargetESPCommon.drawSoftGlow(ms, px, py, pz, size * 3.5F, r, g, b, Math.min(1.0F, animVal * 0.18F * glow), right, up);
-                TargetESPCommon.drawSoftGlow(ms, px, py, pz, size * 6.0F, r, g, b, Math.min(1.0F, animVal * 0.08F * glow), right, up);
-                TargetESPCommon.drawSoftGlow(ms, px, py, pz, size * 10.0F, r, g, b, Math.min(1.0F, animVal * 0.03F * glow), right, up);
-            }
-        } finally {
-            MathPool.release(right);
-            MathPool.release(up);
+            TargetESPCommon.drawSoftGlow(ms, px, py, pz, size * 3.5F, r, g, b, Math.min(1.0F, animVal * 0.18F * glow), right, up);
+            TargetESPCommon.drawSoftGlow(ms, px, py, pz, size * 6.0F, r, g, b, Math.min(1.0F, animVal * 0.08F * glow), right, up);
+            TargetESPCommon.drawSoftGlow(ms, px, py, pz, size * 10.0F, r, g, b, Math.min(1.0F, animVal * 0.03F * glow), right, up);
         }
     }
 
@@ -79,21 +74,44 @@ public final class TargetOrbitCrystalsRenderer implements IMinecraft {
         BufferBuilder buf = RenderSystem.renderThreadTesselator().begin(DrawMode.TRIANGLES, VertexFormats.POSITION_COLOR);
         float h = size * 1.8F;
         float hb = size * 1.0F;
-        float[][] ring = {{size, 0, 0}, {0, 0, size}, {-size, 0, 0}, {0, 0, -size}};
-        for (int i = 0; i < 4; i++) {
-            float[] aa = ring[i];
-            float[] c = ring[(i + 1) % 4];
-            buf.vertex(matrix, 0, h, 0).color(r, g, b, alpha);
-            buf.vertex(matrix, aa[0], 0, aa[2]).color(r, g, b, alpha * 0.45F);
-            buf.vertex(matrix, c[0], 0, c[2]).color(r, g, b, alpha * 0.45F);
-        }
-        for (int i = 0; i < 4; i++) {
-            float[] aa = ring[i];
-            float[] c = ring[(i + 1) % 4];
-            buf.vertex(matrix, 0, -hb, 0).color(r, g, b, alpha * 0.85F);
-            buf.vertex(matrix, c[0], 0, c[2]).color(r, g, b, alpha * 0.35F);
-            buf.vertex(matrix, aa[0], 0, aa[2]).color(r, g, b, alpha * 0.35F);
-        }
+        float a45 = alpha * 0.45F;
+        float a35 = alpha * 0.35F;
+        float a85 = alpha * 0.85F;
+
+        // Top pyramid (4 faces)
+        buf.vertex(matrix, 0, h, 0).color(r, g, b, alpha);
+        buf.vertex(matrix, size, 0, 0).color(r, g, b, a45);
+        buf.vertex(matrix, 0, 0, size).color(r, g, b, a45);
+
+        buf.vertex(matrix, 0, h, 0).color(r, g, b, alpha);
+        buf.vertex(matrix, 0, 0, size).color(r, g, b, a45);
+        buf.vertex(matrix, -size, 0, 0).color(r, g, b, a45);
+
+        buf.vertex(matrix, 0, h, 0).color(r, g, b, alpha);
+        buf.vertex(matrix, -size, 0, 0).color(r, g, b, a45);
+        buf.vertex(matrix, 0, 0, -size).color(r, g, b, a45);
+
+        buf.vertex(matrix, 0, h, 0).color(r, g, b, alpha);
+        buf.vertex(matrix, 0, 0, -size).color(r, g, b, a45);
+        buf.vertex(matrix, size, 0, 0).color(r, g, b, a45);
+
+        // Bottom pyramid (4 faces)
+        buf.vertex(matrix, 0, -hb, 0).color(r, g, b, a85);
+        buf.vertex(matrix, 0, 0, size).color(r, g, b, a35);
+        buf.vertex(matrix, size, 0, 0).color(r, g, b, a35);
+
+        buf.vertex(matrix, 0, -hb, 0).color(r, g, b, a85);
+        buf.vertex(matrix, -size, 0, 0).color(r, g, b, a35);
+        buf.vertex(matrix, 0, 0, size).color(r, g, b, a35);
+
+        buf.vertex(matrix, 0, -hb, 0).color(r, g, b, a85);
+        buf.vertex(matrix, 0, 0, -size).color(r, g, b, a35);
+        buf.vertex(matrix, -size, 0, 0).color(r, g, b, a35);
+
+        buf.vertex(matrix, 0, -hb, 0).color(r, g, b, a85);
+        buf.vertex(matrix, size, 0, 0).color(r, g, b, a35);
+        buf.vertex(matrix, 0, 0, -size).color(r, g, b, a35);
+
         BufferRenderer.drawWithGlobalProgram(buf.end());
     }
 }

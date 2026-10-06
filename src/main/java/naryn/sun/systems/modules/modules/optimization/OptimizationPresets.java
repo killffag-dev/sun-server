@@ -23,6 +23,7 @@ public final class OptimizationPresets {
             if (optimizer != null) {
                 optimizer.enable();
                 optimizer.getEntityShadows().enable();
+                optimizer.getFrustumCulling().enable();
                 optimizer.getEntityOcclusionCulling().enable();
                 optimizer.getBlockEntityOcclusionCulling().enable();
                 optimizer.getEntityDistanceCulling().enable();
@@ -36,12 +37,14 @@ public final class OptimizationPresets {
                 optimizer.getCullParticles().enabled(false);
                 optimizer.getDisableGlint().enabled(false);
                 optimizer.getStaticFluids().enabled(false);
+                optimizer.getAdaptiveMobLod().enable();
             }
             if (noRender != null) {
                 noRender.disable();
             }
             if (packetFilter != null) {
                 packetFilter.enable();
+                packetFilter.getDropOffscreenParticles().enable();
                 packetFilter.getDropObstacleParticles().enable();
                 packetFilter.getMaxParticlesPerSecond().setCurrentValue(300.0F);
                 packetFilter.getSoundLimiter().enable();
@@ -53,6 +56,7 @@ public final class OptimizationPresets {
             if (optimizer != null) {
                 optimizer.enable();
                 optimizer.getEntityShadows().enable();
+                optimizer.getFrustumCulling().enable();
                 optimizer.getEntityOcclusionCulling().enable();
                 optimizer.getBlockEntityOcclusionCulling().enable();
                 optimizer.getEntityDistanceCulling().enable();
@@ -66,6 +70,7 @@ public final class OptimizationPresets {
                 optimizer.getCullParticles().enable();
                 optimizer.getDisableGlint().enabled(false);
                 optimizer.getStaticFluids().enabled(false);
+                optimizer.getAdaptiveMobLod().enable();
             }
             if (noRender != null) {
                 noRender.enable();
@@ -75,6 +80,7 @@ public final class OptimizationPresets {
             }
             if (packetFilter != null) {
                 packetFilter.enable();
+                packetFilter.getDropOffscreenParticles().enable();
                 packetFilter.getDropObstacleParticles().enable();
                 packetFilter.getMaxParticlesPerSecond().setCurrentValue(200.0F);
                 packetFilter.getSoundLimiter().enable();
@@ -86,6 +92,7 @@ public final class OptimizationPresets {
             if (optimizer != null) {
                 optimizer.enable();
                 optimizer.getEntityShadows().enabled(false);
+                optimizer.getFrustumCulling().enable();
                 optimizer.getEntityOcclusionCulling().enable();
                 optimizer.getBlockEntityOcclusionCulling().enable();
                 optimizer.getEntityDistanceCulling().enable();
@@ -99,6 +106,7 @@ public final class OptimizationPresets {
                 optimizer.getCullParticles().enable();
                 optimizer.getDisableGlint().enable();
                 optimizer.getStaticFluids().enable();
+                optimizer.getAdaptiveMobLod().enable();
             }
             if (noRender != null) {
                 noRender.enable();
@@ -112,6 +120,7 @@ public final class OptimizationPresets {
             }
             if (packetFilter != null) {
                 packetFilter.enable();
+                packetFilter.getDropOffscreenParticles().enable();
                 packetFilter.getDropObstacleParticles().enable();
                 packetFilter.getMaxParticlesPerSecond().setCurrentValue(100.0F);
                 packetFilter.getSoundLimiter().enable();
@@ -123,6 +132,7 @@ public final class OptimizationPresets {
             if (optimizer != null) {
                 optimizer.enable();
                 optimizer.getEntityShadows().enabled(false);
+                optimizer.getFrustumCulling().enable();
                 optimizer.getEntityOcclusionCulling().enable();
                 optimizer.getBlockEntityOcclusionCulling().enable();
                 optimizer.getEntityDistanceCulling().enable();
@@ -136,6 +146,7 @@ public final class OptimizationPresets {
                 optimizer.getCullParticles().enable();
                 optimizer.getDisableGlint().enable();
                 optimizer.getStaticFluids().enable();
+                optimizer.getAdaptiveMobLod().enable();
                 optimizer.getAggressiveGc().enable();
             }
             if (noRender != null) {
@@ -154,6 +165,7 @@ public final class OptimizationPresets {
             }
             if (packetFilter != null) {
                 packetFilter.enable();
+                packetFilter.getDropOffscreenParticles().enable();
                 packetFilter.getDropObstacleParticles().enable();
                 packetFilter.getMaxParticlesPerSecond().setCurrentValue(50.0F);
                 packetFilter.getSoundLimiter().enable();

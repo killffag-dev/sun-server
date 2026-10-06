@@ -85,14 +85,12 @@ public final class PredictionHudRenderer {
         context.drawText(font, data.displayName(), textX, textY, Colors.WHITE);
 
         // Эффекты зелий (если применимо)
-        if (data.potionEffects() != null && !data.potionEffects().isEmpty()) {
+        if (data.effectLabels() != null && !data.effectLabels().isEmpty()) {
             float effY = cardY + cardHeight + 3.0F;
-            for (StatusEffectInstance effect : data.potionEffects()) {
-                String effName = ((StatusEffect) effect.getEffectType().value()).getName().getString();
-                int amp = effect.getAmplifier();
-                String effLevel = amp > 0 ? " " + (amp + 1) : "";
-                String effTime = formatDuration(effect.getDuration());
-                String fullEffText = effName + effLevel + " (" + effTime + ")";
+            List<String> labels = data.effectLabels();
+            List<StatusEffectInstance> effects = data.potionEffects();
+            for (int i = 0; i < labels.size(); i++) {
+                String fullEffText = labels.get(i);
                 float effWidth = font.width(fullEffText) + 8.0F;
                 float effHeight = font.height() + 4.0F;
                 float effX = -effWidth / 2.0F;
@@ -100,7 +98,10 @@ public final class PredictionHudRenderer {
                 context.drawRoundedRect(effX, effY, effWidth, effHeight, BorderRadius.all(3.0F), GLASS_BG);
                 context.drawRoundedBorder(effX, effY, effWidth, effHeight, 0.5F, BorderRadius.all(3.0F), GLASS_BORDER);
 
-                ColorRGBA effColor = ColorRGBA.fromInt(((StatusEffect) effect.getEffectType().value()).getColor()).withAlpha(255.0F);
+                ColorRGBA effColor = ColorRGBA.WHITE;
+                if (effects != null && i < effects.size()) {
+                    effColor = ColorRGBA.fromInt(((StatusEffect) effects.get(i).getEffectType().value()).getColor()).withAlpha(255.0F);
+                }
                 context.drawText(font, fullEffText, effX + 4.0F, effY + 2.0F, effColor);
 
                 effY += effHeight + 2.0F;
@@ -108,14 +109,5 @@ public final class PredictionHudRenderer {
         }
 
         context.flushItems();
-    }
-
-    private static String formatDuration(int ticks) {
-        int seconds = ticks / 20;
-        int minutes = seconds / 60;
-        int remainingSeconds = seconds % 60;
-        return minutes > 0
-            ? String.format("%d:%02d", minutes, remainingSeconds)
-            : String.format("0:%02d", remainingSeconds);
     }
 }

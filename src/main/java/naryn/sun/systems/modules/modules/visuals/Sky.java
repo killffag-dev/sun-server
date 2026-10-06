@@ -23,19 +23,20 @@ public class Sky extends BaseModule {
    private final ModeSetting.Value highQuality = new ModeSetting.Value(this.quality, "modules.settings.sky.quality.high");
    private final ModeSetting.Value lowQuality = new ModeSetting.Value(this.quality, "modules.settings.sky.quality.low");
 
-   private final BooleanSetting secondLayer = new BooleanSetting(this, "modules.settings.sky.second_layer");
+   private final naryn.sun.systems.setting.settings.GroupSetting generalGroup = new naryn.sun.systems.setting.settings.GroupSetting(this, "modules.settings.sky.group.general");
+   private final BooleanSetting secondLayer = new BooleanSetting(this.generalGroup, "modules.settings.sky.second_layer");
 
-   private final SliderSetting intensity = new SliderSetting(this, "modules.settings.sky.intensity")
+   private final SliderSetting intensity = new SliderSetting(this.generalGroup, "modules.settings.sky.intensity")
       .min(0.0F)
       .max(3.0F)
       .step(0.05F)
       .currentValue(1.0F);
-   private final SliderSetting speed = new SliderSetting(this, "modules.settings.sky.speed")
+   private final SliderSetting speed = new SliderSetting(this.generalGroup, "modules.settings.sky.speed")
       .min(0.0F)
       .max(3.0F)
       .step(0.05F)
       .currentValue(1.0F);
-   private final SliderSetting scale = new SliderSetting(this, "modules.settings.sky.scale")
+   private final SliderSetting scale = new SliderSetting(this.generalGroup, "modules.settings.sky.scale")
       .min(0.1F)
       .max(5.0F)
       .step(0.05F)

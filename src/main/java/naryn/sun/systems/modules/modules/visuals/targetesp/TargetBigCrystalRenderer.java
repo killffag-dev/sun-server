@@ -3,7 +3,7 @@ package naryn.sun.systems.modules.modules.visuals.targetesp;
 import com.mojang.blaze3d.systems.RenderSystem;
 import naryn.sun.utility.colors.ColorRGBA;
 import naryn.sun.utility.interfaces.IMinecraft;
-import naryn.sun.utility.math.pool.MathPool;
+import naryn.sun.utility.math.MathPool;
 import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
@@ -21,6 +21,10 @@ public final class TargetBigCrystalRenderer implements IMinecraft {
 
     private static final int CRYSTAL_COUNT = 8;
     private static final float[] FACET_SHADING = {1.0F, 0.78F, 0.62F, 0.88F, 0.70F, 0.55F};
+    private static final float[] PX = new float[CRYSTAL_COUNT];
+    private static final float[] PY = new float[CRYSTAL_COUNT];
+    private static final float[] PZ = new float[CRYSTAL_COUNT];
+    private static final float[] WAVE_ARR = new float[CRYSTAL_COUNT];
 
     private TargetBigCrystalRenderer() {
     }
@@ -43,73 +47,63 @@ public final class TargetBigCrystalRenderer implements IMinecraft {
         float g = color.getGreen() / 255.0F;
         float b = color.getBlue() / 255.0F;
 
-        Vector3f right = MathPool.vec3(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
-        Vector3f up = MathPool.vec3(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f right = MathPool.vec3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f up = MathPool.vec3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
 
         float effectiveSpeed = speed * 1.8F;
         float orbitAngleBase = (moveVal * 0.02F + tickTime * 0.03F) * effectiveSpeed;
         float breathe = 1.15F - 0.15F * animVal;
 
-        float[] px = new float[CRYSTAL_COUNT];
-        float[] py = new float[CRYSTAL_COUNT];
-        float[] pz = new float[CRYSTAL_COUNT];
-        float[] waveArr = new float[CRYSTAL_COUNT];
-
         for (int i = 0; i < CRYSTAL_COUNT; i++) {
             float angle = orbitAngleBase + (float) (i * 2.0 * Math.PI / CRYSTAL_COUNT);
             float wave = (float) Math.sin(angle * 2.0F + tickTime * 0.06F);
-            waveArr[i] = wave;
+            WAVE_ARR[i] = wave;
 
             float orbitX = (float) Math.cos(angle) * baseRadius * breathe;
             float orbitZ = (float) Math.sin(angle) * baseRadius * breathe;
             float orbitY = target.getHeight() * 0.5F + wave * (target.getHeight() * 0.22F);
 
-            px[i] = (float) (targetPos.x - camPos.x) + orbitX;
-            py[i] = (float) (targetPos.y - camPos.y) + orbitY;
-            pz[i] = (float) (targetPos.z - camPos.z) + orbitZ;
+            PX[i] = (float) (targetPos.x - camPos.x) + orbitX;
+            PY[i] = (float) (targetPos.y - camPos.y) + orbitY;
+            PZ[i] = (float) (targetPos.z - camPos.z) + orbitZ;
         }
 
         RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
-        try {
-            // Pass 1: Shaded crystal facets
-            BufferBuilder triBuffer = RenderSystem.renderThreadTesselator().begin(DrawMode.TRIANGLES, VertexFormats.POSITION_COLOR);
+        // Pass 1: Shaded crystal facets
+        BufferBuilder triBuffer = RenderSystem.renderThreadTesselator().begin(DrawMode.TRIANGLES, VertexFormats.POSITION_COLOR);
+        for (int i = 0; i < CRYSTAL_COUNT; i++) {
+            ms.push();
+            ms.translate(PX[i], PY[i], PZ[i]);
+            ms.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(tickTime * 2.5F * speed + i * 45.0F));
+            ms.multiply(RotationAxis.POSITIVE_X.rotationDegrees(WAVE_ARR[i] * 22.0F));
+            ms.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(15.0F));
+
+            renderCrystalFacets(ms, triBuffer, size, r, g, b, animVal);
+            ms.pop();
+        }
+        BufferRenderer.drawWithGlobalProgram(triBuffer.end());
+
+        // Pass 2: Sharp contour lines
+        BufferBuilder lineBuffer = RenderSystem.renderThreadTesselator().begin(DrawMode.LINES, VertexFormats.POSITION_COLOR);
+        for (int i = 0; i < CRYSTAL_COUNT; i++) {
+            ms.push();
+            ms.translate(PX[i], PY[i], PZ[i]);
+            ms.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(tickTime * 2.5F * speed + i * 45.0F));
+            ms.multiply(RotationAxis.POSITIVE_X.rotationDegrees(WAVE_ARR[i] * 22.0F));
+            ms.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(15.0F));
+
+            renderCrystalLines(ms, lineBuffer, size, r, g, b, animVal);
+            ms.pop();
+        }
+        BufferRenderer.drawWithGlobalProgram(lineBuffer.end());
+
+        // Pass 3: Soft glow
+        if (glow > 0.0F) {
+            float glowAlpha = Math.min(1.0F, animVal * 0.22F * glow);
             for (int i = 0; i < CRYSTAL_COUNT; i++) {
-                ms.push();
-                ms.translate(px[i], py[i], pz[i]);
-                ms.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(tickTime * 2.5F * speed + i * 45.0F));
-                ms.multiply(RotationAxis.POSITIVE_X.rotationDegrees(waveArr[i] * 22.0F));
-                ms.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(15.0F));
-
-                renderCrystalFacets(ms, triBuffer, size, r, g, b, animVal);
-                ms.pop();
+                TargetESPCommon.drawSoftGlow(ms, PX[i], PY[i], PZ[i], size * 4.0F, r, g, b, glowAlpha, right, up);
             }
-            BufferRenderer.drawWithGlobalProgram(triBuffer.end());
-
-            // Pass 2: Sharp contour lines
-            BufferBuilder lineBuffer = RenderSystem.renderThreadTesselator().begin(DrawMode.LINES, VertexFormats.POSITION_COLOR);
-            for (int i = 0; i < CRYSTAL_COUNT; i++) {
-                ms.push();
-                ms.translate(px[i], py[i], pz[i]);
-                ms.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(tickTime * 2.5F * speed + i * 45.0F));
-                ms.multiply(RotationAxis.POSITIVE_X.rotationDegrees(waveArr[i] * 22.0F));
-                ms.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(15.0F));
-
-                renderCrystalLines(ms, lineBuffer, size, r, g, b, animVal);
-                ms.pop();
-            }
-            BufferRenderer.drawWithGlobalProgram(lineBuffer.end());
-
-            // Pass 3: Soft glow
-            if (glow > 0.0F) {
-                float glowAlpha = Math.min(1.0F, animVal * 0.22F * glow);
-                for (int i = 0; i < CRYSTAL_COUNT; i++) {
-                    TargetESPCommon.drawSoftGlow(ms, px[i], py[i], pz[i], size * 4.0F, r, g, b, glowAlpha, right, up);
-                }
-            }
-        } finally {
-            MathPool.release(right);
-            MathPool.release(up);
         }
     }
 

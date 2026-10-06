@@ -17,6 +17,7 @@ import naryn.sun.systems.modules.modules.visuals.targetesp.TargetSingularityRend
 import naryn.sun.systems.modules.modules.visuals.targetesp.TargetSonarEchoRenderer;
 import naryn.sun.systems.setting.settings.BooleanSetting;
 import naryn.sun.systems.setting.settings.ColorSetting;
+import naryn.sun.systems.setting.settings.GroupSetting;
 import naryn.sun.systems.setting.settings.ModeSetting;
 import naryn.sun.systems.setting.settings.SliderSetting;
 import naryn.sun.systems.target.TargetSettings;
@@ -29,6 +30,7 @@ import net.minecraft.entity.LivingEntity;
 
 @ModuleInfo(name = "Target ESP", category = ModuleCategory.VISUALS, desc = "Помечает активную цель")
 public class TargetESP extends BaseModule {
+    // --- Top-Level: Режим отображения ---
     private final ModeSetting mode = new ModeSetting(this, "modules.settings.target_esp.mode");
     private final ModeSetting.Value singularity = new ModeSetting.Value(this.mode, "modules.settings.target_esp.mode.singularity").select();
     private final ModeSetting.Value naniteHoneycomb = new ModeSetting.Value(this.mode, "modules.settings.target_esp.mode.nanite_honeycomb");
@@ -36,14 +38,18 @@ public class TargetESP extends BaseModule {
     private final ModeSetting.Value sonarEcho = new ModeSetting.Value(this.mode, "modules.settings.target_esp.mode.sonar_echo");
     private final ModeSetting.Value kineticShards = new ModeSetting.Value(this.mode, "modules.settings.target_esp.mode.kinetic_shards");
 
-    private final BooleanSetting targetMobs = new BooleanSetting(this, "modules.settings.target_esp.target_mobs").enabled(false);
-    private final SliderSetting range = new SliderSetting(this, "modules.settings.target_esp.range").min(1.0f).max(50.0f).step(0.5f).currentValue(3.0f);
+    // --- Box 1: Фильтрация целей ---
+    private final GroupSetting targetsGroup = new GroupSetting(this, "modules.settings.target_esp.group.targets");
+    private final BooleanSetting targetMobs = new BooleanSetting(this.targetsGroup, "modules.settings.target_esp.target_mobs").enabled(false);
+    private final SliderSetting range = new SliderSetting(this.targetsGroup, "modules.settings.target_esp.range").min(1.0f).max(50.0f).step(0.5f).currentValue(3.0f);
 
-    private final ColorSetting color = new ColorSetting(this, "modules.settings.target_esp.color").color(Colors.ACCENT);
-    private final SliderSetting radius = new SliderSetting(this, "modules.settings.target_esp.radius").min(0.5f).max(2.5f).step(0.05f).currentValue(1.0f);
-    private final SliderSetting speed = new SliderSetting(this, "modules.settings.target_esp.speed").min(0.2f).max(3.0f).step(0.1f).currentValue(1.0f);
-    private final SliderSetting glow = new SliderSetting(this, "modules.settings.target_esp.glow").min(0.1f).max(3.0f).step(0.1f).currentValue(1.0f);
-    private final SliderSetting size = new SliderSetting(this, "modules.settings.target_esp.size").min(0.3f).max(2.0f).step(0.05f).currentValue(1.0f);
+    // --- Box 2: Внешний вид ---
+    private final GroupSetting visualGroup = new GroupSetting(this, "modules.settings.target_esp.group.visual");
+    private final SliderSetting radius = new SliderSetting(this.visualGroup, "modules.settings.target_esp.radius").min(0.5f).max(2.5f).step(0.05f).currentValue(1.0f);
+    private final SliderSetting size = new SliderSetting(this.visualGroup, "modules.settings.target_esp.size").min(0.3f).max(2.0f).step(0.05f).currentValue(1.0f);
+    private final SliderSetting speed = new SliderSetting(this.visualGroup, "modules.settings.target_esp.speed").min(0.2f).max(3.0f).step(0.1f).currentValue(1.0f);
+    private final SliderSetting glow = new SliderSetting(this.visualGroup, "modules.settings.target_esp.glow").min(0.1f).max(3.0f).step(0.1f).currentValue(1.0f);
+    private final ColorSetting color = new ColorSetting(this.visualGroup, "modules.settings.target_esp.color").color(Colors.ACCENT);
 
     private final Animation animation = new Animation(300L, 0.0F, Easing.BOTH_CUBIC);
     private LivingEntity prevTarget;

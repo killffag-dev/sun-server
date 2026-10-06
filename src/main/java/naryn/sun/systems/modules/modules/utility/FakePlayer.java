@@ -15,6 +15,7 @@ import naryn.sun.systems.modules.api.ModuleInfo;
 import naryn.sun.systems.modules.impl.BaseModule;
 import naryn.sun.systems.modules.modules.visuals.HitParticles;
 import naryn.sun.systems.setting.settings.BooleanSetting;
+import naryn.sun.systems.setting.settings.GroupSetting;
 import naryn.sun.systems.setting.settings.SliderSetting;
 import naryn.sun.utility.game.FakePlayerEntity;
 import net.minecraft.client.world.ClientWorld;
@@ -38,10 +39,12 @@ public class FakePlayer extends BaseModule {
    // существует одновременно с первым, мёртвых "0.0 хп" целей не остаётся.
    private static final long DEATH_CLEANUP_MS = 1500L;
 
-   private final BooleanSetting immortal = new BooleanSetting(this, "modules.settings.fake_player.immortal");
-   private final SliderSetting hp = new SliderSetting(this, "modules.settings.fake_player.hp", () -> this.immortal.isEnabled())
+   // === 1. General & Logic Box ===
+   private final GroupSetting generalGroup = new GroupSetting(this, "modules.settings.fake_player.group.general");
+   private final BooleanSetting immortal = new BooleanSetting(this.generalGroup, "modules.settings.fake_player.immortal");
+   private final SliderSetting hp = new SliderSetting(this.generalGroup, "modules.settings.fake_player.hp", () -> this.immortal.isEnabled())
       .min(2.0F).max(40.0F).step(1.0F).currentValue(20.0F);
-   private final SliderSetting totems = new SliderSetting(this, "modules.settings.fake_player.totems", () -> this.immortal.isEnabled())
+   private final SliderSetting totems = new SliderSetting(this.generalGroup, "modules.settings.fake_player.totems", () -> this.immortal.isEnabled())
       .min(0.0F).max(10.0F).step(1.0F).currentValue(0.0F);
 
    private FakePlayerEntity entity;
@@ -177,6 +180,12 @@ public class FakePlayer extends BaseModule {
       HitParticles hitParticles = Sun.getInstance().getModuleManager().getModule(HitParticles.class);
       if (hitParticles != null && hitParticles.isEnabled()) {
          hitParticles.spawnParticles(this.entity);
+      }
+
+      // Эффект места удара: спавн HitPoint на FakePlayer
+      naryn.sun.systems.modules.modules.visuals.hitpoint.HitPoint hitPoint = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.visuals.hitpoint.HitPoint.class);
+      if (hitPoint != null && hitPoint.isEnabled()) {
+         hitPoint.spawnHit(this.entity);
       }
 
       // Сброс счётчика ПОСЛЕ звука и расчёта - playAttackSound тоже читает

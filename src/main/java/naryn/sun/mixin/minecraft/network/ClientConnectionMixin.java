@@ -21,7 +21,7 @@ public class ClientConnectionMixin implements IMinecraft {
    @Inject(method = "handlePacket", at = @At("HEAD"), cancellable = true)
    private static <T extends PacketListener> void triggerReceivePacketEvent(Packet<T> packet, PacketListener listener, CallbackInfo ci) {
       naryn.sun.utility.profiler.PerformanceProfiler.getInstance().onPacketReceived(packet);
-      ReceivePacketEvent event = new ReceivePacketEvent(packet);
+      ReceivePacketEvent event = ReceivePacketEvent.INSTANCE.set(packet);
       Sun.getInstance().getEventManager().triggerEvent(event);
       if (event.isCancelled()) {
          ci.cancel();
@@ -30,7 +30,7 @@ public class ClientConnectionMixin implements IMinecraft {
 
    @Inject(method = "send(Lnet/minecraft/network/packet/Packet;)V", at = @At("HEAD"), cancellable = true)
    public void triggerSendPacketEvent(Packet<?> packet, CallbackInfo ci) {
-      SendPacketEvent event = new SendPacketEvent(packet);
+      SendPacketEvent event = SendPacketEvent.INSTANCE.set(packet);
       if (!stackOverflowFix) {
          Sun.getInstance().getEventManager().triggerEvent(event);
          if (event.isCancelled()) {

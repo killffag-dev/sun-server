@@ -38,6 +38,8 @@ import net.minecraft.util.math.Vec3d;
 @ModuleInfo(name = "Fresh Drop", category = ModuleCategory.VISUALS, desc = "Только что выброшенный предмет несколько секунд имеет красивое свечение")
 public class FreshDrop extends BaseModule {
 
+   private static final Identifier BLOOM_ID = Sun.id("textures/bloom.png");
+
    // ===== настройки =====
    private final SliderSetting duration = new SliderSetting(this, "modules.settings.fresh_drop.duration").min(1.0F).max(60.0F).step(1.0F).suffix(" sec").currentValue(5.0F);
    private final SliderSetting height = new SliderSetting(this, "modules.settings.fresh_drop.height").min(0.5F).max(5.0F).step(0.1F).suffix(" block").currentValue(2.0F);
@@ -46,9 +48,10 @@ public class FreshDrop extends BaseModule {
 
    // ===== состояние =====
    // все id ItemEntity, которые мы уже видели (чтобы не подсвечивать предметы, лежавшие до включения модуля)
-   private final Set<Integer> seenIds = new HashSet<>();
+   private final it.unimi.dsi.fastutil.ints.IntOpenHashSet seenIds = new it.unimi.dsi.fastutil.ints.IntOpenHashSet();
    // предметы, которые сейчас светятся
-   private final Map<Integer, FreshDrop.GlowEntry> glowing = new HashMap<>();
+   private final it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<FreshDrop.GlowEntry> glowing = new it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<>();
+   private final it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<ItemEntity> currentEntities = new it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<>();
    private boolean initialized = false;
 
    private final EventListener<Render3DEvent> on3DRender = event -> {
@@ -65,8 +68,7 @@ public class FreshDrop extends BaseModule {
       RenderSystem.enableDepthTest();
       RenderSystem.disableCull();
       RenderSystem.depthMask(false);
-      Identifier id = Sun.id("textures/bloom.png");
-      RenderSystem.setShaderTexture(0, id);
+      RenderSystem.setShaderTexture(0, BLOOM_ID);
       RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX_COLOR);
       BufferBuilder builder = RenderSystem.renderThreadTesselator().begin(DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
 
@@ -135,44 +137,47 @@ public class FreshDrop extends BaseModule {
       long durationMillis = (long) (this.duration.getCurrentValue() * 1000.0F);
 
       // собираем все ItemEntity, которые сейчас есть в мире
-      Map<Integer, ItemEntity> current = new HashMap<>();
+      this.currentEntities.clear();
       for (Entity entity : mc.world.getEntities()) {
          if (entity instanceof ItemEntity itemEntity) {
-            current.put(itemEntity.getId(), itemEntity);
+            this.currentEntities.put(itemEntity.getId(), itemEntity);
          }
       }
 
       if (!this.initialized) {
          // при первом тике (включение модуля / вход в мир) просто запоминаем то, что уже лежит,
          // ничего не подсвечивая — иначе все предметы вокруг вспыхнут разом
-         this.seenIds.addAll(current.keySet());
+         this.seenIds.addAll(this.currentEntities.keySet());
          this.initialized = true;
       } else {
-         for (Integer entId : current.keySet()) {
+         for (it.unimi.dsi.fastutil.ints.Int2ObjectMap.Entry<ItemEntity> entry : this.currentEntities.int2ObjectEntrySet()) {
+            int entId = entry.getIntKey();
             if (!this.seenIds.contains(entId)) {
                this.seenIds.add(entId);
-               FreshDrop.GlowEntry entry = new FreshDrop.GlowEntry(current.get(entId).getPos());
-               entry.alpha.setDuration(300L);
-               this.glowing.put(entId, entry);
+               FreshDrop.GlowEntry glowEntry = new FreshDrop.GlowEntry(entry.getValue().getPos());
+               glowEntry.alpha.setDuration(300L);
+               this.glowing.put(entId, glowEntry);
             }
          }
       }
 
       // убираем подсветку у предметов, которых больше нет в мире (подобрали / деспавн)
-      this.glowing.entrySet().removeIf(e -> !current.containsKey(e.getKey()));
+      this.glowing.keySet().removeIf(id -> !this.currentEntities.containsKey(id));
 
-      for (Map.Entry<Integer, FreshDrop.GlowEntry> e : this.glowing.entrySet()) {
+      for (it.unimi.dsi.fastutil.ints.Int2ObjectMap.Entry<FreshDrop.GlowEntry> e : this.glowing.int2ObjectEntrySet()) {
          FreshDrop.GlowEntry glow = e.getValue();
-         ItemEntity itemEntity = current.get(e.getKey());
-         glow.updatePos(itemEntity.getPos());
+         ItemEntity itemEntity = this.currentEntities.get(e.getIntKey());
+         if (itemEntity != null) {
+            glow.updatePos(itemEntity.getPos());
+         }
          glow.alpha.update(!glow.timer.finished(durationMillis));
       }
 
       // окончательно убираем полностью погасшие
-      this.glowing.entrySet().removeIf(e -> e.getValue().alpha.getValue() == 0.0F && e.getValue().timer.finished(durationMillis));
+      this.glowing.values().removeIf(glow -> glow.alpha.getValue() == 0.0F && glow.timer.finished(durationMillis));
 
       // чистим seenIds от id, которых больше нет в мире и которые уже не светятся, чтобы набор не рос бесконечно
-      this.seenIds.removeIf(entId -> !current.containsKey(entId) && !this.glowing.containsKey(entId));
+      this.seenIds.removeIf(entId -> !this.currentEntities.containsKey(entId) && !this.glowing.containsKey(entId));
    }
 
    static class GlowEntry {

@@ -85,7 +85,11 @@ public class ConfigFile implements IMinecraft {
                            Module module = Sun.getInstance().getModuleManager().getModule(moduleName);
                            if (!(module instanceof MenuModule)) {
                               boolean effectiveEnabled = module.getInfo().holdToActivate() ? false : enabled;
-                              module.setEnabled(effectiveEnabled, true);
+                              try {
+                                 module.setEnabled(effectiveEnabled, true);
+                              } catch (Throwable moduleEnableError) {
+                                 Sun.LOGGER.warn("Failed to setEnabled on module '{}' in config {}: {}", moduleName, this.fileName, moduleEnableError.getMessage());
+                              }
                            }
 
                            module.setKey(key);
@@ -125,16 +129,24 @@ public class ConfigFile implements IMinecraft {
                            loadedModules++;
                         } catch (UnknownModuleException var17) {
                            Sun.LOGGER.warn("Module not found during config load: {}", moduleName);
+                        } catch (Throwable var18) {
+                           Sun.LOGGER.warn("Failed to apply module '{}' from config {}: {}", moduleName, this.fileName, var18.getMessage());
                         }
                      }
                   }
 
-                  ClientSoundManager.getInstance().playModuleToggle(true);
-                  Sun.getInstance().getNotificationManager().addNotification(NotificationType.SUCCESS, Localizator.translate("configs.loaded"));
-                  Sun.LOGGER.info("Loaded {} modules from config {}", loadedModules, this.fileName);
-                  if (!this.fileName.equals("autosave")) {
+                  if (!this.fileName.equalsIgnoreCase("autosave")) {
                      Sun.getInstance().getConfigManager().setCurrent(this);
                   }
+
+                  if (mc.world != null) {
+                     try {
+                        ClientSoundManager.getInstance().playModuleToggle(true);
+                        Sun.getInstance().getNotificationManager().addNotification(NotificationType.SUCCESS, Localizator.translate("configs.loaded"));
+                     } catch (Throwable ignored) {
+                     }
+                  }
+                  Sun.LOGGER.info("Loaded {} modules from config {}", loadedModules, this.fileName);
                } else {
                   Sun.LOGGER.warn("Invalid config format: missing 'modules' array in {}", this.fileName);
                }
@@ -228,8 +240,12 @@ public class ConfigFile implements IMinecraft {
    }
 
    public void delete() {
+      boolean wasCurrent = Sun.getInstance().getConfigManager().isCurrent(this);
       if (this.file.exists() && this.file.delete()) {
          Sun.getInstance().getConfigManager().getConfigFiles().remove(this);
+         if (wasCurrent) {
+            Sun.getInstance().getConfigManager().setCurrent(null);
+         }
          MessageUtility.info(Text.of("Конфиг " + this.fileName + " успешно удален"));
          Sun.LOGGER.info("Config file deleted: {}", this.file.getAbsolutePath());
       } else {
@@ -259,8 +275,12 @@ public class ConfigFile implements IMinecraft {
          return false;
       }
 
+      boolean wasCurrent = Sun.getInstance().getConfigManager().isCurrent(this);
       this.file = newFile;
       this.fileName = newName;
+      if (wasCurrent) {
+         Sun.getInstance().getConfigManager().setCurrent(this);
+      }
       return true;
    }
 

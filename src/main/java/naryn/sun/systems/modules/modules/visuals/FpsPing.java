@@ -26,15 +26,15 @@ public class FpsPing extends PositionableHudModule implements IMinecraft {
     private static final ColorRGBA SEPARATOR_COLOR = new ColorRGBA(255, 255, 255, 75);
     private static final ColorRGBA COORD_COLOR = new ColorRGBA(235, 235, 240, 225);
 
+    private final ModeSetting orientation = new ModeSetting(this, "modules.settings.fps_ping.orientation");
+    private final ModeSetting.Value horizontal = new ModeSetting.Value(this.orientation, "modules.settings.fps_ping.orientation.horizontal");
+    private final ModeSetting.Value vertical = new ModeSetting.Value(this.orientation, "modules.settings.fps_ping.orientation.vertical");
+
     private final BooleanSetting background = new BooleanSetting(this, "modules.settings.fps_ping.hud.background").enable();
     private final BooleanSetting watermark = new BooleanSetting(this, "modules.settings.fps_ping.watermark").enable();
     private final BooleanSetting ping = new BooleanSetting(this, "modules.settings.fps_ping.ping").enable();
     private final BooleanSetting fps = new BooleanSetting(this, "modules.settings.fps_ping.fps").enable();
     private final BooleanSetting coordinates = new BooleanSetting(this, "modules.settings.fps_ping.coordinates").enable();
-
-    private final ModeSetting orientation = new ModeSetting(this, "modules.settings.fps_ping.orientation");
-    private final ModeSetting.Value horizontal = new ModeSetting.Value(this.orientation, "modules.settings.fps_ping.orientation.horizontal");
-    private final ModeSetting.Value vertical = new ModeSetting.Value(this.orientation, "modules.settings.fps_ping.orientation.vertical");
 
     private final RealPingTracker pingTracker = new RealPingTracker();
 

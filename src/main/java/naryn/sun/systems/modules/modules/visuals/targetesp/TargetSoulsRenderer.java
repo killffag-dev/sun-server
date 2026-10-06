@@ -3,7 +3,7 @@ package naryn.sun.systems.modules.modules.visuals.targetesp;
 import com.mojang.blaze3d.systems.RenderSystem;
 import naryn.sun.utility.colors.ColorRGBA;
 import naryn.sun.utility.interfaces.IMinecraft;
-import naryn.sun.utility.math.pool.MathPool;
+import naryn.sun.utility.math.MathPool;
 import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
@@ -20,6 +20,9 @@ public final class TargetSoulsRenderer implements IMinecraft {
 
     private static final int WISP_COUNT = 3;
     private static final int TRAIL_SEGMENTS = 18;
+    private static final float[] WISP_HEAD_X = new float[WISP_COUNT];
+    private static final float[] WISP_HEAD_Y = new float[WISP_COUNT];
+    private static final float[] WISP_HEAD_Z = new float[WISP_COUNT];
 
     private TargetSoulsRenderer() {
     }
@@ -45,20 +48,15 @@ public final class TargetSoulsRenderer implements IMinecraft {
         float tickTime = (System.currentTimeMillis() % 1000000L) / 50.0F;
         float effectiveSpeed = speed * 1.5F;
 
-        Vector3f right = MathPool.vec3(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
-        Vector3f up = MathPool.vec3(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f right = MathPool.vec3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f up = MathPool.vec3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
         Matrix4f matrix = ms.peek().getPositionMatrix();
 
         float coreSize = sizeScale * 1.8F;
 
-        float[][] wispHeadX = new float[WISP_COUNT][1];
-        float[][] wispHeadY = new float[WISP_COUNT][1];
-        float[][] wispHeadZ = new float[WISP_COUNT][1];
-
         RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
-        try {
-            // Pass 1: Draw spectral ribbon trail segments (DrawMode.LINES)
+        // Pass 1: Draw spectral ribbon trail segments (DrawMode.LINES)
             BufferBuilder lineBuf = RenderSystem.renderThreadTesselator().begin(DrawMode.LINES, VertexFormats.POSITION_COLOR);
             for (int w = 0; w < WISP_COUNT; w++) {
                 float wispPhase = (float) (w * 2.0 * Math.PI / WISP_COUNT);
@@ -84,9 +82,9 @@ public final class TargetSoulsRenderer implements IMinecraft {
                     float pz = (float) (targetPos.z - camPos.z) + wz;
 
                     if (s == 0) {
-                        wispHeadX[w][0] = px;
-                        wispHeadY[w][0] = py;
-                        wispHeadZ[w][0] = pz;
+                        WISP_HEAD_X[w] = px;
+                        WISP_HEAD_Y[w] = py;
+                        WISP_HEAD_Z[w] = pz;
                     } else {
                         lineBuf.vertex(matrix, prevX, prevY, prevZ).color(r, g, b, prevAlpha);
                         lineBuf.vertex(matrix, px, py, pz).color(r, g, b, alpha);
@@ -102,9 +100,9 @@ public final class TargetSoulsRenderer implements IMinecraft {
 
             // Pass 2: Draw glowing soul cores and aura
             for (int w = 0; w < WISP_COUNT; w++) {
-                float px = wispHeadX[w][0];
-                float py = wispHeadY[w][0];
-                float pz = wispHeadZ[w][0];
+                float px = WISP_HEAD_X[w];
+                float py = WISP_HEAD_Y[w];
+                float pz = WISP_HEAD_Z[w];
 
                 // Bright soul core
                 TargetESPCommon.drawSoftGlow(ms, px, py, pz, coreSize * 1.2F, r, g, b, Math.min(1.0F, animVal * 0.85F), right, up);
@@ -125,9 +123,5 @@ public final class TargetSoulsRenderer implements IMinecraft {
                     TargetESPCommon.drawSoftGlow(ms, mx, my, mz, coreSize * 0.5F, r, g, b, emberAlpha, right, up);
                 }
             }
-        } finally {
-            MathPool.release(right);
-            MathPool.release(up);
-        }
     }
 }

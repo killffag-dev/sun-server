@@ -10,7 +10,7 @@ import naryn.sun.utility.colors.Colors;
 public final class ClientAppearance {
     public enum Mode { FACET_DARK, FACET_FROST }
 
-    private static Mode mode = Mode.FACET_DARK;
+    private static Mode mode = Mode.FACET_FROST;
     private static Mode hudMode = Mode.FACET_FROST;
     private static ColorRGBA accent = ColorRGBA.WHITE;
     private static Language language = Language.RU_RU;
@@ -20,7 +20,7 @@ public final class ClientAppearance {
     public static Mode getMode() { return mode; }
 
     public static void setMode(Mode newMode) {
-        mode = newMode == null ? Mode.FACET_DARK : newMode;
+        mode = newMode == null ? Mode.FACET_FROST : newMode;
         Sun.getInstance().getThemeManager().setCurrentTheme(Theme.DARK);
     }
 

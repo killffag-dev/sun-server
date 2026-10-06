@@ -39,6 +39,9 @@ public class NameUtility extends BaseModule {
     private final BooleanSetting nameTag = new BooleanSetting(this.nameTagGroup, "modules.settings.name_utility.nametag")
             .enabled(true);
 
+    private final BooleanSetting showPing = new BooleanSetting(this.nameTagGroup, "modules.settings.name_utility.ping", () -> !this.nameTag.isEnabled())
+            .enabled(true);
+
     private final ModeSetting style = new ModeSetting(this.nameTagGroup, "modules.settings.name_utility.style", () -> !this.nameTag.isEnabled());
     private final ModeSetting.Value styleGlass = new ModeSetting.Value(this.style, "modules.settings.name_utility.style.glass").select();
     private final ModeSetting.Value styleDark = new ModeSetting.Value(this.style, "modules.settings.name_utility.style.dark");
@@ -46,9 +49,6 @@ public class NameUtility extends BaseModule {
     private final ModeSetting font = new ModeSetting(this.nameTagGroup, "modules.settings.name_utility.font", () -> !this.nameTag.isEnabled());
     private final ModeSetting.Value fontPixel = new ModeSetting.Value(this.font, "modules.settings.name_utility.font.pixel").select();
     private final ModeSetting.Value fontUi = new ModeSetting.Value(this.font, "modules.settings.name_utility.font.ui");
-
-    private final BooleanSetting showPing = new BooleanSetting(this.nameTagGroup, "modules.settings.name_utility.ping", () -> !this.nameTag.isEnabled())
-            .enabled(true);
 
     private final SliderSetting scale = new SliderSetting(this.nameTagGroup, "modules.settings.name_utility.scale", () -> !this.nameTag.isEnabled())
             .min(0.5F)

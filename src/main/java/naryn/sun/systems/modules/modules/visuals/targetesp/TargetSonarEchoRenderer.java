@@ -12,6 +12,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.Vec3d;
+import naryn.sun.utility.math.MathPool;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -54,8 +55,8 @@ public final class TargetSonarEchoRenderer implements IMinecraft {
 
         float tickTime = (System.currentTimeMillis() % 10000000L) / 50.0F;
 
-        Vector3f right = new Vector3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
-        Vector3f up = new Vector3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f right = MathPool.vec3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f up = MathPool.vec3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
 
         Matrix4f matrix = ms.peek().getPositionMatrix();
         RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);

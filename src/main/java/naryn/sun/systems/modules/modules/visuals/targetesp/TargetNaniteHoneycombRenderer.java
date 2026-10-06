@@ -13,6 +13,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import naryn.sun.utility.math.MathPool;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -65,8 +66,8 @@ public final class TargetNaniteHoneycombRenderer implements IMinecraft {
         float rotTime = tickTime * speed * (0.035F + critSurge * 0.02F);
         float hexR = 0.115F * (0.8F + size * 0.4F);
 
-        Vector3f right = new Vector3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
-        Vector3f up = new Vector3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f right = MathPool.vec3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f up = MathPool.vec3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
 
         Matrix4f matrix = ms.peek().getPositionMatrix();
         RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);

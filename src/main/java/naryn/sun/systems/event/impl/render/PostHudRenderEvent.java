@@ -5,8 +5,24 @@ import naryn.sun.framework.base.CustomDrawContext;
 import naryn.sun.systems.event.Event;
 
 public class PostHudRenderEvent extends Event {
-   private final CustomDrawContext context;
-   private final float tickDelta;
+   public static final PostHudRenderEvent INSTANCE = new PostHudRenderEvent();
+
+   private CustomDrawContext context;
+   private float tickDelta;
+
+   public PostHudRenderEvent() {
+   }
+
+   @Generated
+   public PostHudRenderEvent(CustomDrawContext context, float tickDelta) {
+      this.set(context, tickDelta);
+   }
+
+   public PostHudRenderEvent set(CustomDrawContext context, float tickDelta) {
+      this.context = context;
+      this.tickDelta = tickDelta;
+      return this;
+   }
 
    @Generated
    public CustomDrawContext getContext() {
@@ -16,11 +32,5 @@ public class PostHudRenderEvent extends Event {
    @Generated
    public float getTickDelta() {
       return this.tickDelta;
-   }
-
-   @Generated
-   public PostHudRenderEvent(CustomDrawContext context, float tickDelta) {
-      this.context = context;
-      this.tickDelta = tickDelta;
    }
 }

@@ -3,8 +3,8 @@ package naryn.sun.systems.event;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,63 +17,77 @@ import naryn.sun.systems.notifications.NotificationType;
 
 public class EventManager {
 
-   // Сколько раз подряд владелец (обычно Module) должен упасть, прежде чем модуль
-   // будет автоматически отключён. Счётчик сбрасывается при первом успешном вызове.
    private static final int MAX_CONSECUTIVE_ERRORS = 5;
 
-   private final ConcurrentHashMap<Type, CopyOnWriteArrayList<EventListener<?>>> listenerMap = new ConcurrentHashMap<>();
-   private final Map<Class<?>, Field[]> declaredFieldsCache = new HashMap<>();
-   private final Comparator<EventListener<?>> priorityOrder = Comparator.<EventListener<?>>comparingInt(listener -> listener.getPriority()).reversed();
-   private final BiConsumer<List<EventListener<?>>, Comparator<EventListener<?>>> sortCallback = List::sort;
+   public static final class ListenerEntry {
+      public final EventListener<?> listener;
+      public final Object owner;
+      public final int priority;
+
+      public ListenerEntry(EventListener<?> listener, Object owner) {
+         this.listener = listener;
+         this.owner = owner;
+         this.priority = listener.getPriority();
+      }
+   }
+
+   private static final class ListenerField {
+      final Field field;
+      final Type eventType;
+
+      ListenerField(Field field, Type eventType) {
+         this.field = field;
+         this.eventType = eventType;
+         this.field.setAccessible(true);
+      }
+   }
+
+   private final ConcurrentHashMap<Type, CopyOnWriteArrayList<ListenerEntry>> listenerMap = new ConcurrentHashMap<>();
+   private final Map<Class<?>, List<ListenerField>> listenerFieldsCache = new ConcurrentHashMap<>();
+   private final Comparator<ListenerEntry> priorityOrder = Comparator.<ListenerEntry>comparingInt(entry -> entry.priority).reversed();
    private final Consumer<Throwable> errorHandler = Throwable::printStackTrace;
 
-   // Кому принадлежит конкретный EventListener (владелец = подписчик, обычно объект модуля).
-   private final Map<EventListener<?>, Object> listenerOwners = new ConcurrentHashMap<>();
-
-   // Счётчик подряд идущих ошибок. Ключ — владелец сбоя: как правило объект Module,
-   // но может быть и сам EventListener, если владельца определить нельзя.
-   // Благодаря ключу по владельцу, а не по конкретному listener'у, этим же счётчиком
-   // может пользоваться и прямой цикл вызова модулей (см. ModuleTickListener),
-   // минуя подписку через subscribe/triggerEvent.
    private final Map<Object, Integer> consecutiveErrors = new ConcurrentHashMap<>();
+   private volatile boolean hasErrors = false;
 
    public void subscribe(Object subscriber) {
       this.modifyEventListenerState(subscriber, (type, listener) -> {
-         this.listenerMap.computeIfAbsent(type, k -> new CopyOnWriteArrayList<>()).add(listener);
-         this.listenerOwners.put(listener, subscriber);
-         this.sortCallback.accept(this.listenerMap.get(type), this.priorityOrder);
+         ListenerEntry entry = new ListenerEntry(listener, subscriber);
+         CopyOnWriteArrayList<ListenerEntry> list = this.listenerMap.computeIfAbsent(type, k -> new CopyOnWriteArrayList<>());
+         list.add(entry);
+         list.sort(this.priorityOrder);
       });
    }
 
    public void unsubscribe(Object subscriber) {
       this.modifyEventListenerState(subscriber, (type, listener) -> {
-         CopyOnWriteArrayList<EventListener<?>> listeners = this.listenerMap.get(type);
-         if (listeners != null) {
-            listeners.remove(listener);
-            if (listeners.isEmpty()) {
+         CopyOnWriteArrayList<ListenerEntry> list = this.listenerMap.get(type);
+         if (list != null) {
+            list.removeIf(entry -> entry.listener == listener);
+            if (list.isEmpty()) {
                this.listenerMap.remove(type);
             }
          }
-         this.listenerOwners.remove(listener);
       });
-      // Сбрасываем счётчик ошибок владельца: например при ручном disable/enable модуля
-      // из GUI он должен начинать "с чистого листа", а не унаследовать старые ошибки.
       this.consecutiveErrors.remove(subscriber);
+      this.hasErrors = !this.consecutiveErrors.isEmpty();
    }
 
+   @SuppressWarnings("unchecked")
    public <T extends Event> void triggerEvent(T event) {
       Type eventType = event.getClass();
-      List<EventListener<?>> listeners = this.listenerMap.get(eventType);
+      List<ListenerEntry> listeners = this.listenerMap.get(eventType);
       if (listeners != null && !Sun.INSTANCE.isPanic()) {
-         for (EventListener<?> listener : listeners) {
-            Object owner = this.listenerOwners.get(listener);
+         for (ListenerEntry entry : listeners) {
             try {
-               ((EventListener<T>) listener).onEvent(event);
-               this.reportSuccess(owner != null ? owner : listener);
+               ((EventListener<T>) entry.listener).onEvent(event);
+               if (this.hasErrors) {
+                  this.reportSuccess(entry.owner);
+               }
             } catch (Throwable throwable) {
                this.reportFailure(
-                  owner != null ? owner : listener,
-                  listener.getClass().getSimpleName(),
+                  entry.owner,
+                  entry.listener.getClass().getSimpleName(),
                   "событие " + event.getClass().getSimpleName(),
                   throwable
                );
@@ -82,30 +96,15 @@ public class EventManager {
       }
    }
 
-   /**
-    * Сбрасывает счётчик подряд идущих ошибок для владельца после успешного вызова.
-    * Публичный метод — им пользуется не только triggerEvent, но и прямые циклы
-    * вызова модулей (например ModuleTickListener), которые не идут через события.
-    */
    public void reportSuccess(Object owner) {
       if (owner != null && !this.consecutiveErrors.isEmpty()) {
          this.consecutiveErrors.remove(owner);
+         this.hasErrors = !this.consecutiveErrors.isEmpty();
       }
    }
 
-   /**
-    * Централизованная обработка падения владельца (модуля/системного listener'а).
-    * Логирует всегда (консоль/лог-файл). Если owner — Module, дополнительно шлёт
-    * уведомление на экран и после MAX_CONSECUTIVE_ERRORS ошибок подряд
-    * автоматически отключает модуль (silent = true: без звука и без штатного
-    * уведомления BaseModule "модуль выключен" — вместо него своё, с причиной).
-    *
-    * @param owner       объект, чей вызов упал (обычно Module)
-    * @param sourceLabel класс упавшего кода — для лога (listener или сам модуль)
-    * @param context     короткое описание контекста вызова ("tick()", "событие X" и т.п.)
-    * @param throwable   исключение
-    */
    public void reportFailure(Object owner, String sourceLabel, String context, Throwable throwable) {
+      this.hasErrors = true;
       String ownerName = owner != null ? owner.getClass().getSimpleName() : "unknown";
       int errorCount = owner != null ? this.consecutiveErrors.merge(owner, 1, Integer::sum) : 1;
 
@@ -123,6 +122,7 @@ public class EventManager {
 
          if (errorCount >= MAX_CONSECUTIVE_ERRORS) {
             this.consecutiveErrors.remove(module);
+            this.hasErrors = !this.consecutiveErrors.isEmpty();
             module.setEnabled(false, true);
             Sun.getInstance().getNotificationManager().addNotificationOther(
                NotificationType.ERROR,
@@ -146,35 +146,33 @@ public class EventManager {
    }
 
    private void modifyEventListenerState(Object o, BiConsumer<Type, EventListener<?>> action) {
-      for (Field field : this.getCachedDeclaredFields(o.getClass())) {
-         if (field.getType() == EventListener.class) {
-            EventListener<?> eventListener = this.getEventListener(o, field);
+      for (ListenerField lf : this.getListenerFields(o.getClass())) {
+         try {
+            EventListener<?> eventListener = (EventListener<?>) lf.field.get(o);
             if (eventListener != null) {
-               Type eventType = ((ParameterizedType)field.getGenericType()).getActualTypeArguments()[0];
-               action.accept(eventType, eventListener);
+               action.accept(lf.eventType, eventListener);
             }
+         } catch (IllegalAccessException e) {
+            this.errorHandler.accept(e);
          }
       }
    }
 
-   private Field[] getCachedDeclaredFields(Class<?> clazz) {
-      return this.declaredFieldsCache.computeIfAbsent(clazz, Class::getDeclaredFields);
-   }
-
-   private EventListener<?> getEventListener(Object o, Field field) {
-      boolean accessible = field.canAccess(o);
-      field.setAccessible(true);
-
-      Object var5;
-      try {
-         return (EventListener<?>)field.get(o);
-      } catch (IllegalAccessException var9) {
-         this.errorHandler.accept(var9);
-         var5 = null;
-      } finally {
-         field.setAccessible(accessible);
-      }
-
-      return (EventListener<?>)var5;
+   private List<ListenerField> getListenerFields(Class<?> clazz) {
+      return this.listenerFieldsCache.computeIfAbsent(clazz, c -> {
+         List<ListenerField> list = new ArrayList<>();
+         for (Field field : c.getDeclaredFields()) {
+            if (field.getType() == EventListener.class) {
+               Type genericType = field.getGenericType();
+               if (genericType instanceof ParameterizedType pt) {
+                  Type[] typeArgs = pt.getActualTypeArguments();
+                  if (typeArgs.length > 0) {
+                     list.add(new ListenerField(field, typeArgs[0]));
+                  }
+               }
+            }
+         }
+         return list;
+      });
    }
 }

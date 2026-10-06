@@ -5,7 +5,6 @@ import naryn.sun.Sun;
 import naryn.sun.framework.msdf.Font;
 import naryn.sun.framework.msdf.Fonts;
 import naryn.sun.framework.msdf.MsdfRenderer;
-import naryn.sun.systems.modules.modules.utility.NameProtect;
 import naryn.sun.systems.modules.modules.visuals.NameUtility;
 import naryn.sun.utility.mixins.EntityRenderStateAddition;
 import net.minecraft.client.MinecraftClient;
@@ -62,10 +61,6 @@ public final class NameTagRenderer {
             rawName = text != null ? text.getString() : "Player";
         }
 
-        NameProtect nameProtect = Sun.getInstance().getModuleManager().getModule(NameProtect.class);
-        if (nameProtect != null && nameProtect.isEnabled()) {
-            rawName = nameProtect.patchName(rawName);
-        }
         rawName = module.patchName(rawName);
 
         // 2. Парсинг кастомных данных сервера (титулы/привилегии/кланы в верхнюю строку, ХП в нижнюю)

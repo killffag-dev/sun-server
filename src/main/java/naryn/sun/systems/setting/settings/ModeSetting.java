@@ -54,13 +54,20 @@ public class ModeSetting extends AbstractSetting {
    }
 
    public ModeSetting.Value getRandomEnabledElement() {
-      List<ModeSetting.Value> enableValue = this.values.stream().filter(ModeSetting.Value::isSelected).toList();
-      if (!enableValue.isEmpty()) {
-         Random random = new Random();
-         return enableValue.get(random.nextInt(enableValue.size()));
-      } else {
-         return null;
+      int count = 0;
+      for (ModeSetting.Value v : this.values) {
+         if (v.isSelected()) count++;
       }
+      if (count == 0) return null;
+      int target = java.util.concurrent.ThreadLocalRandom.current().nextInt(count);
+      int current = 0;
+      for (ModeSetting.Value v : this.values) {
+         if (v.isSelected()) {
+            if (current == target) return v;
+            current++;
+         }
+      }
+      return null;
    }
 
    @Override
@@ -102,8 +109,8 @@ public class ModeSetting extends AbstractSetting {
       private final ModeSetting parent;
       private final String name;
       private final String description;
-      private final Animation hoverAnimation = new Animation(300L, Easing.FIGMA_EASE_IN_OUT);
-      private final Animation activeAnimation = new Animation(300L, Easing.FIGMA_EASE_IN_OUT);
+      private Animation hoverAnimation;
+      private Animation activeAnimation;
       private final BooleanSupplier hideCondition;
       private PenisPlayer enablePenis;
       private PenisPlayer disablePenis;
@@ -196,13 +203,17 @@ public class ModeSetting extends AbstractSetting {
          return this.description;
       }
 
-      @Generated
       public Animation getHoverAnimation() {
+         if (this.hoverAnimation == null) {
+            this.hoverAnimation = new Animation(300L, Easing.FIGMA_EASE_IN_OUT);
+         }
          return this.hoverAnimation;
       }
 
-      @Generated
       public Animation getActiveAnimation() {
+         if (this.activeAnimation == null) {
+            this.activeAnimation = new Animation(300L, Easing.FIGMA_EASE_IN_OUT);
+         }
          return this.activeAnimation;
       }
 

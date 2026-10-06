@@ -13,6 +13,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import naryn.sun.utility.math.MathPool;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -63,8 +64,8 @@ public final class TargetSingularityRenderer implements IMinecraft {
         float tickTime = (System.currentTimeMillis() % 10000000L) / 50.0F;
         float t = tickTime * speed * (0.04F + critSurge * 0.03F);
 
-        Vector3f right = new Vector3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
-        Vector3f up = new Vector3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f right = MathPool.vec3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f up = MathPool.vec3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
 
         Matrix4f matrix = ms.peek().getPositionMatrix();
         RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);

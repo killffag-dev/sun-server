@@ -7,11 +7,31 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Arm;
 
 public class HandRenderEvent extends EventCancellable {
-   private final Arm arm;
-   private final float swingProgress;
-   private final ItemStack itemStack;
-   private final float equipProgress;
-   private final MatrixStack matrices;
+   public static final HandRenderEvent INSTANCE = new HandRenderEvent();
+
+   private Arm arm;
+   private float swingProgress;
+   private ItemStack itemStack;
+   private float equipProgress;
+   private MatrixStack matrices;
+
+   public HandRenderEvent() {
+   }
+
+   @Generated
+   public HandRenderEvent(Arm arm, float swingProgress, ItemStack itemStack, float equipProgress, MatrixStack matrices) {
+      this.set(arm, swingProgress, itemStack, equipProgress, matrices);
+   }
+
+   public HandRenderEvent set(Arm arm, float swingProgress, ItemStack itemStack, float equipProgress, MatrixStack matrices) {
+      this.arm = arm;
+      this.swingProgress = swingProgress;
+      this.itemStack = itemStack;
+      this.equipProgress = equipProgress;
+      this.matrices = matrices;
+      this.setCancelled(false);
+      return this;
+   }
 
    @Generated
    public Arm getArm() {
@@ -36,14 +56,5 @@ public class HandRenderEvent extends EventCancellable {
    @Generated
    public MatrixStack getMatrices() {
       return this.matrices;
-   }
-
-   @Generated
-   public HandRenderEvent(Arm arm, float swingProgress, ItemStack itemStack, float equipProgress, MatrixStack matrices) {
-      this.arm = arm;
-      this.swingProgress = swingProgress;
-      this.itemStack = itemStack;
-      this.equipProgress = equipProgress;
-      this.matrices = matrices;
    }
 }

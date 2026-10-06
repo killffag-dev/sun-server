@@ -24,6 +24,7 @@ import org.joml.Matrix4f;
 public final class PredictionLandingRenderer {
 
     private static final List<BlockFace> FACES = new ArrayList<>(64);
+    private static int faceCount = 0;
     private static final LongOpenHashSet SEEN_KEYS = new LongOpenHashSet(64);
     private static final List<Box> ENTITY_BOXES = new ArrayList<>(8);
 
@@ -31,7 +32,7 @@ public final class PredictionLandingRenderer {
     }
 
     public static void render(MatrixStack ms, List<TrajectoryData> trajectories, ColorRGBA userColor) {
-        FACES.clear();
+        faceCount = 0;
         SEEN_KEYS.clear();
         ENTITY_BOXES.clear();
 
@@ -56,7 +57,7 @@ public final class PredictionLandingRenderer {
             }
         }
 
-        if (FACES.isEmpty() && ENTITY_BOXES.isEmpty()) {
+        if (faceCount == 0 && ENTITY_BOXES.isEmpty()) {
             return;
         }
 
@@ -68,7 +69,7 @@ public final class PredictionLandingRenderer {
 
         // Проход 1: Заливка полупрозрачными квадами
         BufferBuilder quadsBuffer = RenderSystem.renderThreadTesselator().begin(DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-        for (int i = 0; i < FACES.size(); i++) {
+        for (int i = 0; i < faceCount; i++) {
             BlockFace face = FACES.get(i);
             addBlockFaceQuadVertices(quadsBuffer, matrix, face.pos(), face.side(), blockFillColor);
         }
@@ -79,7 +80,7 @@ public final class PredictionLandingRenderer {
 
         // Проход 2: Четкая контурная обводка
         BufferBuilder linesBuffer = RenderSystem.renderThreadTesselator().begin(DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
-        for (int i = 0; i < FACES.size(); i++) {
+        for (int i = 0; i < faceCount; i++) {
             BlockFace face = FACES.get(i);
             addBlockFaceOutlineVertices(linesBuffer, matrix, face.pos(), face.side(), blockOutlineColor);
         }
@@ -95,21 +96,27 @@ public final class PredictionLandingRenderer {
 
         int rInt = Math.max(1, Math.round(radius));
         float rSq = radius * radius;
+        BlockPos.Mutable mutablePos = new BlockPos.Mutable();
+        BlockPos.Mutable abovePos = new BlockPos.Mutable();
 
         if (hitSide == Direction.UP || hitSide == Direction.DOWN) {
+            int cx = centerPos.getX();
+            int cy = centerPos.getY();
+            int cz = centerPos.getZ();
             for (int dx = -rInt; dx <= rInt; dx++) {
                 for (int dz = -rInt; dz <= rInt; dz++) {
                     if (dx * dx + dz * dz > rSq + 0.5F) continue;
 
-                    int bx = centerPos.getX() + dx;
-                    int bz = centerPos.getZ() + dz;
+                    int bx = cx + dx;
+                    int bz = cz + dz;
 
                     for (int dy = 2; dy >= -3; dy--) {
-                        BlockPos check = new BlockPos(bx, centerPos.getY() + dy, bz);
-                        if (!world.getBlockState(check).isAir()) {
-                            BlockPos above = check.up();
-                            if (world.getBlockState(above).isAir() || !world.getBlockState(above).isOpaqueFullCube()) {
-                                addFace(check, hitSide);
+                        int by = cy + dy;
+                        mutablePos.set(bx, by, bz);
+                        if (!world.getBlockState(mutablePos).isAir()) {
+                            abovePos.set(bx, by + 1, bz);
+                            if (world.getBlockState(abovePos).isAir() || !world.getBlockState(abovePos).isOpaqueFullCube()) {
+                                addFace(bx, by, bz, hitSide);
                                 break;
                             }
                         }
@@ -121,26 +128,42 @@ public final class PredictionLandingRenderer {
                 for (int d2 = -rInt; d2 <= rInt; d2++) {
                     if (d1 * d1 + d2 * d2 > rSq + 0.5F) continue;
 
-                    BlockPos targetPos;
+                    int tx, ty, tz;
                     if (hitSide == Direction.NORTH || hitSide == Direction.SOUTH) {
-                        targetPos = centerPos.add(d1, d2, 0);
+                        tx = centerPos.getX() + d1;
+                        ty = centerPos.getY() + d2;
+                        tz = centerPos.getZ();
                     } else {
-                        targetPos = centerPos.add(0, d2, d1);
+                        tx = centerPos.getX();
+                        ty = centerPos.getY() + d2;
+                        tz = centerPos.getZ() + d1;
                     }
 
-                    if (!world.getBlockState(targetPos).isAir()) {
-                        addFace(targetPos, hitSide);
+                    mutablePos.set(tx, ty, tz);
+                    if (!world.getBlockState(mutablePos).isAir()) {
+                        addFace(tx, ty, tz, hitSide);
                     }
                 }
             }
         }
     }
 
-    private static void addFace(BlockPos pos, Direction side) {
-        long key = (pos.asLong() << 3) | (side.getId() & 0x7);
+    private static void addFace(int x, int y, int z, Direction side) {
+        long key = (BlockPos.asLong(x, y, z) << 3) | (side.getId() & 0x7);
         if (SEEN_KEYS.add(key)) {
-            FACES.add(new BlockFace(pos, side));
+            if (faceCount < FACES.size()) {
+                FACES.get(faceCount).set(x, y, z, side);
+            } else {
+                BlockFace face = new BlockFace();
+                face.set(x, y, z, side);
+                FACES.add(face);
+            }
+            faceCount++;
         }
+    }
+
+    private static void addFace(BlockPos pos, Direction side) {
+        addFace(pos.getX(), pos.getY(), pos.getZ(), side);
     }
 
     private static void addBlockFaceQuadVertices(
@@ -296,6 +319,21 @@ public final class PredictionLandingRenderer {
         buffer.vertex(matrix, (float) x1, (float) y1, (float) z1).color(r, g, b, a);
     }
 
-    private record BlockFace(BlockPos pos, Direction side) {
+    private static final class BlockFace {
+        private final BlockPos.Mutable pos = new BlockPos.Mutable();
+        private Direction side;
+
+        public void set(int x, int y, int z, Direction side) {
+            this.pos.set(x, y, z);
+            this.side = side;
+        }
+
+        public BlockPos.Mutable pos() {
+            return this.pos;
+        }
+
+        public Direction side() {
+            return this.side;
+        }
     }
 }

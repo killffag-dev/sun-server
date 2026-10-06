@@ -15,6 +15,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ArmorFeatureRenderer.class)
 public abstract class ArmorFeatureRendererMixin<S extends BipedEntityRenderState, M extends BipedEntityModel<S>, A extends BipedEntityModel<S>> {
 
+   @org.spongepowered.asm.mixin.Unique
+   private static HitColor sun$hitColor;
+
+   @org.spongepowered.asm.mixin.Unique
+   private static HitColor sun$getHitColor() {
+      if (sun$hitColor == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$hitColor = Sun.getInstance().getModuleManager().getModule(HitColor.class);
+      }
+      return sun$hitColor;
+   }
+
    // Ставим флаг "сейчас рисуем броню, сущность в hurt-состоянии" ДО того как render()
    // пройдётся по CHEST/LEGS/FEET/HEAD (каждый слот внутри вызывает renderArmor -> equipmentRenderer.render).
    @Inject(
@@ -22,7 +33,10 @@ public abstract class ArmorFeatureRendererMixin<S extends BipedEntityRenderState
       at = @At("HEAD")
    )
    private void sun$markHurtArmor(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, S state, float limbAngle, float limbDistance, CallbackInfo ci) {
-      Sun.getInstance().getModuleManager().getModule(HitColor.class).setHurtArmor(state.hurt);
+      HitColor hitColor = sun$getHitColor();
+      if (hitColor != null) {
+         hitColor.setHurtArmor(state.hurt);
+      }
    }
 
    // Гасим флаг сразу после того, как ВСЯ броня сущности отрисована — чтобы он не "утёк"
@@ -33,6 +47,9 @@ public abstract class ArmorFeatureRendererMixin<S extends BipedEntityRenderState
       at = @At("TAIL")
    )
    private void sun$unmarkHurtArmor(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, S state, float limbAngle, float limbDistance, CallbackInfo ci) {
-      Sun.getInstance().getModuleManager().getModule(HitColor.class).setHurtArmor(false);
+      HitColor hitColor = sun$getHitColor();
+      if (hitColor != null) {
+         hitColor.setHurtArmor(false);
+      }
    }
 }

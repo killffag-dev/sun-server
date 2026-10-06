@@ -84,6 +84,21 @@ public final class PerformanceProfiler implements IMinecraft {
     private long cachedSysUsedRamMb = 0;
     private long cachedSysTotalRamMb = 0;
     private long lastSystemSampleNanos = 0;
+    private net.minecraft.client.gui.screen.Screen lastScreenInstance = null;
+    private String cachedScreenName = "InGame";
+
+    private String getScreenName(MinecraftClient client) {
+        if (client == null || client.currentScreen == null) {
+            this.lastScreenInstance = null;
+            return "InGame";
+        }
+        net.minecraft.client.gui.screen.Screen screen = client.currentScreen;
+        if (screen != this.lastScreenInstance) {
+            this.lastScreenInstance = screen;
+            this.cachedScreenName = screen.getClass().getSimpleName();
+        }
+        return this.cachedScreenName;
+    }
 
     // Зафиксированные спайки (топ худших)
     private final List<LagSpikeRecord> worstSpikes = new ArrayList<>();
@@ -91,8 +106,9 @@ public final class PerformanceProfiler implements IMinecraft {
     private final Map<SpikeCause, Double> causeTotalFpsDrop = new EnumMap<>(SpikeCause.class);
     private int criticalSpikesCount = 0;
 
-    // Хранение полной покадровой истории каждого кадра/миллисекунды
-    private final List<FrameRecord> frameRecords = Collections.synchronizedList(new ArrayList<>());
+    // Хранение покадровой истории с защитой от переполнения памяти (ring buffer cap 10,000)
+    private static final int MAX_FRAME_RECORDS = 10_000;
+    private final Deque<FrameRecord> frameRecords = new ArrayDeque<>(MAX_FRAME_RECORDS);
 
     public boolean isActive() { return this.active; }
 
@@ -139,7 +155,9 @@ public final class PerformanceProfiler implements IMinecraft {
         this.causeBreakdown.clear();
         this.causeTotalFpsDrop.clear();
         this.criticalSpikesCount = 0;
-        this.frameRecords.clear();
+        synchronized (this.frameRecords) {
+            this.frameRecords.clear();
+        }
     }
 
     public synchronized void stop(File targetDirectory) {
@@ -258,7 +276,7 @@ public final class PerformanceProfiler implements IMinecraft {
             cause = SpikeCause.GPU_TERRAIN_STALL;
         }
 
-        String screenName = (client != null && client.currentScreen != null) ? client.currentScreen.getClass().getSimpleName() : "InGame";
+        String screenName = this.getScreenName(client);
         long offsetMs = (now - this.sessionStartNanos) / 1_000_000L;
 
         if (isSpike) {
@@ -282,7 +300,12 @@ public final class PerformanceProfiler implements IMinecraft {
                 gcCountDelta > 0, gcTimeDelta, heapUsedMb, packets, chunkPackets, blockPackets, entityPackets,
                 explosions, this.cachedSysCpu, this.cachedJvmCpu, this.cachedSysUsedRamMb, this.cachedSysTotalRamMb,
                 screenName);
-        this.frameRecords.add(frameRecord);
+        synchronized (this.frameRecords) {
+            if (this.frameRecords.size() >= MAX_FRAME_RECORDS) {
+                this.frameRecords.pollFirst();
+            }
+            this.frameRecords.addLast(frameRecord);
+        }
 
         this.lastFrameFps = currentFps;
     }
@@ -344,7 +367,10 @@ public final class PerformanceProfiler implements IMinecraft {
         long totalGcTimeMs = MemoryTracker.getTotalGcTimeMs() - this.startGcTimeMs;
         int avgLoadedChunks = this.chunkSampleCount > 0 ? (int) (this.sumLoadedChunks / this.chunkSampleCount) : 0;
         int totalSpikes = this.causeBreakdown.values().stream().mapToInt(Integer::intValue).sum();
-        List<FrameRecord> allFramesCopy = new ArrayList<>(this.frameRecords);
+        List<FrameRecord> allFramesCopy;
+        synchronized (this.frameRecords) {
+            allFramesCopy = new ArrayList<>(this.frameRecords);
+        }
         return new SessionData(
                 systemSnapshot,
                 sessionDurationNanos,

@@ -4,7 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
 import lombok.Generated;
 import naryn.sun.Sun;
-import naryn.sun.systems.modules.modules.utility.NameProtect;
+import naryn.sun.systems.modules.modules.visuals.NameUtility;
 import naryn.sun.utility.colors.Colors;
 import naryn.sun.utility.render.batching.Batching;
 import net.minecraft.client.gl.Defines;
@@ -46,11 +46,7 @@ public final class MsdfRenderer {
       float thickness = 0.05F;
       float smoothness = 0.5F;
       float spacing = 0.0F;
-      NameProtect nameProtectModule = Sun.getInstance().getModuleManager().getModule(NameProtect.class);
-      if (nameProtectModule != null && nameProtectModule.isEnabled()) {
-         text = nameProtectModule.patchName(text);
-      }
-      naryn.sun.systems.modules.modules.visuals.NameUtility nameUtility = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.visuals.NameUtility.class);
+      NameUtility nameUtility = Sun.getInstance().getModuleManager().getModule(NameUtility.class);
       if (nameUtility != null && nameUtility.isEnabled() && nameUtility.getHideNick().isEnabled()) {
          text = nameUtility.patchName(text);
       }

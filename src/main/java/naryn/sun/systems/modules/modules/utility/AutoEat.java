@@ -58,13 +58,13 @@ public class AutoEat extends BaseModule {
    // --- Пополнение хотбара ---
    private final BooleanSetting refillHotbar = new BooleanSetting(this, "modules.settings.auto_eat.refill_hotbar", "modules.settings.auto_eat.refill_hotbar.desc");
    private final GroupSetting refillGroup = new GroupSetting(this, "modules.settings.auto_eat.group.refill", () -> !this.refillHotbar.isEnabled());
+   private final BooleanSetting restoreSlot = new BooleanSetting(this.refillGroup, "modules.settings.auto_eat.restore_slot", "modules.settings.auto_eat.restore_slot.desc")
+      .enable();
    private final SliderSetting hotbarSlot = new SliderSetting(this.refillGroup, "modules.settings.auto_eat.hotbar_slot", "modules.settings.auto_eat.hotbar_slot.desc")
       .min(1.0F)
       .max(9.0F)
       .step(1.0F)
       .currentValue(3.0F);
-   private final BooleanSetting restoreSlot = new BooleanSetting(this.refillGroup, "modules.settings.auto_eat.restore_slot", "modules.settings.auto_eat.restore_slot.desc")
-      .enable();
 
    private final AutoEatFoodFilter foodFilter = new AutoEatFoodFilter(
       this.allowBadFood,

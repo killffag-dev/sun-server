@@ -18,6 +18,7 @@ public class NotificationOther {
    private final String desc;
    private final Timer timer = new Timer();
    private final long duration;
+   private final net.minecraft.util.Identifier iconId;
    private final Animation animation = new Animation(280L, Easing.CUBIC_OUT);
    private final Animation showing = new Animation(260L, Easing.CUBIC_OUT);
    private final Animation animY = new Animation(240L, Easing.CUBIC_OUT);
@@ -27,6 +28,7 @@ public class NotificationOther {
       this.title = title;
       this.desc = desc;
       this.duration = 2400L;
+      this.iconId = Sun.id("icons/" + type.getName() + ".png");
    }
 
    private static final float PAD = 6.0F;
@@ -64,7 +66,7 @@ public class NotificationOther {
 
       // Иконка типа
       context.drawTexture(
-         Sun.id("icons/" + this.type.getName() + ".png"),
+         this.iconId,
          x + PAD + 3.0F,
          y + PAD + 3.0F,
          10.0F,

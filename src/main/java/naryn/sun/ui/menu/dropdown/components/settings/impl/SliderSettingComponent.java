@@ -170,9 +170,6 @@ public class SliderSettingComponent extends MenuSettingComponent<SliderSetting> 
 
    @Override
    public void onKeyPressed(int keyCode, int scanCode, int modifiers) {
-      if ((keyCode == 262 || keyCode == 263) && current == this) {
-         current.getSetting().setCurrentValue(current.getSetting().getCurrentValue() + current.getSetting().getStep() * 0.7F * (keyCode == 262 ? 1 : -1));
-      }
    }
 
    @Override

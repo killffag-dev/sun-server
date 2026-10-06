@@ -28,7 +28,7 @@ public class ClientPlayerEntityMixin implements ClientPlayerEntityAddition, IMin
 
    @Redirect(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"), require = 0)
    private boolean onIsUsingItemRedirect(ClientPlayerEntity player) {
-      SlowDownEvent slowDownEvent = new SlowDownEvent();
+      SlowDownEvent slowDownEvent = SlowDownEvent.INSTANCE.set();
       Sun.getInstance().getEventManager().triggerEvent(slowDownEvent);
       return player.isUsingItem() && player.getVehicle() == null && !slowDownEvent.isCancelled();
    }
@@ -44,12 +44,12 @@ public class ClientPlayerEntityMixin implements ClientPlayerEntityAddition, IMin
 
    @Inject(method = "tick", at = @At("HEAD"))
    public void triggerTickEvent(CallbackInfo ci) {
-      Sun.getInstance().getEventManager().triggerEvent(new ClientPlayerTickEvent());
+      Sun.getInstance().getEventManager().triggerEvent(ClientPlayerTickEvent.INSTANCE);
    }
 
    @Inject(method = "tick", at = @At("RETURN"))
    public void triggerTickEndEvent(CallbackInfo ci) {
-      Sun.getInstance().getEventManager().triggerEvent(new ClientPlayerTickEndEvent());
+      Sun.getInstance().getEventManager().triggerEvent(ClientPlayerTickEndEvent.INSTANCE);
    }
 
    @Inject(method = "tickMovement", at = @At("HEAD"))
@@ -73,12 +73,22 @@ public class ClientPlayerEntityMixin implements ClientPlayerEntityAddition, IMin
    public float replaceMovePacketPitch(ClientPlayerEntity instance) {
       RotationHandler rotationHandler = Sun.getInstance().getRotationHandler();
       float pitch = rotationHandler.isIdling() ? instance.getPitch() : rotationHandler.getCurrentRotation().getPitch();
-      rotationHandler.getServerRotation().setYaw(pitch);
+      rotationHandler.getServerRotation().setPitch(pitch);
       return pitch;
    }
 
    @Override
    public int sun$getOnGroundTicks() {
       return this.groundTicks;
+   }
+
+   @Inject(method = "dropSelectedItem", at = @At("HEAD"), cancellable = true)
+   public void onDropSelectedItem(boolean entireStack, CallbackInfoReturnable<Boolean> cir) {
+      naryn.sun.systems.modules.modules.utility.BlockSlot blockSlot = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.utility.BlockSlot.class);
+      if (blockSlot != null && blockSlot.isEnabled() && mc.player != null) {
+         if (blockSlot.isSlotIndexLocked(mc.player.getInventory().selectedSlot)) {
+            cir.setReturnValue(false);
+         }
+      }
    }
 }

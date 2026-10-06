@@ -219,6 +219,10 @@ public final class DrawUtility implements IMinecraft, IWindow {
       TextureDrawUtility.drawImage(matrices, builder, x, y, z, width, height, color);
    }
 
+   public static void drawImage(MatrixStack matrices, BufferBuilder builder, double x, double y, double z, double width, double height, int colorRGB) {
+      TextureDrawUtility.drawImage(matrices, builder, x, y, z, width, height, colorRGB);
+   }
+
    public static void drawImage(MatrixStack matrices, Identifier identifier, double x, double y, double z, double width, double height, ColorRGBA color) {
       TextureDrawUtility.drawImage(matrices, identifier, x, y, z, width, height, color);
    }

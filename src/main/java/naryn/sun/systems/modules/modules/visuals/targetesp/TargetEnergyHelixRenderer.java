@@ -3,7 +3,7 @@ package naryn.sun.systems.modules.modules.visuals.targetesp;
 import com.mojang.blaze3d.systems.RenderSystem;
 import naryn.sun.utility.colors.ColorRGBA;
 import naryn.sun.utility.interfaces.IMinecraft;
-import naryn.sun.utility.math.pool.MathPool;
+import naryn.sun.utility.math.MathPool;
 import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
@@ -31,6 +31,9 @@ public final class TargetEnergyHelixRenderer implements IMinecraft {
     private static final float[] DZ = new float[STEPS + 1];
     private static final float[] TRAIL_ALPHA = new float[STEPS + 1];
     private static final float[] TRAIL_W = new float[STEPS + 1];
+    private static final float[] HEAD_X = new float[COMETS];
+    private static final float[] HEAD_Y = new float[COMETS];
+    private static final float[] HEAD_Z = new float[COMETS];
 
     private TargetEnergyHelixRenderer() {
     }
@@ -77,23 +80,18 @@ public final class TargetEnergyHelixRenderer implements IMinecraft {
         float tickTime = (System.currentTimeMillis() % 10000000L) / 50.0F;
         float rotTime = tickTime * speed * (0.05F + critSurge * 0.02F);
 
-        Vector3f right = MathPool.vec3(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
-        Vector3f up = MathPool.vec3(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f right = MathPool.vec3f(1.0F, 0.0F, 0.0F).rotate(camera.getRotation());
+        Vector3f up = MathPool.vec3f(0.0F, 1.0F, 0.0F).rotate(camera.getRotation());
 
-        try {
-            float rx = right.x, ry = right.y, rz = right.z;
-            float ux = up.x, uy = up.y, uz = up.z;
+        float rx = right.x, ry = right.y, rz = right.z;
+        float ux = up.x, uy = up.y, uz = up.z;
 
-            Matrix4f matrix = ms.peek().getPositionMatrix();
-            RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
+        Matrix4f matrix = ms.peek().getPositionMatrix();
+        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
-            float maxTrailW = 0.14F * (0.8F + size * 0.4F);
-            float orbitSpeed = 2.6F;
-            float trailDuration = (float) Math.PI / orbitSpeed;
-
-            float[] headX = new float[COMETS];
-            float[] headY = new float[COMETS];
-            float[] headZ = new float[COMETS];
+        float maxTrailW = 0.14F * (0.8F + size * 0.4F);
+        float orbitSpeed = 2.6F;
+        float trailDuration = (float) Math.PI / orbitSpeed;
 
             for (int c = 0; c < COMETS; c++) {
                 float offset = (float) (c * Math.PI);
@@ -119,9 +117,9 @@ public final class TargetEnergyHelixRenderer implements IMinecraft {
                     TRAIL_W[t] = maxTrailW * (0.20F + 0.80F * f);
                 }
 
-                headX[c] = PX[STEPS];
-                headY[c] = PY[STEPS];
-                headZ[c] = PZ[STEPS];
+                HEAD_X[c] = PX[STEPS];
+                HEAD_Y[c] = PY[STEPS];
+                HEAD_Z[c] = PZ[STEPS];
 
                 // 2. Camera-screen aligned billboarding (never edge-on, never twists, zero gap at any camera angle)
                 float prevNr = 0.0F;
@@ -212,14 +210,10 @@ public final class TargetEnergyHelixRenderer implements IMinecraft {
             BufferBuilder headBuf = RenderSystem.renderThreadTesselator().begin(DrawMode.QUADS, VertexFormats.POSITION_COLOR);
             for (int c = 0; c < COMETS; c++) {
                 TargetESPCommon.drawGlowingNode(matrix, headBuf,
-                        headX[c], headY[c], headZ[c], right, up,
+                        HEAD_X[c], HEAD_Y[c], HEAD_Z[c], right, up,
                         0.035F * size, 0.085F * size,
                         r, g, b, cr, cg, cb, alpha, activeGlow);
             }
             BufferRenderer.drawWithGlobalProgram(headBuf.end());
-        } finally {
-            MathPool.release(right);
-            MathPool.release(up);
-        }
     }
 }

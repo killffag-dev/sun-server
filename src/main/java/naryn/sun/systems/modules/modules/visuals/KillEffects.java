@@ -58,12 +58,12 @@ public class KillEffects extends BaseModule {
       {{0.0F, -0.3F}, {0.4F, -0.15F}}, {{0.0F, -0.3F}, {-0.4F, -0.15F}}
    };
 
-   private final ColorSetting color = new ColorSetting(this, "modules.settings.kill_effects.color").color(new ColorRGBA(94.0F, 168.0F, 71.0F, 255.0F));
    private final SliderSetting particleCount = new SliderSetting(this, "modules.settings.kill_effects.particle_count")
       .min(20.0F)
       .max(100.0F)
       .step(1.0F)
       .currentValue(50.0F);
+   private final ColorSetting color = new ColorSetting(this, "modules.settings.kill_effects.color").color(new ColorRGBA(94.0F, 168.0F, 71.0F, 255.0F));
   
 
    private final List<KillEffects.Leaf> leaves = new ArrayList<>();
@@ -94,6 +94,14 @@ public class KillEffects extends BaseModule {
       this.dissolvingEntities.put(entity, System.currentTimeMillis() + MAX_LIFETIME_MS);
    };
 
+   @Override
+   public void onDisable() {
+      super.onDisable();
+      this.dissolvingEntities.clear();
+      this.leaves.clear();
+      this.pendingLeaves.clear();
+   }
+
    private final EventListener<GameTickEvent> onGameTick = event -> {
       long now = System.currentTimeMillis();
 
@@ -112,6 +120,8 @@ public class KillEffects extends BaseModule {
          boolean expiredByLanding = leaf.landed && now - leaf.landTime >= LAND_FADE_MS;
          if (expiredByAge || expiredByLanding) {
             leafIterator.remove();
+         } else if (!leaf.landed) {
+            leaf.checkCollision(now);
          }
       }
 
@@ -287,6 +297,8 @@ public class KillEffects extends BaseModule {
 
       boolean landed = false;
       long landTime = 0L;
+      boolean grounded = false;
+      double groundY = 0.0;
 
       Vec3d renderPos;
       float renderRotX;
@@ -346,6 +358,33 @@ public class KillEffects extends BaseModule {
          this.renderRotZ = MathUtility.random(0.0F, 360.0F);
       }
 
+      void checkCollision(long now) {
+         if (this.grounded || this.landed) {
+            return;
+         }
+         float t = (now - this.spawnTime) / 1000.0F;
+         if (t < 0.0F) {
+            t = 0.0F;
+         }
+         float fallDistance = (t < RAMP_TIME_SEC)
+               ? this.fallSpeed * (t * t) / (2.0F * RAMP_TIME_SEC)
+               : this.fallSpeed * (t - RAMP_TIME_SEC / 2.0F);
+
+         double burstDisplacement = this.burstSpeed / this.burstDecay * (1.0 - Math.exp(-this.burstDecay * t));
+         double meanderX = this.ampAx * Math.sin(this.freqAx * t + this.phaseAx) + this.ampBx * Math.sin(this.freqBx * t + this.phaseBx);
+         double meanderZ = this.ampAz * Math.sin(this.freqAz * t + this.phaseAz) + this.ampBz * Math.sin(this.freqBz * t + this.phaseBz);
+
+         double candidateX = this.spawnPos.x + this.burstDirX * burstDisplacement + meanderX;
+         double candidateY = this.spawnPos.y - fallDistance;
+         double candidateZ = this.spawnPos.z + this.burstDirZ * burstDisplacement + meanderZ;
+
+         BlockPos below = BlockPos.ofFloored(candidateX, candidateY - 0.05, candidateZ);
+         if (this.isSolid(below)) {
+            this.grounded = true;
+            this.groundY = below.getY() + 1.0;
+         }
+      }
+
       void update(long now) {
          if (this.landed) {
             return;
@@ -373,15 +412,11 @@ public class KillEffects extends BaseModule {
          double candidateY = this.spawnPos.y - fallDistance;
          double candidateZ = this.spawnPos.z + this.burstDirZ * burstDisplacement + meanderZ;
 
-         BlockPos below = BlockPos.ofFloored(candidateX, candidateY - 0.05, candidateZ);
-         if (this.isSolid(below)) {
-            double top = below.getY() + 1.0;
-            if (candidateY <= top) {
-               this.renderPos = new Vec3d(candidateX, top + 0.01, candidateZ);
-               this.landed = true;
-               this.landTime = now;
-               return;
-            }
+         if (this.grounded && candidateY <= this.groundY) {
+            this.renderPos = new Vec3d(candidateX, this.groundY + 0.01, candidateZ);
+            this.landed = true;
+            this.landTime = now;
+            return;
          }
 
          this.renderPos = new Vec3d(candidateX, candidateY, candidateZ);

@@ -31,13 +31,20 @@ public final class Draw3DUtility implements IMinecraft {
       int glowLayers = 3;
       float glowStep = 0.1F;
 
+      float minX = (float) box.minX;
+      float minY = (float) box.minY;
+      float minZ = (float) box.minZ;
+      float maxX = (float) box.maxX;
+      float maxY = (float) box.maxY;
+      float maxZ = (float) box.maxZ;
+
       for (int i = glowLayers; i >= 1; i--) {
          float expand = i * glowStep;
          float alpha = baseAlpha * (0.15F / i);
-         renderFilledBox(matrices, buffer, box.expand(expand), r, g, b, alpha);
+         renderFilledBox(matrices, buffer, minX - expand, minY - expand, minZ - expand, maxX + expand, maxY + expand, maxZ + expand, r, g, b, alpha);
       }
 
-      renderFilledBox(matrices, buffer, box, r, g, b, baseAlpha);
+      renderFilledBox(matrices, buffer, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, baseAlpha);
       RenderSystem.enableCull();
       RenderSystem.enableDepthTest();
       RenderSystem.disableBlend();
@@ -48,7 +55,7 @@ public final class Draw3DUtility implements IMinecraft {
       float g = color.getGreen() / 255.0F;
       float b = color.getBlue() / 255.0F;
       float a = color.getAlpha() / 255.0F;
-      renderFilledBox(matrices, buffer, box, r, g, b, a);
+      renderFilledBox(matrices, buffer, (float)box.minX, (float)box.minY, (float)box.minZ, (float)box.maxX, (float)box.maxY, (float)box.maxZ, r, g, b, a);
    }
 
    public static void renderBoxInternalDiagonals(MatrixStack matrices, BufferBuilder buf, Box box, ColorRGBA color) {
@@ -74,12 +81,10 @@ public final class Draw3DUtility implements IMinecraft {
    }
 
    public static void renderFilledBox(MatrixStack matrices, BufferBuilder buffer, Box box, float r, float g, float b, float a) {
-      float minX = (float)box.minX;
-      float minY = (float)box.minY;
-      float minZ = (float)box.minZ;
-      float maxX = (float)box.maxX;
-      float maxY = (float)box.maxY;
-      float maxZ = (float)box.maxZ;
+      renderFilledBox(matrices, buffer, (float)box.minX, (float)box.minY, (float)box.minZ, (float)box.maxX, (float)box.maxY, (float)box.maxZ, r, g, b, a);
+   }
+
+   public static void renderFilledBox(MatrixStack matrices, BufferBuilder buffer, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, float r, float g, float b, float a) {
       Matrix4f matrix = matrices.peek().getPositionMatrix();
       buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a);
       buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, a);
@@ -147,28 +152,37 @@ public final class Draw3DUtility implements IMinecraft {
 
    public static void drawLine(MatrixStack matrices, VertexConsumer vertexConsumer, Vec3d startPos, Vec3d endPos, ColorRGBA color) {
       Entry entry = matrices.peek();
-      Vec3d normalized = endPos.subtract(startPos).normalize();
-      Vector3f startVector = naryn.sun.utility.math.pool.MathPool.vec3((float)startPos.x, (float)startPos.y, (float)startPos.z);
-      try {
-         vertexConsumer.vertex(entry, startVector).color(color.getRGB()).normal(entry, (float)normalized.x, (float)normalized.y, (float)normalized.z);
-         vertexConsumer.vertex(entry, (float)endPos.x, (float)endPos.y, (float)endPos.z)
-            .color(color.getRGB())
-            .normal(entry, (float)normalized.x, (float)normalized.y, (float)normalized.z);
-      } finally {
-         naryn.sun.utility.math.pool.MathPool.release(startVector);
-      }
+      double dx = endPos.x - startPos.x;
+      double dy = endPos.y - startPos.y;
+      double dz = endPos.z - startPos.z;
+      double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      float nx = len > 1.0E-5 ? (float)(dx / len) : 0.0F;
+      float ny = len > 1.0E-5 ? (float)(dy / len) : 1.0F;
+      float nz = len > 1.0E-5 ? (float)(dz / len) : 0.0F;
+      vertexConsumer.vertex(entry, (float)startPos.x, (float)startPos.y, (float)startPos.z)
+         .color(color.getRGB())
+         .normal(entry, nx, ny, nz);
+      vertexConsumer.vertex(entry, (float)endPos.x, (float)endPos.y, (float)endPos.z)
+         .color(color.getRGB())
+         .normal(entry, nx, ny, nz);
    }
 
    public static void drawLine(MatrixStack matrices, BufferBuilder builder, Vec3d startPos, Vec3d endPos, ColorRGBA color) {
       Entry matrixEntry = matrices.peek();
       Matrix4f matrix4f = matrixEntry.getPositionMatrix();
-      Vec3d normalized = endPos.subtract(startPos).normalize();
+      double dx = endPos.x - startPos.x;
+      double dy = endPos.y - startPos.y;
+      double dz = endPos.z - startPos.z;
+      double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      float nx = len > 1.0E-5 ? (float)(dx / len) : 0.0F;
+      float ny = len > 1.0E-5 ? (float)(dy / len) : 1.0F;
+      float nz = len > 1.0E-5 ? (float)(dz / len) : 0.0F;
       builder.vertex(matrix4f, (float)startPos.x, (float)startPos.y, (float)startPos.z)
          .color(color.getRGB())
-         .normal(matrixEntry, (float)normalized.x, (float)normalized.y, (float)normalized.z);
+         .normal(matrixEntry, nx, ny, nz);
       builder.vertex(matrix4f, (float)endPos.x, (float)endPos.y, (float)endPos.z)
          .color(color.getRGB())
-         .normal(matrixEntry, (float)normalized.x, (float)normalized.y, (float)normalized.z);
+         .normal(matrixEntry, nx, ny, nz);
    }
 
    public static void renderLineFromPlayer(MatrixStack matrices, BufferBuilder builder, Vec3d endPos, ColorRGBA color) {

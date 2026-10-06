@@ -18,23 +18,13 @@ import naryn.sun.utility.render.obj.Rect;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.VertexConsumerProvider.Immediate;
-import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ModelTransformationMode;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.crash.CrashException;
-import net.minecraft.util.crash.CrashReport;
-import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.Vec2f;
-import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
 
 public class CustomDrawContext extends DrawContext implements IMinecraft {
    private final DrawContext originalContext;
@@ -281,9 +271,7 @@ public class CustomDrawContext extends DrawContext implements IMinecraft {
       this.getMatrices().push();
       this.getMatrices().translate(x, y, 0.0F);
       this.getMatrices().scale(size, size, size);
-      DiffuseLighting.disableGuiDepthLighting();
       this.drawItem(item, 0, 0);
-      DiffuseLighting.disableGuiDepthLighting();
       this.getMatrices().pop();
    }
 
@@ -296,44 +284,6 @@ public class CustomDrawContext extends DrawContext implements IMinecraft {
    }
 
    public void drawBatchItem(ItemStack item, int x, int y) {
-      this.drawBatchItem(mc.player, mc.world, item, x, y, 0);
-   }
-
-   private void drawBatchItem(@Nullable LivingEntity entity, @Nullable World world, ItemStack stack, int x, int y, int seed) {
-      this.drawBatchItem(entity, world, stack, x, y, seed, 0);
-   }
-
-   private void drawBatchItem(@Nullable LivingEntity entity, @Nullable World world, ItemStack stack, int x, int y, int seed, int z) {
-      MatrixStack matrices = this.getMatrices();
-      ItemRenderState itemRenderState = ((DrawContextAccessor)this.originalContext).getItemRenderState();
-      Immediate vertexConsumers = ((DrawContextAccessor)this.originalContext).getVertexConsumers();
-      if (!stack.isEmpty()) {
-         itemRenderState.clear();
-         mc.getItemModelManager().update(itemRenderState, stack, ModelTransformationMode.GUI, false, world, entity, seed);
-         matrices.push();
-         matrices.translate(x + 8, y + 8, 150 + (itemRenderState.hasDepth() ? z : 0));
-
-         try {
-            matrices.scale(16.0F, -16.0F, 16.0F);
-            boolean bl = !itemRenderState.isSideLit();
-            if (bl) {
-               DiffuseLighting.disableGuiDepthLighting();
-            }
-
-            itemRenderState.render(matrices, vertexConsumers, 15728880, OverlayTexture.DEFAULT_UV);
-            if (bl) {
-               DiffuseLighting.enableGuiDepthLighting();
-            }
-         } catch (Throwable var15) {
-            CrashReport crashReport = CrashReport.create(var15, "Rendering item");
-            CrashReportSection crashReportSection = crashReport.addElement("Item being rendered");
-            crashReportSection.add("Item Type", () -> String.valueOf(stack.getItem()));
-            crashReportSection.add("Item Components", () -> String.valueOf(stack.getComponents()));
-            crashReportSection.add("Item Foil", () -> String.valueOf(stack.hasGlint()));
-            throw new CrashException(crashReport);
-         }
-
-         matrices.pop();
-      }
+      this.drawItem(item, x, y);
    }
 }

@@ -19,8 +19,10 @@ public class CustomRenderTarget extends Framebuffer implements IMinecraft, IWind
    }
 
    public CustomRenderTarget setLinear() {
-      this.linear = true;
-      RenderSystem.recordRenderCall(() -> this.setTexFilter(9729));
+      if (!this.linear) {
+         this.linear = true;
+         RenderSystem.recordRenderCall(() -> this.setTexFilter(9729));
+      }
       return this;
    }
 
@@ -33,10 +35,20 @@ public class CustomRenderTarget extends Framebuffer implements IMinecraft, IWind
       super.setTexFilter(this.linear ? 9729 : texFilter);
    }
 
+   private int getTargetWidth() {
+      int fbWidth = mc.getWindow() != null ? mc.getWindow().getFramebufferWidth() : (int) mw.getScaledWidth();
+      return Math.max((int) Math.floor(fbWidth * this.downscale), 1);
+   }
+
+   private int getTargetHeight() {
+      int fbHeight = mc.getWindow() != null ? mc.getWindow().getFramebufferHeight() : (int) mw.getScaledHeight();
+      return Math.max((int) Math.floor(fbHeight * this.downscale), 1);
+   }
+
    private void resizeFramebuffer() {
-      if (this.needsNewFramebuffer()) {
-         int targetWidth = Math.max((int)Math.floor(mw.getScaledWidth() * this.downscale), 1);
-         int targetHeight = Math.max((int)Math.floor(mw.getScaledHeight() * this.downscale), 1);
+      int targetWidth = getTargetWidth();
+      int targetHeight = getTargetHeight();
+      if (this.textureWidth != targetWidth || this.textureHeight != targetHeight) {
          this.initFbo(targetWidth, targetHeight);
       }
    }
@@ -60,8 +72,6 @@ public class CustomRenderTarget extends Framebuffer implements IMinecraft, IWind
    }
 
    private boolean needsNewFramebuffer() {
-      int targetWidth = Math.max((int)Math.floor(mw.getScaledWidth() * this.downscale), 1);
-      int targetHeight = Math.max((int)Math.floor(mw.getScaledHeight() * this.downscale), 1);
-      return this.textureWidth != targetWidth || this.textureHeight != targetHeight;
+      return this.textureWidth != getTargetWidth() || this.textureHeight != getTargetHeight();
    }
 }

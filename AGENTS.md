@@ -1,4 +1,4 @@
-﻿# SUN Client тАФ Project Context & Architecture Map
+# SUN Client — Project Context & Architecture Map
 
 > **For AI Agents:** This file is loaded automatically. Read this once to understand the codebase structure and avoid unnecessary filesystem scans (`list_dir`, `find_by_name`, `grep_search`).
 
@@ -16,9 +16,10 @@
 ---
 
 ## 2. CRITICAL: Directory Layout & Legacy Remnants
-тЪая╕П **WARNING:** The root directory contains old leftover folders from a previous decompilation:
+⚠️ **WARNING:** The root directory contains old leftover folders from a previous decompilation:
 - **IGNORE root legacy folders:** `/<root>/framework`, `/<root>/mixin`, `/<root>/protection`, `/<root>/systems`, `/<root>/ui`, and `/<root>/utility`. They are **obsolete** and not compiled.
-- **IGNORE scratch/build dirs:** `.gradle/`, `build/`, `run/`, `asset_backup/`, `.tools/`, `minecraft_sources/`, `temp_skill/`.
+- **IGNORE scratch/build dirs:** `.gradle/`, `build/`, `run/`, `asset_backup/`, `.tools/`, `temp_skill/`.
+- **Vanilla Minecraft Source Reference:** For Minecraft 1.21.4 vanilla code, NEVER scan or search `minecraft_sources/` recursively (22k files) and NEVER use `javap`. Use `minecraft_sources_tree.txt` to lookup the exact file path instantly, then read only that file.
 - **ACTIVE CODE LIVES ONLY IN:**
   - `src/main/java/naryn/sun/` (all active Java source code, including `access/` and `protection/client/`)
   - `src/main/resources/` (assets, shaders, mixins, fabric metadata)
@@ -29,70 +30,70 @@
 
 ```
 src/main/java/naryn/sun/
-тФЬтФАтФА Sun.java                         # Core Singleton (Sun.INSTANCE), main entry point & service coordinator
-тФВ
-тФЬтФАтФА access/                          # Fast static accessors (MCCameraAccess, MCClientAccess, MCPlayerAccess, MCWorldAccess)
-тФВ
-тФЬтФАтФА framework/                       # Low-level OpenGL & Rendering Engine
-тФВ   тФЬтФАтФА base/                        # GL states, texture abstractions
-тФВ   тФЬтФАтФА msdf/                        # Multi-channel Signed Distance Field font rendering (MSDF)
-тФВ   тФЬтФАтФА objects/                     # Framebuffers, CustomRenderTarget (HiDPI & downscale support)
-тФВ   тФФтФАтФА shader/                      # GlProgram base class, MotionBlurProgram, SkyProgram, bloom/blur
-тФВ
-тФЬтФАтФА mixin/                           # Fabric Mixin Injections (see sun.mixins.json)
-тФВ   тФЬтФАтФА accessors/                   # Accessor interfaces (GameRendererAccessor, CameraAccessor, etc.)
-тФВ   тФФтФАтФА minecraft/                   # Hooks into client, render, entity, world, network, gui
-тФВ
-тФЬтФАтФА protection/                      # Active client protection hooks
-тФВ   тФФтФАтФА client/                      # MinecraftClientMixinProtection, SoundSystemMixinProtection
-тФВ
-тФЬтФАтФА systems/                         # Core Client Systems
-тФВ   тФЬтФАтФА animation/                   # Easing and UI interpolation curves
-тФВ   тФЬтФАтФА bbmodel/                     # Blockbench 3D model loader & renderer
-тФВ   тФЬтФАтФА config/                      # ConfigManager, ConfigDropHandler (JSON configuration)
-тФВ   тФЬтФАтФА event/                       # EventBus / EventManager (@Subscribe event system)
-тФВ   тФЬтФАтФА file/                        # FileManager (manages .minecraft/sun/ directories)
-тФВ   тФЬтФАтФА friends/                     # FriendManager (friend list & highlighting)
-тФВ   тФЬтФАтФА localization/                # Localizator (multi-language string support)
-тФВ   тФЬтФАтФА notifications/               # NotificationManager (in-game HUD alerts)
-тФВ   тФЬтФАтФА setting/                     # Settings Architecture (Setting, AbstractSetting, BooleanSetting,
-тФВ   тФВ                                # SliderSetting, ModeSetting, SelectSetting, ColorSetting, BindSetting, etc.)
-тФВ   тФЬтФАтФА target/                      # TargetManager (combat & focus entity tracking)
-тФВ   тФЬтФАтФА theme/                       # ThemeManager (color palettes and UI themes)
-тФВ   тФЬтФАтФА waypoints/                   # WayPointsManager (in-world waypoints)
-тФВ   тФФтФАтФА modules/                     # Modules Engine
-тФВ       тФЬтФАтФА Module.java              # Base class for all client features
-тФВ       тФЬтФАтФА ModuleManager.java       # Registry, tick/render dispatching
-тФВ       тФЬтФАтФА api/ & impl/             # Module categories, metadata, builders
-тФВ       тФЬтФАтФА constructions/           # Swing animation presets and builders
-тФВ       тФФтФАтФА modules/                 # Feature implementations:
-тФВ           тФЬтФАтФА optimization/        # Optimizer, PacketFilter, Profiler, NoRender, OptimizationPresets
-тФВ           тФЬтФАтФА utility/             # AntiOverlay, AutoAccept, AutoAuth, AutoEat, AutoInvisible, AutoLeave,
-тФВ           тФВ                        # AutoSprint, CommandBind, DeathCords, FakePlayer, Freelook, HitSound,
-тФВ           тФВ                        # LayoutFix, MineHelper, NameProtect, NoHurtCam, NoInteract, Zoom
-тФВ           тФФтФАтФА visuals/             # ArmorStatus, CustomFog, FpsPing, FreshDrop, Friends, Fullbright,
-тФВ                                    # HeadCosmetics, Hitbox, HitColor, Interface, InventoryView, ItemPhysics,
-тФВ                                    # JumpCircle, Keystrokes, KillEffects, MaceHit, MenuModule, MotionBlur,
-тФВ                                    # MusicModule, NameUtility, PotionStatus, Prediction, ShulkerPeek, Sky,
-тФВ                                    # SkyEntityModule, SwingAnimation, Target, TargetESP, TargetHud, TNTTimer,
-тФВ                                    # Trails, ViewModel, World
-тФВ
-тФЬтФАтФА ui/                              # User Interface
-тФВ   тФЬтФАтФА menu/                        # MenuScreen (ClickGUI / client settings window)
-тФВ   тФФтФАтФА components/                  # Buttons, sliders, checkboxes, color pickers, draggable elements
-тФВ
-тФФтФАтФА utility/                         # Utilities & Helpers
-    тФЬтФАтФА chunkanimator/               # Chunk animation easing and calculations
-    тФЬтФАтФА culling/                     # OcclusionCuller (frame-based caching for entities and blocks)
-    тФЬтФАтФА game/                        # PlayerUtility, ChatUtility, TPSHandler, TitleBarHelper
-    тФЬтФАтФА interfaces/                  # IMinecraft (shortcut 'mc' for MinecraftClient.getInstance())
-    тФЬтФАтФА inventory/                   # InventoryUtility, ItemSlot, EnchantmentUtility
-    тФЬтФАтФА math/                        # FastMath, MathUtility, Vector utils, Chat calculator
-    тФЬтФАтФА profiler/                    # PerformanceProfiler, PerformanceReportGenerator
-    тФЬтФАтФА render/                      # DrawUtility (2D primitives, batching, textures, color blending)
-    тФЬтФАтФА rotations/                   # RotationHandler, RotationUpdateListener (aim & camera math)
-    тФЬтФАтФА time/                        # StopWatch, Timer utilities
-    тФФтФАтФА sounds/                      # Sound playback helpers
+├── Sun.java                         # Core Singleton (Sun.INSTANCE), main entry point & service coordinator
+│
+├── access/                          # Fast static accessors (MCCameraAccess, MCClientAccess, MCPlayerAccess, MCWorldAccess)
+│
+├── framework/                       # Low-level OpenGL & Rendering Engine
+│   ├── base/                        # GL states, texture abstractions
+│   ├── msdf/                        # Multi-channel Signed Distance Field font rendering (MSDF)
+│   ├── objects/                     # Framebuffers, CustomRenderTarget (HiDPI & downscale support)
+│   └── shader/                      # GlProgram base class, MotionBlurProgram, SkyProgram, bloom/blur
+│
+├── mixin/                           # Fabric Mixin Injections (see sun.mixins.json)
+│   ├── accessors/                   # Accessor interfaces (GameRendererAccessor, CameraAccessor, etc.)
+│   └── minecraft/                   # Hooks into client, render, entity, world, network, gui
+│
+├── protection/                      # Active client protection hooks
+│   └── client/                      # MinecraftClientMixinProtection, SoundSystemMixinProtection
+│
+├── systems/                         # Core Client Systems
+│   ├── animation/                   # Easing and UI interpolation curves
+│   ├── bbmodel/                     # Blockbench 3D model loader & renderer
+│   ├── config/                      # ConfigManager, ConfigDropHandler (JSON configuration)
+│   ├── event/                       # EventBus / EventManager (@Subscribe event system)
+│   ├── file/                        # FileManager (manages .minecraft/sun/ directories)
+│   ├── friends/                     # FriendManager (friend list & highlighting)
+│   ├── localization/                # Localizator (multi-language string support)
+│   ├── notifications/               # NotificationManager (in-game HUD alerts)
+│   ├── setting/                     # Settings Architecture (Setting, AbstractSetting, BooleanSetting,
+│   │                                # SliderSetting, ModeSetting, SelectSetting, ColorSetting, BindSetting, etc.)
+│   ├── target/                      # TargetManager (combat & focus entity tracking)
+│   ├── theme/                       # ThemeManager (color palettes and UI themes)
+│   ├── waypoints/                   # WayPointsManager (in-world waypoints)
+│   └── modules/                     # Modules Engine
+│       ├── Module.java              # Base class for all client features
+│       ├── ModuleManager.java       # Registry, tick/render dispatching
+│       ├── api/ & impl/             # Module categories, metadata, builders
+│       ├── constructions/           # Swing animation presets and builders
+│       └── modules/                 # Feature implementations:
+│           ├── optimization/        # Optimizer, PacketFilter, Profiler, NoRender, OptimizationPresets
+│           ├── utility/             # AntiOverlay, AutoAccept, AutoAuth, AutoEat, AutoInvisible, AutoLeave,
+│           │                        # AutoSprint, CommandBind, DeathCords, FakePlayer, Freelook, HitSound,
+│           │                        # LayoutFix, MineHelper, NameProtect, NoHurtCam, NoInteract, Zoom
+│           └── visuals/             # ArmorStatus, CustomFog, FpsPing, FreshDrop, Friends, Fullbright,
+│                                    # HeadCosmetics, Hitbox, HitColor, Interface, InventoryView, ItemPhysics,
+│                                    # JumpCircle, Keystrokes, KillEffects, MaceHit, MenuModule, MotionBlur,
+│                                    # MusicModule, NameUtility, PotionStatus, Prediction, ShulkerPeek, Sky,
+│                                    # SkyEntityModule, SwingAnimation, Target, TargetESP, TargetHud, TNTTimer,
+│                                    # Trails, ViewModel, World
+│
+├── ui/                              # User Interface
+│   ├── menu/                        # MenuScreen (ClickGUI / client settings window)
+│   └── components/                  # Buttons, sliders, checkboxes, color pickers, draggable elements
+│
+└── utility/                         # Utilities & Helpers
+    ├── chunkanimator/               # Chunk animation easing and calculations
+    ├── culling/                     # OcclusionCuller (frame-based caching for entities and blocks)
+    ├── game/                        # PlayerUtility, ChatUtility, TPSHandler, TitleBarHelper
+    ├── interfaces/                  # IMinecraft (shortcut 'mc' for MinecraftClient.getInstance())
+    ├── inventory/                   # InventoryUtility, ItemSlot, EnchantmentUtility
+    ├── math/                        # FastMath, MathUtility, Vector utils, Chat calculator
+    ├── profiler/                    # PerformanceProfiler, PerformanceReportGenerator
+    ├── render/                      # DrawUtility (2D primitives, batching, textures, color blending)
+    ├── rotations/                   # RotationHandler, RotationUpdateListener (aim & camera math)
+    ├── time/                        # StopWatch, Timer utilities
+    └── sounds/                      # Sound playback helpers
 ```
 
 ---
@@ -124,6 +125,13 @@ src/main/java/naryn/sun/
 7. **Strict Scope (No Unsolicited Additions):** Implement strictly what was requested. Never add unasked-for visual effects, background tints, extra colors, or unnecessary settings.
 8. **Strict Dual Localization (RU/EN):** Keep Russian and English completely separated without English words leaking when RU is active. Keys follow `modules.settings.<module_key>.<setting_id>`.
 9. **Performance & Render Safety:** For visual features (particles, custom 3D geometry, shaders), assess impact on FPS and Sodium pipeline before coding. Always use `Render3DBackgroundEvent` (before entities) for full-screen/sky backgrounds to prevent entity nametag clipping.
+10. **Module Settings Architecture & Box-in-Box Protocol (Strict Hierarchy):**
+    When declaring settings inside any `Module` (`BaseModule`), NEVER dump loose settings in flat unstructured lists. Always adhere to this strict 4-step hierarchy:
+    - **1. Modes First:** If the module has modes, style presets, or core algorithms (`ModeSetting`), they MUST always be declared at the very top (Top-Level Root of the card).
+    - **2. Mode-Specific Settings Box:** Parameters configuring the active mode/algorithm must follow directly below in a dedicated container (`GroupSetting`).
+    - **3. General & Logic Box:** All remaining general settings, behavior toggles, targets, filters, delays, and logic follow next in their own container (`GroupSetting`).
+    - **4. Colors at the Very Bottom:** Color pickers (`ColorSetting`), palettes, and gradients MUST always be placed at the very bottom in the lowest box (unless explicitly tied to a higher-priority mode sub-box).
+    - **Internal Order Inside Any Container:** 1) `BooleanSetting` (toggles), 2) `ModeSetting`/`SelectSetting` (selectors), 3) `SliderSetting`/`RangeSetting` (numbers), 4) `ColorSetting` (colors), 5) `BindSetting`/`StringSetting`.
 
 ---
 
@@ -138,13 +146,29 @@ src/main/java/naryn/sun/
 5. **Ultra-Brief Plans:** When proposing or documenting an implementation plan, give only the bare essence: short bullet points of exact changes and files. No fluff, no obvious descriptions, no long preambles.
 6. **ASCII / Text Visualizations:** When visualizing UI layouts, flows, or architectures, use compact ASCII/symbol diagrams (e.g., box frames `[ Button ]`, ASCII art, or arrows `A -> B -> C`). Do not generate bulky markdown tables or external visual boilerplate.
 7. **Minimalist Completion Summaries:** When reporting finished work, keep the summary strictly to 2-4 brief bullet points: what was done, files changed, and verification result. Never write multi-paragraph recaps, never recite code line-by-line, and avoid any conversational filler.
+8. **No Bytecode Decompilation or Blind Minecraft Scans:** NEVER run `javap`. NEVER recursively scan `minecraft_sources/` or `.gradle/`. Instead, lookup the class in `minecraft_sources_tree.txt` using `Select-String -Path minecraft_sources_tree.txt -Pattern "ClassName:"`, which takes <0.1s, then open only the found path.
 
 ---
 
-## 8. Git Version Control & Progress Safety Protocol
-1. **Safety Commits Before Risky Edits:** Before performing refactoring, removing code, or reworking working modules, ensure the current working state is committed.
-2. **Atomic Commits After Completion:** After successfully completing any feature, bugfix, or setting change (and verifying via quiet Gradle compile), create a concise, descriptive Git commit.
-3. **History Inspection & Rollback:** When restoring or reviewing previous implementations, use Git history (`git log`, `git show`, `git diff`) to inspect exact earlier code states.
-4. **Remote Synchronization:** Push commits to `origin main` to keep the GitHub repository continuously updated.
+## 8. Change Logging & Progress Safety Protocol (`changelog/`)
+1. **No Remote Git Push:** NEVER run `git push`. GitHub remote is unlinked to prevent hangs, authentication prompts, and token burn.
+2. **Mandatory Changelog Entry:** After completing any feature, bugfix, or setting change (and verifying via quiet Gradle compile), ALWAYS append a concise entry to `changelog/CHANGELOG.md` with:
+   - Timestamp (`[YYYY-MM-DD HH:MM]`) and task/module name
+   - What was done / fixed
+   - List of modified files
+3. **Local Git Safety (Optional / Local Only):** If performing risky refactoring, you may create a local Git commit (`git commit -m "..."`) for rollback capability. Never attempt remote synchronization.
+
+---
+
+## 9. Launch Roadmap & Client Infrastructure (Tasks 15.8 – 15.12)
+
+| Task | Title | Description & Implementation Details | Status |
+| :--- | :--- | :--- | :--- |
+| **15.8** | **Бэкенд & Лицензии (API)** | Сервер на Node.js (`server/server.js`): эндпоинты `/api/check`, веб-админка `/admin` с графическим интерфейсом, управлением HWID, продлением подписок, выдачей косметики и автосохранением в `server/database.json`. | ✅ **Готово (Прототип)** |
+| **15.9** | **Сайт & Личный Кабинет** | Веб-интерфейс для пользователей: регистрация, оплата подписки/косметики, привязка HWID. | ⏳ В планах |
+| **15.10** | **Платёжный агрегатор** | Подключение приёма платежей (СБП/карты/P2P для цифровых товаров: Aaio/Lava/Payok). | ⏳ В планах |
+| **15.11** | **Встраивание в клиент SUN** | Модуль `LicenseManager.java`: сбор уникального HWID, сетевой запрос к API, получение купленной косметики. Следующий шаг: блокирующий экран при бане/истекшей подписке. | 🔄 **В работе** (Ядро внедрено) |
+| **15.12** | **Аудит 51 модуля & баг-лист** | Составление реестра известных багов по всем модулям, приоритизация и устранение Critical/Crash ошибок. | ⏳ В планах |
+
 
 

@@ -3,6 +3,8 @@ package naryn.sun.mixin.minecraft.client.render.block.entity;
 import naryn.sun.Sun;
 import naryn.sun.systems.modules.modules.optimization.NoRender;
 import naryn.sun.systems.modules.modules.optimization.Optimizer;
+import naryn.sun.systems.modules.modules.optimization.SmartCull;
+import naryn.sun.utility.culling.FrustumCuller;
 import naryn.sun.utility.culling.OcclusionCuller;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BellBlockEntity;
@@ -34,6 +36,34 @@ public class BlockEntityRenderDispatcherMixin {
     @Shadow
     public World world;
 
+    @org.spongepowered.asm.mixin.Unique private static NoRender sun$noRender;
+    @org.spongepowered.asm.mixin.Unique private static Optimizer sun$optimizer;
+    @org.spongepowered.asm.mixin.Unique private static SmartCull sun$smartCull;
+
+    @org.spongepowered.asm.mixin.Unique
+    private static NoRender sun$getNoRender() {
+        if (sun$noRender == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+            sun$noRender = Sun.getInstance().getModuleManager().getModule(NoRender.class);
+        }
+        return sun$noRender;
+    }
+
+    @org.spongepowered.asm.mixin.Unique
+    private static Optimizer sun$getOptimizer() {
+        if (sun$optimizer == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+            sun$optimizer = Sun.getInstance().getModuleManager().getModule(Optimizer.class);
+        }
+        return sun$optimizer;
+    }
+
+    @org.spongepowered.asm.mixin.Unique
+    private static SmartCull sun$getSmartCull() {
+        if (sun$smartCull == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+            sun$smartCull = Sun.getInstance().getModuleManager().getModule(SmartCull.class);
+        }
+        return sun$smartCull;
+    }
+
     @Inject(
         method = "render(Lnet/minecraft/block/entity/BlockEntity;FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;)V",
         at = @At("HEAD"),
@@ -51,7 +81,7 @@ public class BlockEntityRenderDispatcherMixin {
         }
 
         // NoRender block entity checks
-        NoRender noRender = Sun.getInstance().getModuleManager().getModule(NoRender.class);
+        NoRender noRender = sun$getNoRender();
         if (noRender != null && noRender.isEnabled()) {
             if (noRender.getChests().isSelected() && blockEntity instanceof ChestBlockEntity) {
                 ci.cancel();
@@ -83,21 +113,37 @@ public class BlockEntityRenderDispatcherMixin {
             }
         }
 
-        Optimizer optimizer = Sun.getInstance().getModuleManager().getModule(Optimizer.class);
+        Optimizer optimizer = sun$getOptimizer();
         if (optimizer != null && optimizer.isEnabled()) {
             BlockPos pos = blockEntity.getPos();
 
+            Vec3d camPos = this.camera.getPos();
+            double dx = (pos.getX() + 0.5) - camPos.x;
+            double dy = (pos.getY() + 0.5) - camPos.y;
+            double dz = (pos.getZ() + 0.5) - camPos.z;
+            double distSq = dx * dx + dy * dy + dz * dz;
+
             // Дистанционное отсечение сундуков/табличек/спавнеров
             if (optimizer.getBlockEntityDistanceCulling().isEnabled()) {
-                Vec3d camPos = this.camera.getPos();
-                double dx = (pos.getX() + 0.5) - camPos.x;
-                double dy = (pos.getY() + 0.5) - camPos.y;
-                double dz = (pos.getZ() + 0.5) - camPos.z;
-                double distSq = dx * dx + dy * dy + dz * dz;
                 float maxDist = optimizer.getBlockEntityCullDistance().getCurrentValue();
                 if (distSq > maxDist * maxDist) {
                     ci.cancel();
                     return;
+                }
+            }
+
+            // Отсечение вне поля зрения (Frustum / FOV)
+            SmartCull smartCull = sun$getSmartCull();
+            if (this.camera != null) {
+                FrustumCuller.update(this.camera);
+                if (distSq >= 16.0) {
+                    if (smartCull != null && smartCull.shouldCullBlockEntity(dx, dy, dz)) {
+                        ci.cancel();
+                        return;
+                    } else if (optimizer.getFrustumCulling().isEnabled() && !FrustumCuller.isRelativeInside(dx, dy, dz, 1.25)) {
+                        ci.cancel();
+                        return;
+                    }
                 }
             }
 

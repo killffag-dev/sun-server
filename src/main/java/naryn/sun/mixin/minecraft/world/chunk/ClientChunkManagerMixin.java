@@ -1,6 +1,8 @@
 package naryn.sun.mixin.minecraft.world.chunk;
 
 import java.util.function.Consumer;
+import naryn.sun.Sun;
+import naryn.sun.systems.modules.modules.optimization.SmartCull;
 import naryn.sun.utility.chunkanimator.ChunkAnimator;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.nbt.NbtCompound;
@@ -27,11 +29,13 @@ public class ClientChunkManagerMixin {
    }
 
    private float getSurfaceY(WorldChunk chunk) {
+      SmartCull smartCull = Sun.getInstance().getModuleManager().getModule(SmartCull.class);
+      int step = (smartCull != null && smartCull.isFastChunkSampling()) ? 4 : 1;
       int totalHeight = 0;
       int count = 0;
 
-      for (int x = 0; x < 16; x++) {
-         for (int z = 0; z < 16; z++) {
+      for (int x = 0; x < 16; x += step) {
+         for (int z = 0; z < 16; z += step) {
             int height = chunk.getHeightmap(Type.WORLD_SURFACE).get(x, z);
             totalHeight += height;
             count++;

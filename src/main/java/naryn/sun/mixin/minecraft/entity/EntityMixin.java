@@ -20,9 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Entity.class)
 public class EntityMixin implements IMinecraft, BacktrackableEntity {
-   @Unique
-   private final List<Object> backTracks = new ArrayList<>();
-
    @ModifyExpressionValue(method = "move", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;isControlledByPlayer()Z"))
    public boolean fixFalldistanceValue(boolean original) {
       return (Object) this == mc.player ? false : original;
@@ -40,22 +37,42 @@ public class EntityMixin implements IMinecraft, BacktrackableEntity {
 
    @Override
    public List<Object> sun2_0$getBackTracks() {
-      return this.backTracks;
+      return java.util.Collections.emptyList();
+   }
+
+   @Unique private static naryn.sun.systems.modules.modules.visuals.Friends sun$friends;
+   @Unique private static naryn.sun.systems.modules.modules.visuals.Target sun$target;
+
+   @Unique
+   private static naryn.sun.systems.modules.modules.visuals.Friends sun$getFriends() {
+      if (sun$friends == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$friends = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.visuals.Friends.class);
+      }
+      return sun$friends;
+   }
+
+   @Unique
+   private static naryn.sun.systems.modules.modules.visuals.Target sun$getTarget() {
+      if (sun$target == null && Sun.getInstance() != null && Sun.getInstance().getModuleManager() != null) {
+         sun$target = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.visuals.Target.class);
+      }
+      return sun$target;
    }
 
    @Inject(method = "getTeamColorValue", at = @At("HEAD"), cancellable = true)
    private void sun$friendTeamColor(CallbackInfoReturnable<Integer> cir) {
       if ((Object) this instanceof net.minecraft.entity.player.PlayerEntity player) {
-         naryn.sun.systems.modules.modules.visuals.Friends friends = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.visuals.Friends.class);
+         String playerName = player.getGameProfile().getName();
+         naryn.sun.systems.modules.modules.visuals.Friends friends = sun$getFriends();
          if (friends != null && friends.isEnabled() && friends.isOutline()) {
-            if (Sun.getInstance().getFriendManager().isFriend(player.getName().getString())) {
+            if (Sun.getInstance().getFriendManager().isFriend(playerName)) {
                cir.setReturnValue(0x00FF00);
                return;
             }
          }
-         naryn.sun.systems.modules.modules.visuals.Target target = Sun.getInstance().getModuleManager().getModule(naryn.sun.systems.modules.modules.visuals.Target.class);
+         naryn.sun.systems.modules.modules.visuals.Target target = sun$getTarget();
          if (target != null && target.isEnabled() && target.isOutline()) {
-            if (Sun.getInstance().getTargetManager().isTarget(player.getName().getString())) {
+            if (Sun.getInstance().getTargetManager().isTarget(playerName)) {
                if (naryn.sun.systems.modules.modules.visuals.Target.shouldShowOutline(player)) {
                   cir.setReturnValue(0xFF0000);
                }

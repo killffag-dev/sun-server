@@ -7,15 +7,26 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 
 public class CollisionShapeEvent extends EventCancellable {
-   private final BlockState state;
-   private final BlockPos pos;
+   public static final CollisionShapeEvent INSTANCE = new CollisionShapeEvent();
+
+   private BlockState state;
+   private BlockPos pos;
    private VoxelShape shape;
+
+   public CollisionShapeEvent() {
+   }
 
    @Generated
    public CollisionShapeEvent(BlockState state, BlockPos pos, VoxelShape shape) {
+      this.set(state, pos, shape);
+   }
+
+   public CollisionShapeEvent set(BlockState state, BlockPos pos, VoxelShape shape) {
       this.state = state;
       this.pos = pos;
       this.shape = shape;
+      this.setCancelled(false);
+      return this;
    }
 
    @Generated

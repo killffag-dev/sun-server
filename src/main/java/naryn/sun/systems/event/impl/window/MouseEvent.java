@@ -1,9 +1,9 @@
 package naryn.sun.systems.event.impl.window;
 
 import lombok.Generated;
-import naryn.sun.systems.event.Event;
+import naryn.sun.systems.event.EventCancellable;
 
-public class MouseEvent extends Event {
+public class MouseEvent extends EventCancellable {
    private final int button;
    private final int action;
 

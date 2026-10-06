@@ -77,7 +77,7 @@ public abstract class HeldItemRendererMixin {
       Arm arm = isMainHand ? player.getMainArm() : player.getMainArm().getOpposite();
       boolean isRightArm = arm == Arm.RIGHT;
       matrices.push();
-      HandRenderEvent event = new HandRenderEvent(arm, swingProgress, item, equipProgress, matrices);
+      HandRenderEvent event = HandRenderEvent.INSTANCE.set(arm, swingProgress, item, equipProgress, matrices);
       Sun.getInstance().getEventManager().triggerEvent(event);
 
       if (event.isCancelled()) {

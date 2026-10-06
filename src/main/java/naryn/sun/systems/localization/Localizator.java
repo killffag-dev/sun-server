@@ -16,8 +16,8 @@ import ru.kotopushka.compiler.sdk.enums.VMProtectType;
 public final class Localizator {
    private static final Language DEFAULT_LANG = Language.RU_RU;
    private static Language currentLanguage = DEFAULT_LANG;
-   private static final Map<Language, Map<String, String>> allLanguageTranslations = new HashMap<>();
-   private static final Map<String, String> translations = new HashMap<>();
+   private static final java.util.EnumMap<Language, Map<String, String>> allLanguageTranslations = new java.util.EnumMap<>(Language.class);
+   private static Map<String, String> activeTranslations = java.util.Collections.emptyMap();
 
    private static final String[] SUB_LANG_FILES = {
       "ui/ui.lang",
@@ -28,14 +28,11 @@ public final class Localizator {
    };
 
    public static void loadTranslations() {
-      translations.clear();
       for (Language lang : Language.values()) {
          loadLanguage(lang);
       }
       Map<String, String> current = allLanguageTranslations.get(currentLanguage);
-      if (current != null) {
-         translations.putAll(current);
-      }
+      activeTranslations = current != null ? current : java.util.Collections.emptyMap();
    }
 
    private static void loadLanguage(Language lang) {
@@ -68,32 +65,42 @@ public final class Localizator {
 
    public static void setLanguage(@Nonnull Language lang) {
       currentLanguage = lang;
-      loadTranslations();
+      Map<String, String> current = allLanguageTranslations.get(currentLanguage);
+      if (current == null || current.isEmpty()) {
+         loadTranslations();
+      } else {
+         activeTranslations = current;
+      }
    }
 
    public static String translate(String key) {
-      return translations.getOrDefault(key, key);
+      String val = activeTranslations.get(key);
+      return val != null ? val : key;
    }
 
    public static String translate(Language lang, String key) {
       Map<String, String> map = allLanguageTranslations.get(lang);
-      if (map != null && map.containsKey(key)) {
-         return map.get(key);
+      if (map != null) {
+         String val = map.get(key);
+         if (val != null) return val;
       }
-      return translations.getOrDefault(key, key);
+      String val = activeTranslations.get(key);
+      return val != null ? val : key;
    }
 
    public static String translateOrDefault(String key, String defaultValue) {
-      return translations.getOrDefault(key, defaultValue);
+      String val = activeTranslations.get(key);
+      return val != null ? val : defaultValue;
    }
 
    public static String translate(String key, Object... args) {
-      String format = translations.getOrDefault(key, key);
-      return String.format(format, args);
+      String format = activeTranslations.get(key);
+      return String.format(format != null ? format : key, args);
    }
 
    public static String translateOrEmpty(String key) {
-      return translations.getOrDefault(key, " ");
+      String val = activeTranslations.get(key);
+      return val != null ? val : " ";
    }
 
    @VMProtect(type = VMProtectType.MUTATION)

@@ -31,8 +31,14 @@ public class GlProgram {
       });
    }
 
+   private net.minecraft.client.render.RenderPhase.ShaderProgram cachedRenderPhase;
+   private final java.util.Map<String, GlUniform> uniformCache = new java.util.HashMap<>();
+
    public net.minecraft.client.render.RenderPhase.ShaderProgram renderPhaseProgram() {
-      return new net.minecraft.client.render.RenderPhase.ShaderProgram(this.programKey);
+      if (this.cachedRenderPhase == null) {
+         this.cachedRenderPhase = new net.minecraft.client.render.RenderPhase.ShaderProgram(this.programKey);
+      }
+      return this.cachedRenderPhase;
    }
 
    public ShaderProgram use() {
@@ -43,7 +49,18 @@ public class GlProgram {
    }
 
    public GlUniform findUniform(String name) {
-      return ((ShaderProgramAccessor)this.backingProgram).getUniformsByName().get(name);
+      GlUniform cached = this.uniformCache.get(name);
+      if (cached != null) {
+         return cached;
+      }
+      if (this.backingProgram == null) {
+         return null;
+      }
+      GlUniform uniform = ((ShaderProgramAccessor)this.backingProgram).getUniformsByName().get(name);
+      if (uniform != null) {
+         this.uniformCache.put(name, uniform);
+      }
+      return uniform;
    }
 
    @Internal

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
@@ -38,6 +38,19 @@
         </div>
     </div>
 
+    <!-- Announcement Modal -->
+    <div id="announceModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 glass-modal" style="display:none;">
+        <div class="bg-card p-8 rounded-xl shadow-2xl w-96 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4">Send One-Time Announcement</h2>
+            <p class="text-xs text-gray-400 mb-4">Users will see this only once upon next login.</p>
+            <textarea id="announceText" placeholder="Enter announcement text..." class="w-full p-3 rounded bg-dark border border-gray-600 focus:outline-none focus:border-primary mb-4 h-32"></textarea>
+            <div class="flex gap-2">
+                <button onclick="document.getElementById('announceModal').style.display='none'" class="w-1/2 bg-gray-600 hover:bg-gray-500 py-2 rounded">Cancel</button>
+                <button onclick="submitAnnouncement()" class="w-1/2 bg-purple-600 hover:bg-purple-500 py-2 rounded font-bold">Send</button>
+            </div>
+        </div>
+    </div>
+
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         <aside class="w-64 bg-card border-r border-gray-800 flex flex-col">
@@ -46,9 +59,13 @@
                 <span class="text-xl font-bold tracking-wider">SUN ADMIN</span>
             </div>
             <nav class="flex-1 p-4 space-y-2">
-                <a href="#" class="flex items-center gap-3 px-4 py-3 bg-dark/50 text-primary rounded-lg border border-primary/20">
+                <a href="#" onclick="currentView='active'; renderTable();" class="flex items-center gap-3 px-4 py-3 bg-dark/50 text-primary rounded-lg border border-primary/20">
                     <i class="fa-solid fa-users"></i>
                     <span>Users</span>
+                </a>
+                <a href="#" onclick="currentView='deleted'; renderTable();" class="flex items-center gap-3 px-4 py-3 bg-dark/50 text-red-400 rounded-lg border border-red-500/20 mt-2">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Recycle Bin (30d)</span>
                 </a>
             </nav>
             <div class="p-4 border-t border-gray-800">
@@ -62,7 +79,7 @@
         <main class="flex-1 overflow-y-auto p-8">
             <header class="flex justify-between items-center mb-8">
                 <div>
-                    <h1 class="text-3xl font-bold">Users Management</h1>
+                    <h1 class="text-3xl font-bold" id="pageTitle">Users Management</h1>
                     <p class="text-gray-400 mt-1">Manage Freemium accounts, Sparks, and cosmetics.</p>
                 </div>
                 <div class="flex gap-4">
@@ -92,15 +109,26 @@
                 </div>
             </div>
 
+            <!-- Bulk Actions -->
+            <div class="flex justify-between items-center bg-blue-900/20 p-3 rounded-lg border border-blue-500/30 mb-4 transition-all" id="bulkActions" style="display:none;">
+                <div class="text-sm font-medium pl-2"><span id="selectedCount">0</span> selected</div>
+                <div class="flex gap-2">
+                    <button onclick="openAnnounceModal()" class="bg-purple-600 hover:bg-purple-500 px-3 py-1.5 text-sm rounded transition"><i class="fa-solid fa-bullhorn mr-1"></i> Announce</button>
+                    <button onclick="promptBulkSparks()" class="bg-yellow-600 hover:bg-yellow-500 px-3 py-1.5 text-sm rounded transition"><i class="fa-solid fa-bolt mr-1"></i> +/- Sparks</button>
+                    <button onclick="bulkDelete()" class="bg-red-600 hover:bg-red-500 px-3 py-1.5 text-sm rounded transition"><i class="fa-solid fa-trash mr-1"></i> Soft Delete</button>
+                </div>
+            </div>
+
             <!-- Table -->
             <div class="bg-card rounded-lg border border-gray-800 overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-dark/50 border-b border-gray-800">
                         <tr>
+                            <th class="p-4 w-12"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
                             <th class="p-4 text-gray-400 font-medium">ID / UID</th>
                             <th class="p-4 text-gray-400 font-medium">Username</th>
                             <th class="p-4 text-gray-400 font-medium">Sparks</th>
-                            <th class="p-4 text-gray-400 font-medium">Cosmetics</th>
+                            <th class="p-4 text-gray-400 font-medium">Status/Cosmetics</th>
                             <th class="p-4 text-gray-400 font-medium text-right">Actions</th>
                         </tr>
                     </thead>
@@ -114,6 +142,7 @@
 
     <script>
         let allUsers = {};
+        let currentView = 'active'; // 'active' or 'deleted'
         
         function getAuthToken() { return localStorage.getItem('sun_admin_token'); }
         
@@ -185,25 +214,126 @@
             } catch(e) { console.error(e); }
         }
 
+        function getSelectedIds() {
+            return Array.from(document.querySelectorAll('.user-cb:checked')).map(cb => cb.value);
+        }
+
+        function updateSelection() {
+            const selected = getSelectedIds().length;
+            const bulkBar = document.getElementById('bulkActions');
+            if (selected > 0) {
+                bulkBar.style.display = 'flex';
+                document.getElementById('selectedCount').innerText = selected;
+            } else {
+                bulkBar.style.display = 'none';
+            }
+        }
+
+        function toggleAll(src) {
+            const cbs = document.querySelectorAll('.user-cb');
+            cbs.forEach(cb => cb.checked = src.checked);
+            updateSelection();
+        }
+
+        function openAnnounceModal() {
+            document.getElementById('announceText').value = '';
+            document.getElementById('announceModal').style.display = 'flex';
+        }
+
+        function submitAnnouncement() {
+            const text = document.getElementById('announceText').value;
+            if (!text) return;
+            const targets = getSelectedIds();
+            if (targets.length === 0) return alert('No users selected');
+            
+            sendAction({ action: 'send_announcement', hwids: targets, text });
+            document.getElementById('announceModal').style.display = 'none';
+            document.querySelectorAll('.user-cb').forEach(cb => cb.checked = false);
+            updateSelection();
+        }
+
+        function promptBulkSparks() {
+            const hwids = getSelectedIds();
+            if (hwids.length === 0) return;
+            const amount = prompt("Enter sparks amount to add (e.g. 50) or remove (e.g. -30):");
+            if (amount && !isNaN(parseInt(amount))) {
+                sendAction({ action: 'add_coins_bulk', hwids: hwids, amount: parseInt(amount) });
+            }
+        }
+
+        function bulkDelete() {
+            const hwids = getSelectedIds();
+            if (hwids.length === 0) return;
+            if (confirm("Are you sure you want to soft-delete these " + hwids.length + " users? (They will be moved to the Recycle Bin for 30 days)")) {
+                sendAction({ action: 'soft_delete_bulk', hwids: hwids });
+                document.getElementById('selectAll').checked = false;
+            }
+        }
+
+        function promptSparksSingle(hwid) {
+            const amount = prompt("Enter sparks amount to add/remove (e.g. +50, -30):");
+            if (amount && !isNaN(parseInt(amount))) {
+                sendAction({ action: 'add_coins', hwid: hwid, amount: parseInt(amount) });
+            }
+        }
+
         function renderTable() {
             const tbody = document.getElementById('usersTableBody');
             const search = document.getElementById('searchInput').value.toLowerCase();
+            document.getElementById('pageTitle').innerText = currentView === 'active' ? 'Users Management' : 'Recycle Bin';
+            
             tbody.innerHTML = '';
+            document.getElementById('selectAll').checked = false;
+            updateSelection();
             
             let total = 0;
 
             for (const [key, user] of Object.entries(allUsers)) {
                 if (search && !(user.username||'').toLowerCase().includes(search) && !key.toLowerCase().includes(search)) continue;
+                
+                const isDeleted = !!user.deletedAt;
+                if (currentView === 'active' && isDeleted) continue;
+                if (currentView === 'deleted' && !isDeleted) continue;
+
                 total++;
                 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-dark/30 transition";
                 
-                const cosmetics = (Array.isArray(user.cosmetics) ? user.cosmetics : []).map(c => 
-                    `<span class="px-2 py-1 bg-accent/20 text-accent text-xs rounded border border-accent/30 mr-1">${c}</span>`
-                ).join('') || '<span class="text-gray-500 text-sm">None</span>';
+                let statusHtml = '';
+                if (isDeleted) {
+                    const daysLeft = 30 - Math.floor((Date.now() - new Date(user.deletedAt).getTime()) / (1000 * 60 * 60 * 24));
+                    statusHtml = `<span class="px-2 py-1 bg-red-900/30 text-red-400 text-xs rounded border border-red-500/30">Deleted (Purge in ${daysLeft}d)</span>`;
+                } else {
+                    const cosmetics = (Array.isArray(user.cosmetics) ? user.cosmetics : []).map(c => 
+                        `<span class="px-2 py-1 bg-accent/20 text-accent text-xs rounded border border-accent/30 mr-1">${c}</span>`
+                    ).join('') || '<span class="text-gray-500 text-sm">None</span>';
+                    statusHtml = cosmetics;
+                }
+
+                const singleActions = isDeleted ? `
+                    <button onclick="sendAction({action:'restore', hwid:'${key}'})" class="px-3 py-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded border border-green-500/30 transition" title="Restore User">
+                        <i class="fa-solid fa-trash-arrow-up"></i> Restore
+                    </button>
+                    <button onclick="if(confirm('Permanent delete?')) sendAction({action:'hard_delete', hwid:'${key}'})" class="px-3 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded border border-red-500/30 transition" title="Permanent Delete">
+                        <i class="fa-solid fa-ban"></i>
+                    </button>
+                ` : `
+                    <button onclick="promptSparksSingle('${key}')" class="px-3 py-1 bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30 rounded border border-yellow-500/30 transition" title="Add/Remove Sparks">
+                        <i class="fa-solid fa-coins"></i>
+                    </button>
+                    <button onclick="sendAction({action:'toggle_cosmetics', hwid:'${key}'})" class="px-3 py-1 bg-accent/20 text-accent hover:bg-accent/30 rounded border border-accent/30 transition" title="Toggle Standard Cosmetics">
+                        <i class="fa-solid fa-shirt"></i>
+                    </button>
+                    <button onclick="if(confirm('Move user to recycle bin?')) sendAction({action:'soft_delete', hwid:'${key}'})" class="px-3 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded border border-red-500/30 transition" title="Delete User">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                `;
 
                 tr.innerHTML = `
+                    <td class="p-4">
+                        <input type="checkbox" class="user-cb" value="${key}" onclick="updateSelection()">
+                    </td>
                     <td class="p-4">
                         <div class="font-mono text-xs text-gray-400">${key.substring(0,8)}...</div>
                         <div class="text-xs text-gray-500 mt-1">UID: ${user.uid || '-'}</div>
@@ -212,17 +342,9 @@
                     <td class="p-4">
                         <span class="text-yellow-400 font-bold"><i class="fa-solid fa-bolt mr-1"></i>${user.coins || 0}</span>
                     </td>
-                    <td class="p-4">${cosmetics}</td>
+                    <td class="p-4">${statusHtml}</td>
                     <td class="p-4 text-right space-x-2">
-                        <button onclick="sendAction({action:'add_coins', hwid:'${key}', amount:50})" class="px-3 py-1 bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30 rounded border border-yellow-500/30 transition" title="Add 50 Sparks">
-                            <i class="fa-solid fa-coins"></i>
-                        </button>
-                        <button onclick="sendAction({action:'toggle_cosmetics', hwid:'${key}'})" class="px-3 py-1 bg-accent/20 text-accent hover:bg-accent/30 rounded border border-accent/30 transition" title="Toggle Standard Cosmetics">
-                            <i class="fa-solid fa-shirt"></i>
-                        </button>
-                        <button onclick="if(confirm('Delete user?')) sendAction({action:'delete', hwid:'${key}'})" class="px-3 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded border border-red-500/30 transition" title="Delete User">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                        ${singleActions}
                     </td>
                 `;
                 tbody.appendChild(tr);

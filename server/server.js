@@ -1067,7 +1067,37 @@ const server = http.createServer((req, res) => {
                 const data = JSON.parse(body);
                 const { action, hwid } = data;
 
-                if (action === 'extend' && database[hwid]) {
+                if (action === 'send_announcement') {
+                    if (data.hwids) {
+                        for (let h of data.hwids) {
+                            if (database[h]) database[h].pendingAnnouncement = data.text;
+                        }
+                    }
+                    saveDatabase(database);
+                } else if (action === 'soft_delete') {
+                    if (database[hwid]) database[hwid].deletedAt = new Date().toISOString();
+                    saveDatabase(database);
+                } else if (action === 'soft_delete_bulk') {
+                    if (data.hwids) {
+                        for (let h of data.hwids) {
+                            if (database[h]) database[h].deletedAt = new Date().toISOString();
+                        }
+                    }
+                    saveDatabase(database);
+                } else if (action === 'hard_delete') {
+                    delete database[hwid];
+                    saveDatabase(database);
+                } else if (action === 'restore') {
+                    if (database[hwid]) delete database[hwid].deletedAt;
+                    saveDatabase(database);
+                } else if (action === 'add_coins_bulk') {
+                    if (data.hwids) {
+                        for (let h of data.hwids) {
+                            if (database[h]) database[h].coins = (database[h].coins || 0) + (parseInt(data.amount) || 0);
+                        }
+                    }
+                    saveDatabase(database);
+                } else if (action === 'extend' && database[hwid]) {
                     const currentExp = new Date(database[hwid].expires);
                     const baseDate = currentExp > new Date() ? currentExp : new Date();
                     baseDate.setDate(baseDate.getDate() + (data.days || 30));
@@ -1871,6 +1901,10 @@ const server = http.createServer((req, res) => {
             }
         }
 
+        if (user.pendingAnnouncement) {
+            delete user.pendingAnnouncement;
+            saveDatabase(database);
+        }
         console.log(`[SUN-API] [OK] Доступ разрешен: ${user.username} (HWID: ${user.hwid || 'проверен'})`);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         return res.end(JSON.stringify({
@@ -1982,6 +2016,23 @@ const server = http.createServer((req, res) => {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('404 Not Found');
 });
+
+
+// Background job to permanently delete users from Recycle Bin after 30 days
+setInterval(() => {
+    let changed = false;
+    const now = Date.now();
+    for (const k of Object.keys(database)) {
+        if (database[k].deletedAt) {
+            const delDate = new Date(database[k].deletedAt).getTime();
+            if (now - delDate > 30 * 24 * 60 * 60 * 1000) {
+                delete database[k];
+                changed = true;
+            }
+        }
+    }
+    if (changed) saveDatabase(database);
+}, 60 * 60 * 1000); // Check every hour
 
 server.listen(PORT, () => {
     console.log(`\n=============================================================`);

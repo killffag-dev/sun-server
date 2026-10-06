@@ -41,8 +41,17 @@
     <!-- Announcement Modal -->
     <div id="announceModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 glass-modal" style="display:none;">
         <div class="bg-card p-8 rounded-xl shadow-2xl w-96 border border-gray-700">
-            <h2 class="text-xl font-bold mb-4">Send One-Time Announcement</h2>
-            <p class="text-xs text-gray-400 mb-4">Users will see this only once upon next login.</p>
+            <h2 class="text-xl font-bold mb-4">Send Announcement</h2>
+            <p class="text-xs text-gray-400 mb-2">Users will see this upon next login.</p>
+            <div class="mb-4">
+                <label class="flex items-center space-x-2 text-sm text-gray-300">
+                    <input type="checkbox" id="announceIsUpdate" class="rounded bg-dark border-gray-600" onchange="document.getElementById('versionInputDiv').style.display = this.checked ? 'block' : 'none'">
+                    <span>This is a Mandatory Update</span>
+                </label>
+            </div>
+            <div id="versionInputDiv" class="mb-4" style="display:none;">
+                <input type="text" id="announceVersion" placeholder="Target Version (e.g. 2.1.0)" class="w-full p-2 rounded bg-dark border border-gray-600 focus:border-primary text-sm">
+            </div>
             <textarea id="announceText" placeholder="Enter announcement text..." class="w-full p-3 rounded bg-dark border border-gray-600 focus:outline-none focus:border-primary mb-4 h-32"></textarea>
             <div class="flex gap-2">
                 <button onclick="document.getElementById('announceModal').style.display='none'" class="w-1/2 bg-gray-600 hover:bg-gray-500 py-2 rounded">Cancel</button>
@@ -242,11 +251,13 @@
 
         function submitAnnouncement() {
             const text = document.getElementById('announceText').value;
+            const isUpdate = document.getElementById('announceIsUpdate').checked;
+            const version = document.getElementById('announceVersion').value;
             if (!text) return;
             const targets = getSelectedIds();
             if (targets.length === 0) return alert('No users selected');
             
-            sendAction({ action: 'send_announcement', hwids: targets, text });
+            sendAction({ action: 'send_announcement', hwids: targets, text, isUpdate, version });
             document.getElementById('announceModal').style.display = 'none';
             document.querySelectorAll('.user-cb').forEach(cb => cb.checked = false);
             updateSelection();
@@ -330,6 +341,11 @@
                     </button>
                 `;
 
+                let onlineBadge = '<span class="w-3 h-3 rounded-full bg-gray-500 inline-block mr-2" title="Offline"></span>';
+                if (user.lastPing && (Date.now() - user.lastPing) < 5 * 60 * 1000) {
+                    onlineBadge = '<span class="w-3 h-3 rounded-full bg-green-500 inline-block mr-2 shadow-[0_0_8px_rgba(34,197,94,0.8)]" title="Online"></span>';
+                }
+
                 tr.innerHTML = `
                     <td class="p-4">
                         <input type="checkbox" class="user-cb" value="${key}" onclick="updateSelection()">
@@ -338,7 +354,7 @@
                         <div class="font-mono text-xs text-gray-400">${key.substring(0,8)}...</div>
                         <div class="text-xs text-gray-500 mt-1">UID: ${user.uid || '-'}</div>
                     </td>
-                    <td class="p-4 font-medium">${user.username || 'Unknown'}</td>
+                    <td class="p-4 font-medium flex items-center h-full mt-2">${onlineBadge}${user.username || 'Unknown'}</td>
                     <td class="p-4">
                         <span class="text-yellow-400 font-bold"><i class="fa-solid fa-bolt mr-1"></i>${user.coins || 0}</span>
                     </td>

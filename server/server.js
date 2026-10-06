@@ -1070,7 +1070,13 @@ const server = http.createServer((req, res) => {
                 if (action === 'send_announcement') {
                     if (data.hwids) {
                         for (let h of data.hwids) {
-                            if (database[h]) database[h].pendingAnnouncement = data.text;
+                            if (database[h]) {
+                                database[h].pendingAnnouncement = {
+                                    text: data.text,
+                                    isUpdate: !!data.isUpdate,
+                                    version: data.version || null
+                                };
+                            }
                         }
                     }
                     saveDatabase(database);
@@ -1881,6 +1887,7 @@ const server = http.createServer((req, res) => {
             return res.end(JSON.stringify({ valid: false, message: "Срок действия бета-теста истек!" }));
         }
 
+        if (clientVersion) user.clientVersion = clientVersion;
         // Проверка и аппаратная привязка (HWID Lock)
         if (hwid) {
             if (!user.hwid) {
@@ -1901,9 +1908,16 @@ const server = http.createServer((req, res) => {
             }
         }
 
-        if (user.pendingAnnouncement) {
-            delete user.pendingAnnouncement;
-            saveDatabase(database);
+        let sendAnnounce = user.pendingAnnouncement || null;
+        if (sendAnnounce) {
+            if (sendAnnounce.isUpdate && user.clientVersion === sendAnnounce.version) {
+                delete user.pendingAnnouncement;
+                sendAnnounce = null;
+                saveDatabase(database);
+            } else if (!sendAnnounce.isUpdate) {
+                delete user.pendingAnnouncement;
+                saveDatabase(database);
+            }
         }
         console.log(`[SUN-API] [OK] Доступ разрешен: ${user.username} (HWID: ${user.hwid || 'проверен'})`);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });

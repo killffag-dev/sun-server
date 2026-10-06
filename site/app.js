@@ -294,9 +294,45 @@ function getStoredUser() {
   }
 }
 
+function showAnnouncement(ann) {
+  if (!ann || !ann.text) return;
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);padding:20px;';
+  
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;max-width:400px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.5);text-align:center;color:#fff;animation:popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);';
+  
+  const style = document.createElement('style');
+  style.textContent = '@keyframes popIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}';
+  document.head.appendChild(style);
+
+  const title = document.createElement('h2');
+  title.textContent = ann.isUpdate ? 'Обновление' : 'Объявление';
+  title.style.cssText = 'font-size:20px;font-weight:700;margin-bottom:12px;color:' + (ann.isUpdate ? '#3b82f6' : '#a855f7') + ';';
+  
+  const text = document.createElement('p');
+  text.textContent = ann.text;
+  text.style.cssText = 'font-size:15px;color:#a1a1aa;margin-bottom:24px;line-height:1.5;';
+  
+  const btn = document.createElement('button');
+  btn.textContent = 'Понятно';
+  btn.style.cssText = 'background:linear-gradient(90deg, #3b82f6, #8b5cf6);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:600;cursor:pointer;transition:transform 0.2s;';
+  btn.onmouseover = () => btn.style.transform = 'scale(1.05)';
+  btn.onmouseout = () => btn.style.transform = 'scale(1)';
+  btn.onclick = () => {
+    modal.remove();
+  };
+  
+  box.appendChild(title);
+  box.appendChild(text);
+  box.appendChild(btn);
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+}
 function updateUserUI(u) {
   if (!u) return;
   currentUser = u;
+  if (u.announcement) { showAnnouncement(u.announcement); }
   saveSession(u.sessionToken, u.key, u);
 
   const headerBtn = $('#btn-header-auth');
@@ -590,3 +626,4 @@ try {
     });
   });
 })();
+

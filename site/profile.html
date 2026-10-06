@@ -427,7 +427,7 @@ function populateProfile(u) {
   if (u.hwid || u.clientLinked) {
     if (dot) dot.className = 'kimiko-dot active';
     if (hwidText) hwidText.textContent = 'Привязан';
-    if (pairCard) pairCard.style.display = 'none';
+    if (pairCard) pairCard.style.display = ''; // Freemium: allow re-linking anytime
   } else {
     if (dot) dot.className = 'kimiko-dot warning';
     if (hwidText) hwidText.textContent = 'Не привязан';
@@ -664,7 +664,7 @@ if (fPairClient) {
       if ($('#k-hwid-text')) $('#k-hwid-text').textContent = 'Привязан';
       if ($('#k-hwid-dot')) $('#k-hwid-dot').className = 'kimiko-dot active';
       const pairCard = $('#card-pair-game');
-      if (pairCard) pairCard.style.display = 'none';
+      if (pairCard) pairCard.style.display = ''; // Freemium: allow re-linking anytime
       if (currentUser) {
         currentUser.hwid = 'SUN-CONNECTED';
         currentUser.clientLinked = true;

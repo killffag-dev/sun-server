@@ -90,19 +90,33 @@
                 <div>
                     <h1 class="text-3xl font-bold" id="pageTitle">Управление Пользователями</h1>
                     <div class="flex items-center space-x-2 mt-3 bg-dark/50 p-1 rounded-lg border border-gray-700 w-fit">
-                        <button class="px-4 py-2 rounded-md bg-primary text-white text-sm font-bold shadow transition">Режим просмотра</button>
-                        <button class="px-4 py-2 rounded-md text-gray-400 hover:text-white text-sm transition">Режим редактора</button>
+                        <button id="btnViewMode" onclick="setEditorMode(false)" class="px-4 py-2 rounded-md bg-primary text-white text-sm font-bold shadow transition">Режим просмотра</button>
+                        <button id="btnEditMode" onclick="setEditorMode(true)" class="px-4 py-2 rounded-md text-gray-400 hover:text-white text-sm transition">Режим редактора</button>
                     </div>
                 </div>
                 <div class="flex gap-4">
-                    <button onclick="openAnnounceModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg font-bold transition flex items-center gap-2 border border-purple-500">
+                    <button onclick="openGlobalAnnounceModal(false)" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-3 rounded-lg font-bold transition flex items-center gap-2 border border-purple-500">
                         <i class="fa-solid fa-bullhorn"></i> Объявление "Привет"
                     </button>
-                    <button onclick="openAnnounceModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-lg font-bold transition flex items-center gap-2 border border-blue-500">
+                    <button onclick="openGlobalAnnounceModal(true)" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-lg font-bold transition flex items-center gap-2 border border-blue-500">
                         <i class="fa-solid fa-code-branch"></i> О новой версии
                     </button>
                     <div class="bg-card px-6 py-3 rounded-lg border border-gray-800 flex items-center gap-4 ml-4">
-                        <i class="fa-solid fa-user-check text-green-500 text-xl"></i>
+                        <i class="fa-solid fa-gamepad text-green-500 text-xl"></i>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider">В Игре</p>
+                            <p class="text-xl font-bold" id="stat-game">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-card px-6 py-3 rounded-lg border border-gray-800 flex items-center gap-4">
+                        <i class="fa-solid fa-globe text-blue-500 text-xl"></i>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider">На Сайте</p>
+                            <p class="text-xl font-bold" id="stat-web">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-card px-6 py-3 rounded-lg border border-gray-800 flex items-center gap-4">
+                        <i class="fa-solid fa-user-check text-gray-400 text-xl"></i>
                         <div>
                             <p class="text-xs text-gray-400 uppercase tracking-wider">Всего</p>
                             <p class="text-xl font-bold" id="stat-total">0</p>
@@ -158,7 +172,27 @@
 
     <script>
         let allUsers = {};
-        let currentView = 'active'; // 'active' or 'deleted'
+        let currentView = 'active';
+
+        let isEditorMode = false;
+        function setEditorMode(mode) {
+            isEditorMode = mode;
+            document.getElementById('btnViewMode').className = mode ? "px-4 py-2 rounded-md text-gray-400 hover:text-white text-sm transition" : "px-4 py-2 rounded-md bg-primary text-white text-sm font-bold shadow transition";
+            document.getElementById('btnEditMode').className = !mode ? "px-4 py-2 rounded-md text-gray-400 hover:text-white text-sm transition" : "px-4 py-2 rounded-md bg-primary text-white text-sm font-bold shadow transition";
+            
+            // Скрываем/показываем создание пользователей и действия
+            const actionsBar = document.querySelector('.bg-card.p-4.rounded-lg.mb-6');
+            if (actionsBar) {
+                const addDiv = actionsBar.querySelector('.flex.gap-3:not(.w-1\/2)');
+                if (addDiv) addDiv.style.display = mode ? 'flex' : 'none';
+            }
+            
+            const thCheck = document.querySelector('th input#selectAll');
+            if(thCheck) thCheck.style.display = mode ? 'block' : 'none';
+            
+            renderTable();
+        }
+     // 'active' or 'deleted'
         
         function getAuthToken() { return localStorage.getItem('sun_admin_token'); }
         
@@ -322,7 +356,7 @@
                     `<span class="px-2 py-1 bg-accent/20 text-accent text-xs rounded border border-accent/30 mr-1">${c}</span>`
                 ).join('') : '<span class="text-gray-500 text-sm">Пусто</span>';
 
-                const singleActions = isDeleted ? `
+                const singleActions = !isEditorMode ? `<span class="text-xs text-gray-500">Только чтение</span>` : (isDeleted ? `
                     <button onclick="sendAction({action:'restore', hwid:'${key}'})" class="px-3 py-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded border border-green-500/30 transition" title="Restore User">
                         <i class="fa-solid fa-trash-arrow-up"></i>
                     </button>
@@ -348,7 +382,7 @@
 
                 tr.innerHTML = `
                     <td class="p-4">
-                        <input type="checkbox" class="user-cb" value="${key}" onclick="updateSelection()">
+                        ${isEditorMode ? `<input type="checkbox" class="user-cb" value="${key}" onclick="updateSelection()">` : ''}
                     </td>
                     <td class="p-4 font-medium"><div class="flex items-center">${onlineBadge}${user.username || 'Unknown'}</div></td>
                     <td class="p-4">
@@ -376,6 +410,8 @@
                 tbody.appendChild(trCosmetics);
             }
             document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-game').textContent = gameOnlineCount;
+            document.getElementById('stat-web').textContent = webOnlineCount;
         }
 
         function toggleCosmetics(key) {
@@ -393,7 +429,16 @@
             document.getElementById('newUsername').value = '';
         }
 
-        window.onload = checkAuth;
+        
+        function sendWebPing() {
+            if (getAuthToken()) {
+                fetch('/api/web-ping', { method: 'POST', headers: {'X-Admin-Token': getAuthToken()} }).catch(()=>{});
+            }
+        }
+        setInterval(sendWebPing, 60000);
+        setInterval(fetchUsers, 30000); // auto update table
+    
+        window.onload = () => { checkAuth(); sendWebPing(); };
     </script>
 </body>
 </html>

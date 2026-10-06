@@ -9,6 +9,7 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const Database = require('better-sqlite3');
 
 const PORT = process.env.PORT || 8080;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'database.json');
@@ -196,32 +197,66 @@ function getSessionCookieHeader(req, token) {
     return `sun_session=${val}; Path=/; SameSite=Lax; Max-Age=${maxAge}${isHttps ? '; Secure' : ''}`;
 }
 
-// Загрузка или создание базы данных с авто-восстановлением из бэкапа
-function loadDatabase() {
-    let db = {};
+
+const DB_ENCRYPTION_KEY = crypto.scryptSync(process.env.DB_ENCRYPTION_KEY || 'SUN_SECURE_KEY', 'salt', 32);
+const sqlDb = new Database(path.join(__dirname, 'database.sqlite'));
+sqlDb.exec('CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, encrypted_data TEXT)');
+
+function encryptObject(obj) {
+    const text = JSON.stringify(obj);
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-cbc', DB_ENCRYPTION_KEY, iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return iv.toString('hex') + ':' + encrypted;
+}
+
+function decryptObject(text) {
+    if (!text) return null;
     try {
-        if (fs.existsSync(DB_FILE)) {
-            const data = fs.readFileSync(DB_FILE, 'utf-8');
-            db = JSON.parse(data);
-        }
+        const textParts = text.split(':');
+        const iv = Buffer.from(textParts.shift(), 'hex');
+        const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-cbc', DB_ENCRYPTION_KEY, iv);
+        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return JSON.parse(decrypted);
     } catch (e) {
-        console.error('[SUN-DB] Ошибка чтения базы данных:', e);
+        return null;
+    }
+}
+
+// Загрузка или создание базы данных с авто-восстановлением
+function loadDatabase() {
+    // Migrate old JSON if exists
+    if (fs.existsSync(DB_FILE)) {
+        console.log('[SUN-DB] Migrating database.json to SQLite...');
+        try {
+            const raw = fs.readFileSync(DB_FILE, 'utf-8');
+            const dbJson = JSON.parse(raw);
+            const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (@id, @data)');
+            const migrateTx = sqlDb.transaction((db) => {
+                for (const key of Object.keys(db)) {
+                    insert.run({ id: key, data: encryptObject(db[key]) });
+                }
+            });
+            migrateTx(dbJson);
+            fs.renameSync(DB_FILE, DB_FILE + '.migrated');
+            if (fs.existsSync(DB_BACKUP_FILE)) fs.renameSync(DB_BACKUP_FILE, DB_BACKUP_FILE + '.migrated');
+        } catch (e) {
+            console.error('[SUN-DB] Error during migration:', e);
+        }
     }
 
-    // Восстанавливаем из резервной копии, если в ней есть данные, которых нет в DB_FILE
+    let db = {};
     try {
-        if (fs.existsSync(DB_BACKUP_FILE)) {
-            const backupData = fs.readFileSync(DB_BACKUP_FILE, 'utf-8');
-            const backupDb = JSON.parse(backupData);
-            for (const k of Object.keys(backupDb)) {
-                if (!db[k]) {
-                    db[k] = backupDb[k];
-                    console.log(`[SUN-DB] Восстановлен аккаунт из резервной копии: ${k}`);
-                }
-            }
+        const stmt = sqlDb.prepare('SELECT id, encrypted_data FROM users');
+        for (const row of stmt.iterate()) {
+            const decrypted = decryptObject(row.encrypted_data);
+            if (decrypted) db[row.id] = decrypted;
         }
     } catch (e) {
-        console.error('[SUN-DB] Ошибка чтения резервной копии базы данных:', e);
+        console.error('[SUN-DB] SQLite load error:', e);
     }
 
     if (Object.keys(db).length === 0) {
@@ -245,7 +280,6 @@ function loadDatabase() {
         };
     }
 
-    // Присваиваем UID всем пользователям, у кого его нет (начиная от 10+, 0-9 зарезервированы)
     let nextUidCounter = 10;
     for (const k of Object.keys(db)) {
         if (db[k] && typeof db[k].uid === 'number' && db[k].uid >= nextUidCounter) {
@@ -262,14 +296,28 @@ function loadDatabase() {
     return db;
 }
 
-// Надежное сохранение базы данных в 2 независимых файла для защиты от потери данных
+// Надежное сохранение базы данных
 function saveDatabase(db) {
     try {
-        const jsonStr = JSON.stringify(db, null, 2);
-        fs.writeFileSync(DB_FILE, jsonStr, 'utf-8');
-        fs.writeFileSync(DB_BACKUP_FILE, jsonStr, 'utf-8');
+        const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (@id, @data)');
+        const saveTx = sqlDb.transaction((dbObj) => {
+            for (const key of Object.keys(dbObj)) {
+                insert.run({ id: key, data: encryptObject(dbObj[key]) });
+            }
+        });
+        saveTx(db);
+        
+        const existingKeys = new Set(Object.keys(db));
+        const allIds = sqlDb.prepare('SELECT id FROM users').all();
+        const deleteStmt = sqlDb.prepare('DELETE FROM users WHERE id = ?');
+        const deleteTx = sqlDb.transaction(() => {
+            for (const row of allIds) {
+                if (!existingKeys.has(row.id)) deleteStmt.run(row.id);
+            }
+        });
+        deleteTx();
     } catch (e) {
-        console.error('[SUN-DB] Ошибка сохранения базы данных:', e);
+        console.error('[SUN-DB] SQLite save error:', e);
     }
 }
 
@@ -1067,7 +1115,28 @@ const server = http.createServer((req, res) => {
                 const data = JSON.parse(body);
                 const { action, hwid } = data;
 
-                if (action === 'send_announcement') {
+                if (action === 'send_global_announcement') {
+                    const text = data.text || '';
+                    const isUpdate = !!data.isUpdate;
+                    const version = data.version || '';
+                    
+                    // Обновляем для всех в базе (игра)
+                    for (const key of Object.keys(database)) {
+                        database[key].pendingAnnouncement = { text, isUpdate, version };
+                    }
+                    saveDatabase(database);
+                    
+                    // Обновляем для сайта
+                    announcement = {
+                        active: true,
+                        type: isUpdate ? 'warning' : 'info',
+                        title: isUpdate ? 'Новая версия ' + version : 'Объявление',
+                        message: text,
+                        url: ''
+                    };
+                    fs.writeFileSync(ANNOUNCEMENT_FILE, JSON.stringify(announcement, null, 2));
+                    console.log('[SUN-API] Глобальное объявление отправлено!');
+                } else if (action === 'send_announcement') {
                     if (data.hwids) {
                         for (let h of data.hwids) {
                             if (database[h]) {
@@ -1793,6 +1862,18 @@ const server = http.createServer((req, res) => {
     }
 
     // 3.96 API САЙТА: Общедоступный профиль (аватарка и баннер видны всем)
+    if (parsedUrl.pathname === '/api/generate-link-code') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        return res.end(JSON.stringify({ code: code }));
+    }
+
+    if (parsedUrl.pathname === '/api/sparks-balance') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        // Мок: возвращаем 0 или можно брать из БД если есть сессия, но сейчас заглушка
+        return res.end(JSON.stringify({ sparks: 0 }));
+    }
+
     if (parsedUrl.pathname === '/api/profile' && (req.method === 'GET' || req.method === 'POST')) {
         const queryUser = (parsedUrl.query.username || parsedUrl.query.u || parsedUrl.query.key || '').trim().toLowerCase();
         const sessionToken = (getCookie(req, 'sun_session') || '').trim();
@@ -1892,6 +1973,15 @@ const server = http.createServer((req, res) => {
         if (hwid) {
             if (!user.hwid) {
                 user.hwid = hwid;
+                // Telemetry logic
+                const now = Date.now();
+                if (user.lastGamePing) {
+                    const diff = Math.floor((now - user.lastGamePing) / 1000);
+                    if (diff < 300) {
+                        user.playtime = (user.playtime || 0) + diff;
+                    }
+                }
+                user.lastGamePing = now;
                 user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
                 saveDatabase(database);
                 console.log(`[SUN-API] [HWID] Ключ ${userKey} (${user.username}) успешно ПРИВЯЗАН к ПК HWID: ${hwid}`);
@@ -1903,6 +1993,15 @@ const server = http.createServer((req, res) => {
                     message: "Ключ привязан к другому компьютеру! Сбросьте привязку HWID в Личном кабинете на сайте." 
                 }));
             } else {
+                // Telemetry logic
+                const now = Date.now();
+                if (user.lastGamePing) {
+                    const diff = Math.floor((now - user.lastGamePing) / 1000);
+                    if (diff < 300) {
+                        user.playtime = (user.playtime || 0) + diff;
+                    }
+                }
+                user.lastGamePing = now;
                 user.lastSeen = new Date().toISOString().replace('T', ' ').substring(0, 16);
                 saveDatabase(database);
             }

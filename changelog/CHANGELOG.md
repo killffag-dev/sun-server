@@ -71,5 +71,16 @@
   - Обновлены Dockerfile и server/Dockerfile до node:22-slim с безопасным npm install (не блокирующим сборку на Railway).
   - Добавлены optionalDependencies в package.json и server/package.json.
   - Проверена сквозная работоспособность API авторизации (/api/check) и загрузки пользователей из database.sqlite.
-  - Изменены файлы: Dockerfile, package.json, server/Dockerfile, server/package.json, server/server.js, server/database.json, server/database.backup.json, CHANGELOG.md.
+- [2026-10-07 11:04] Актуализация AGENTS.md и защита баз данных в Git
+  - Добавлено правило исключения живых баз данных (`database.json`, `database.sqlite*`) в `.gitignore` и зафиксировано в протоколе безопасности.
+  - Актуализирован Roadmap (задачи 15.8, 15.9, 15.11 переведены в статус "Готово").
+  - Задокументирована работа гибридной СУБД SQLite (Node 22 native / better-sqlite3 с AES-256) и привязки по коду без HWID/банов.
+  - Изменены файлы: .gitignore, AGENTS.md, CHANGELOG.md.
+
+- [2026-10-07 11:18] Исправление входа в Админ-панель (admin.html)
+  - Устранена критическая синтаксическая ошибка JavaScript (`SyntaxError: Unexpected token ';'`) в строке формирования действий пользователя, из-за которой парсинг скрипта полностью блокировался и клик по кнопке входа не вызывал `loginAdmin()`.
+  - Устранена ошибка `ReferenceError: gameOnlineCount is not defined` в `renderTable()`.
+  - Форма авторизации переведена на стандартную отправку `<form onsubmit="...">` с поддержкой русской подсказки и корректной обработки клавиши Enter.
+  - Добавлена интеллектуальная валидация введенных данных: при попытке ввести 6-значный код сопряжения игры или ключ SUN ID выводится понятная подсказка с указанием, что игровой код вводится в `/profile.html`, а для админки нужен мастер-пароль (`sun2026admin`).
+  - Изменены файлы: server/admin.html, CHANGELOG.md.
 

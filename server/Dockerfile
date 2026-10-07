@@ -13,7 +13,7 @@ COPY bot/updates/version_info.json ./bot/updates/version_info.json
 
 WORKDIR /app/server
 
-# Открываем порт 8080 для сервера и админки
+ENV PORT=8080
 EXPOSE 8080
 
 CMD ["node", "server.js"]

@@ -1,7 +1,7 @@
 /**
  * SUN Client — Сервер авторизации и лицензий с красивой Админ-панелью
  * Запуск: node server/server.js
- * Админка доступна в браузере: http://localhost:8080/admin
+ * Админка: /admin
  */
 
 const http = require('http');
@@ -9,9 +9,15 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const Database = require('better-sqlite3');
+let Database = null;
+try {
+    Database = require('better-sqlite3');
+} catch (e) {
+    console.warn('[SUN-DB] Native better-sqlite3 not available, using JSON fallback:', e.message);
+}
 
 const PORT = process.env.PORT || 8080;
+const DOMAIN = (process.env.DOMAIN || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null) || process.env.RENDER_EXTERNAL_URL || 'https://sun-server-production.up.railway.app').replace(/\/+$/, '');
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'database.json');
 const DB_BACKUP_FILE = process.env.DB_BACKUP_FILE || path.join(__dirname, 'database.backup.json');
 const SITE_DIR = process.env.SITE_DIR || path.resolve(path.join(__dirname, '..', 'site'));
@@ -28,9 +34,25 @@ try {
 }
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sun2026admin';
+
+process.on('uncaughtException', (err) => {
+    console.error('[SUN-SERVER] [CRITICAL] Uncaught exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[SUN-SERVER] [CRITICAL] Unhandled rejection:', reason);
+});
 const SESSION_SECRET = process.env.SESSION_SECRET || 'SUN_SESSION_SECRET_2026_SECURE_KEY_9837418247918237';
 // Map of active admin session tokens -> expiration timestamp (ms)
 const activeAdminSessions = new Map();
+
+// Map of active client link codes -> { code, token, createdAt, linked, user, key, uid, sparks }
+const activeLinkCodes = new Map();
+setInterval(() => {
+    const now = Date.now();
+    for (const [code, entry] of activeLinkCodes.entries()) {
+        if (now - entry.createdAt > 10 * 60 * 1000) activeLinkCodes.delete(code);
+    }
+}, 60 * 1000);
 
 function timingSafeCompare(a, b) {
     if (typeof a !== 'string' || typeof b !== 'string') return false;
@@ -199,8 +221,16 @@ function getSessionCookieHeader(req, token) {
 
 
 const DB_ENCRYPTION_KEY = crypto.scryptSync(process.env.DB_ENCRYPTION_KEY || 'SUN_SECURE_KEY', 'salt', 32);
-const sqlDb = new Database(path.join(__dirname, 'database.sqlite'));
-sqlDb.exec('CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, encrypted_data TEXT)');
+let sqlDb = null;
+try {
+    if (Database) {
+        sqlDb = new Database(path.join(__dirname, 'database.sqlite'));
+        sqlDb.exec('CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, encrypted_data TEXT)');
+    }
+} catch (e) {
+    console.warn('[SUN-DB] SQLite init error, using JSON fallback:', e.message);
+    sqlDb = null;
+}
 
 function encryptObject(obj) {
     const text = JSON.stringify(obj);
@@ -228,35 +258,47 @@ function decryptObject(text) {
 
 // Загрузка или создание базы данных с авто-восстановлением
 function loadDatabase() {
-    // Migrate old JSON if exists
-    if (fs.existsSync(DB_FILE)) {
-        console.log('[SUN-DB] Migrating database.json to SQLite...');
-        try {
-            const raw = fs.readFileSync(DB_FILE, 'utf-8');
-            const dbJson = JSON.parse(raw);
-            const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (@id, @data)');
-            const migrateTx = sqlDb.transaction((db) => {
-                for (const key of Object.keys(db)) {
-                    insert.run({ id: key, data: encryptObject(db[key]) });
-                }
-            });
-            migrateTx(dbJson);
-            fs.renameSync(DB_FILE, DB_FILE + '.migrated');
-            if (fs.existsSync(DB_BACKUP_FILE)) fs.renameSync(DB_BACKUP_FILE, DB_BACKUP_FILE + '.migrated');
-        } catch (e) {
-            console.error('[SUN-DB] Error during migration:', e);
-        }
-    }
-
     let db = {};
-    try {
-        const stmt = sqlDb.prepare('SELECT id, encrypted_data FROM users');
-        for (const row of stmt.iterate()) {
-            const decrypted = decryptObject(row.encrypted_data);
-            if (decrypted) db[row.id] = decrypted;
+    if (sqlDb) {
+        // Migrate old JSON if exists
+        if (fs.existsSync(DB_FILE)) {
+            console.log('[SUN-DB] Migrating database.json to SQLite...');
+            try {
+                const raw = fs.readFileSync(DB_FILE, 'utf-8');
+                const dbJson = JSON.parse(raw);
+                const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (@id, @data)');
+                const migrateTx = sqlDb.transaction((dbObj) => {
+                    for (const key of Object.keys(dbObj)) {
+                        insert.run({ id: key, data: encryptObject(dbObj[key]) });
+                    }
+                });
+                migrateTx(dbJson);
+                // DB migration completed, keep DB_FILE active
+                if (fs.existsSync(DB_BACKUP_FILE)) fs.renameSync(DB_BACKUP_FILE, DB_BACKUP_FILE + '.migrated');
+            } catch (e) {
+                console.error('[SUN-DB] Error during migration:', e);
+            }
         }
-    } catch (e) {
-        console.error('[SUN-DB] SQLite load error:', e);
+
+        try {
+            const stmt = sqlDb.prepare('SELECT id, encrypted_data FROM users');
+            for (const row of stmt.iterate()) {
+                const decrypted = decryptObject(row.encrypted_data);
+                if (decrypted) db[row.id] = decrypted;
+            }
+        } catch (e) {
+            console.error('[SUN-DB] SQLite load error:', e);
+        }
+    } else {
+        try {
+            if (fs.existsSync(DB_FILE)) {
+                db = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+            } else if (fs.existsSync(DB_FILE + '.migrated')) {
+                db = JSON.parse(fs.readFileSync(DB_FILE + '.migrated', 'utf-8'));
+            }
+        } catch (e) {
+            console.error('[SUN-DB] Fallback JSON load error:', e);
+        }
     }
 
     if (Object.keys(db).length === 0) {
@@ -298,26 +340,36 @@ function loadDatabase() {
 
 // Надежное сохранение базы данных
 function saveDatabase(db) {
+    if (sqlDb) {
+        try {
+            const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (@id, @data)');
+            const saveTx = sqlDb.transaction((dbObj) => {
+                for (const key of Object.keys(dbObj)) {
+                    insert.run({ id: key, data: encryptObject(dbObj[key]) });
+                }
+            });
+            saveTx(db);
+            
+            const existingKeys = new Set(Object.keys(db));
+            const allIds = sqlDb.prepare('SELECT id FROM users').all();
+            const deleteStmt = sqlDb.prepare('DELETE FROM users WHERE id = ?');
+            const deleteTx = sqlDb.transaction(() => {
+                for (const row of allIds) {
+                    if (!existingKeys.has(row.id)) deleteStmt.run(row.id);
+                }
+            });
+            deleteTx();
+        } catch (e) {
+            console.error('[SUN-DB] SQLite save error:', e);
+        }
+    }
+    // Также всегда сохраняем резервную копию в JSON
     try {
-        const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (@id, @data)');
-        const saveTx = sqlDb.transaction((dbObj) => {
-            for (const key of Object.keys(dbObj)) {
-                insert.run({ id: key, data: encryptObject(dbObj[key]) });
-            }
-        });
-        saveTx(db);
-        
-        const existingKeys = new Set(Object.keys(db));
-        const allIds = sqlDb.prepare('SELECT id FROM users').all();
-        const deleteStmt = sqlDb.prepare('DELETE FROM users WHERE id = ?');
-        const deleteTx = sqlDb.transaction(() => {
-            for (const row of allIds) {
-                if (!existingKeys.has(row.id)) deleteStmt.run(row.id);
-            }
-        });
-        deleteTx();
+        const tmpFile = DB_FILE + '.tmp';
+        fs.writeFileSync(tmpFile, JSON.stringify(db, null, 2), 'utf-8');
+        fs.renameSync(tmpFile, DB_FILE);
     } catch (e) {
-        console.error('[SUN-DB] SQLite save error:', e);
+        // Игнорируем ошибки временных файлов
     }
 }
 
@@ -1861,17 +1913,136 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // 3.96 API САЙТА: Общедоступный профиль (аватарка и баннер видны всем)
+    // 3.96 API САЙТА & КЛИЕНТА: Привязка аккаунта через код
     if (parsedUrl.pathname === '/api/generate-link-code') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        return res.end(JSON.stringify({ code: code }));
+        let code = '';
+        do {
+            code = Math.floor(100000 + Math.random() * 900000).toString();
+        } while (activeLinkCodes.has(code));
+
+        const token = crypto.randomBytes(16).toString('hex');
+        activeLinkCodes.set(code, {
+            code,
+            token,
+            createdAt: Date.now(),
+            linked: false,
+            user: null,
+            key: null,
+            uid: 10,
+            sparks: 0
+        });
+        return res.end(JSON.stringify({ code, token }));
+    }
+
+    if (parsedUrl.pathname === '/api/link-status') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        const code = (parsedUrl.query.code || '').replace(/[^0-9]/g, '').trim();
+        const token = (parsedUrl.query.token || '').trim();
+
+        let entry = activeLinkCodes.get(code);
+        if (!entry && token) {
+            for (const item of activeLinkCodes.values()) {
+                if (item.token === token) { entry = item; break; }
+            }
+        }
+
+        if (!entry) {
+            return res.end(JSON.stringify({ linked: false, error: 'not_found' }));
+        }
+
+        if (entry.linked) {
+            return res.end(JSON.stringify({
+                linked: true,
+                username: entry.user,
+                key: entry.key,
+                uid: entry.uid,
+                sparks: entry.sparks,
+                token: entry.token
+            }));
+        }
+
+        return res.end(JSON.stringify({ linked: false, pending: true }));
+    }
+
+    if (parsedUrl.pathname === '/api/auth/pair/link' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
+                const auth = getUserBySessionToken(sessionToken);
+                if (!auth) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: 'Необходимо войти в аккаунт на сайте' }));
+                }
+                const inputCode = String(data.code || '').replace(/[^0-9]/g, '').trim();
+                if (!inputCode || inputCode.length !== 6) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: 'Введите корректный 6-значный код из игры' }));
+                }
+
+                let entry = activeLinkCodes.get(inputCode);
+                if (!entry) {
+                    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: 'Код привязки не найден или истек. Откройте окно привязки в игре.' }));
+                }
+
+                entry.linked = true;
+                entry.user = auth.user.username;
+                entry.key = auth.user.key || auth.key;
+                entry.uid = auth.user.uid || 10;
+                entry.sparks = typeof auth.user.coins === 'number' ? auth.user.coins : 0;
+
+                auth.user.clientLinked = true;
+                auth.user.clientLinkToken = entry.token;
+                saveDatabase(database);
+
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({
+                    success: true,
+                    message: `Игра успешно привязана к аккаунту ${auth.user.username}!`
+                }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ error: 'Ошибка обработки запроса: ' + e.message }));
+            }
+        });
+        return;
     }
 
     if (parsedUrl.pathname === '/api/sparks-balance') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        // Мок: возвращаем 0 или можно брать из БД если есть сессия, но сейчас заглушка
-        return res.end(JSON.stringify({ sparks: 0 }));
+        const key = (parsedUrl.query.key || '').trim();
+        const token = (parsedUrl.query.token || '').trim();
+        const sessionToken = (getCookie(req, 'sun_session') || '').trim();
+
+        let targetUser = null;
+        if (key && database[key]) {
+            targetUser = database[key];
+        } else if (token) {
+            for (const u of Object.values(database)) {
+                if (u.clientLinkToken === token) { targetUser = u; break; }
+            }
+        }
+
+        if (!targetUser && sessionToken) {
+            const auth = getUserBySessionToken(sessionToken);
+            if (auth) targetUser = auth.user;
+        }
+
+        if (targetUser) {
+            const sparks = typeof targetUser.coins === 'number' ? targetUser.coins : 0;
+            return res.end(JSON.stringify({
+                sparks,
+                username: targetUser.username,
+                uid: targetUser.uid,
+                linked: true
+            }));
+        }
+
+        return res.end(JSON.stringify({ sparks: 0, linked: false }));
     }
 
     if (parsedUrl.pathname === '/api/profile' && (req.method === 'GET' || req.method === 'POST')) {
@@ -1917,6 +2088,7 @@ const server = http.createServer((req, res) => {
     if (parsedUrl.pathname === '/api/check') {
         const hwid = parsedUrl.query.hwid;
         const key = parsedUrl.query.key;
+        const clientVersion = (parsedUrl.query.version || parsedUrl.query.v || '').trim();
 
         if (!hwid && !key) {
             res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -2092,7 +2264,7 @@ const server = http.createServer((req, res) => {
     // 7. СТАТИЧЕСКИЙ САЙТ-ВИЗИТКА (site/)
     const safeBaseDir = SITE_DIR.endsWith(path.sep) ? SITE_DIR : SITE_DIR + path.sep;
     let reqPath = parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname;
-    if (parsedUrl.pathname === '/profile') {
+    if (parsedUrl.pathname === '/profile' || parsedUrl.pathname === '/link') {
         reqPath = '/profile.html';
     }
     
@@ -2147,19 +2319,19 @@ setInterval(() => {
     if (changed) saveDatabase(database);
 }, 60 * 60 * 1000); // Check every hour
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`\n=============================================================`);
     console.log(`[SUN CLIENT] СЕРВЕР АВТОРИЗАЦИИ, САЙТ И АДМИН-ПАНЕЛЬ`);
     console.log(`=============================================================`);
-    console.log(`Сайт-визитка:         http://localhost:${PORT}/`);
-    console.log(`Личный кабинет:       http://localhost:${PORT}/profile`);
-    console.log(`Админ-панель:         http://localhost:${PORT}/admin`);
-    console.log(`API для Майнкрафта:   http://localhost:${PORT}/api/check`);
+    console.log(`Сайт-визитка:         ${DOMAIN}/`);
+    console.log(`Личный кабинет:       ${DOMAIN}/profile`);
+    console.log(`Админ-панель:         ${DOMAIN}/admin`);
+    console.log(`API для Майнкрафта:   ${DOMAIN}/api/check`);
     console.log(`База данных:          ${DB_FILE}`);
     console.log(`=============================================================\n`);
 
     // Автоматический Keep-Alive пингер против засыпания хостинга (Render / Railway / Glitch)
-    const keepAliveUrl = process.env.PING_URL || process.env.RENDER_EXTERNAL_URL;
+    const keepAliveUrl = process.env.PING_URL || process.env.RENDER_EXTERNAL_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? ('https://' + process.env.RAILWAY_PUBLIC_DOMAIN) : null) || DOMAIN;
     if (keepAliveUrl) {
         console.log(`[Keep-Alive] Авто-пингер активирован для: ${keepAliveUrl} (каждые 8 минут)`);
         setInterval(() => {

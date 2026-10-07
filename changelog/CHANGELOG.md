@@ -1,3 +1,25 @@
+[2026-10-07 21:54] Link UI Monochrome Theme & Admin Security Hardening
+- Полный перевод страницы сопряжения site/link.html в монохромный дизайн сайта: убраны золотые и жёлтые акценты, аватар и кнопка подтверждения приведены к чистому бело-серому стилю.
+- Из формы входа админ-панели server/admin.html полностью удалена подсказка с паролем по умолчанию.
+- Измененные файлы: site/link.html, server/admin.html
+
+[2026-10-07 21:26] One-Click Connect Hardening & Security/UI Bugfixes
+- Исправлен расчет ширины плашки профиля в MainMenuHeaderBar: теперь при привязанном аккаунте учитывается реальный никнейм из SparksManager, предотвращая обрезку текста и перекрытие кнопки баланса Спарксов.
+- Устранена утечка фоновых потоков и нежелательное открытие браузера в LinkCodeScreen при быстром закрытии диалога игроком (добавлены проверки статуса running).
+- Добавлена обработка истечения времени токена и кнопка «Повторить» при сбоях сети в LinkCodeScreen; вызовы буфера обмена GLFW вынесены в клиентский поток.
+- Внедрено динамическое обновление баланса Спарксов в кнопке шапки HeaderActionBtn без необходимости пересоздания экрана.
+- В server.js внедрена защита от захвата токенов привязки (re-link protection), идемпотентность подтверждений и поддержка аутентификации по ключу пользователя.
+- В site/link.html согласована длина пароля при регистрации (от 8 символов) и улучшена обработка ошибок 404 (истечение срока ссылки).
+- Измененные файлы: src/main/java/naryn/sun/ui/mainmenu/MainMenuHeaderBar.java, src/main/java/naryn/sun/ui/mainmenu/HeaderActionBtn.java, src/main/java/naryn/sun/ui/mainmenu/LinkCodeScreen.java, server/server.js, site/link.html, test_one_click_flow.js
+
+[2026-10-07 21:10] One-Click Client Pairing & Main Menu Bugfix (Бесшовная привязка в 1 клик)
+- Устранен конфликт координат клика в MainMenuHeaderBar: кнопка «Войти» больше не перехватывается блоком профиля при незалогиненном состоянии.
+- Внедрен механизм One-Click Connect: клик по кнопке «Войти» запрашивает криптостойкий токен в /api/auth/pair/start и автоматически открывает браузер.
+- Создана выделенная страница сопряжения site/link.html: мгновенное подтверждение в 1 клик для авторизованных пользователей и форма быстрой регистрации/входа с автоматической привязкой.
+- В LinkCodeScreen реализован опрос сервера в фоне, авто-сохранение сессии в SparksManager, звуковое подтверждение и возврат в главное меню с обновленным профилем.
+- В server.js добавлены эндпоинты /api/auth/pair/start, /api/auth/pair/info, /api/auth/pair/confirm и обновлен /api/link-status.
+- Измененные файлы: src/main/java/naryn/sun/ui/mainmenu/MainMenuHeaderBar.java, src/main/java/naryn/sun/ui/mainmenu/LinkCodeScreen.java, server/server.js, site/link.html
+
 [2026-10-07 20:10] Database Persistence & Admin Panel Fixes
 - Устранена проблема со сбросом базы данных при изменениях и git push: файлы `database.json`, `database.backup.json` и `database.sqlite*` исключены из Git-индекса (`git rm --cached`) и добавлены в `.gitignore` и `.dockerignore`.
 - Внедрено авто-определение постоянного хранилища (Persistent Volume `/data` или `DATA_DIR`) в `server.js` для предотвращения стирания базы при пересборках контейнеров на Railway / хостинге.

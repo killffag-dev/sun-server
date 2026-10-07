@@ -398,7 +398,7 @@
                     showToast('Авторизация успешна!');
                     fetchUsers();
                 } else {
-                    err.textContent = (data.error || 'Неверный пароль') + ' (по умолчанию: sun2026admin)';
+                    err.textContent = data.error || 'Неверный пароль администратора';
                     err.style.display = 'block';
                 }
             } catch(e) {

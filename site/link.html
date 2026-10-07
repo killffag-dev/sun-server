@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Привязка клиента — SUN Visuals</title>
+<meta name="description" content="Бесшовное сопряжение клиента Minecraft SUN с личным кабинетом.">
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg?v=white2">
+<link rel="stylesheet" href="style.css?v=8">
+<style>
+  body.link-body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: #090b10;
+    color: #f1f5f9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .link-card {
+    width: 100%;
+    max-width: 440px;
+    background: rgba(18, 22, 32, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    border-radius: 18px;
+    padding: 32px 28px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+  }
+  .link-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #facc15, #f59e0b, #fbbf24);
+  }
+  .link-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .link-logo {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 12px;
+    display: block;
+    filter: drop-shadow(0 4px 12px rgba(250, 204, 21, 0.25));
+  }
+  .link-title {
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px;
+    color: #ffffff;
+  }
+  .link-sub {
+    font-size: 13.5px;
+    color: #94a3b8;
+    margin: 0;
+    line-height: 1.45;
+  }
+  .user-badge {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+  }
+  .user-avatar-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #facc15, #f59e0b);
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 800;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .user-avatar-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .user-meta {
+    flex: 1;
+    min-width: 0;
+  }
+  .user-name-line {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .user-uid {
+    font-size: 11.5px;
+    color: #facc15;
+    background: rgba(250, 204, 21, 0.12);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+  .user-sparks {
+    font-size: 12.5px;
+    color: #94a3b8;
+    margin-top: 3px;
+  }
+  .user-sparks b {
+    color: #fef08a;
+  }
+  .btn-submit-pair {
+    width: 100%;
+    padding: 13px 18px;
+    background: linear-gradient(135deg, #facc15, #eab308);
+    border: none;
+    border-radius: 10px;
+    color: #0f172a;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    box-shadow: 0 4px 16px rgba(250, 204, 21, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-submit-pair:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+    box-shadow: 0 6px 20px rgba(250, 204, 21, 0.38);
+  }
+  .btn-submit-pair:active {
+    transform: translateY(0);
+  }
+  .btn-submit-pair:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .btn-switch-account {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-top: 14px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.15s ease;
+  }
+  .btn-switch-account:hover {
+    color: #f8fafc;
+  }
+  .auth-tabs {
+    display: flex;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.28);
+    padding: 4px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+  .auth-tab-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .auth-tab-btn.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+  .auth-form-group {
+    margin-bottom: 14px;
+  }
+  .auth-form-group label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-bottom: 6px;
+  }
+  .auth-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 14px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9px;
+    color: #ffffff;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  .auth-input:focus {
+    border-color: #facc15;
+  }
+  .status-screen {
+    text-align: center;
+    padding: 12px 0;
+  }
+  .status-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .status-icon.success {
+    background: rgba(115, 240, 135, 0.14);
+    border: 1px solid rgba(115, 240, 135, 0.3);
+    color: #73f087;
+  }
+  .status-icon.error {
+    background: rgba(248, 113, 113, 0.14);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    color: #f87171;
+  }
+  .status-icon.loading {
+    background: rgba(250, 204, 21, 0.14);
+    border: 1px solid rgba(250, 204, 21, 0.3);
+    color: #facc15;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.96); }
+  }
+  .btn-secondary {
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 12px 18px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    margin-top: 14px;
+    transition: background 0.15s ease;
+  }
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .alert-box {
+    background: rgba(248, 113, 113, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.28);
+    border-radius: 9px;
+    padding: 10px 14px;
+    color: #fca5a5;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+    line-height: 1.4;
+  }
+  .alert-box.show {
+    display: block;
+  }
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    z-index: 9999;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body class="link-body">
+<div class="bg"></div>
+
+<div class="link-card">
+  <div class="link-header">
+    <img src="assets/logo.svg" alt="SUN Logo" class="link-logo">
+    <h1 class="link-title" id="page-title">Вход в SUN Client</h1>
+    <p class="link-sub" id="page-sub">Подключение запущенной игры к вашему аккаунту</p>
+  </div>
+
+  <div id="alert-box" class="alert-box"></div>
+
+  <!-- СОСТОЯНИЕ 1: ЗАГРУЗКА -->
+  <div id="state-loading" class="status-screen">
+    <div class="status-icon loading">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+    </div>
+    <p style="color: #cbd5e1; font-size: 14px; margin: 0;">Проверка сессии сопряжения...</p>
+  </div>
+
+  <!-- СОСТОЯНИЕ 2: ОШИБКА ТОКЕНА / ИСТЕК -->
+  <div id="state-error" class="status-screen" style="display: none;">
+    <div class="status-icon error">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6m0-6l6 6"/></svg>
+    </div>
+    <h3 style="margin: 0 0 8px; font-size: 17px; color: #f87171;" id="error-title">Ссылка недействительна</h3>
+    <p style="margin: 0 0 20px; font-size: 13.5px; color: #94a3b8; line-height: 1.5;" id="error-desc">
+      Срок действия ссылки истек или она уже была использована. Вернитесь в игру и нажмите кнопку «Войти» снова.
+    </p>
+    <a href="/" class="btn-secondary">На главную</a>
+  </div>
+
+  <!-- СОСТОЯНИЕ 3: ПОДТВЕРЖДЕНИЕ ДЛЯ АВТОРИЗОВАННОГО ПОЛЬЗОВАТЕЛЯ -->
+  <div id="state-confirm" style="display: none;">
+    <div class="user-badge">
+      <div class="user-avatar-circle" id="confirm-avatar">S</div>
+      <div class="user-meta">
+        <div class="user-name-line">
+          <span id="confirm-username">User</span>
+          <span class="user-uid" id="confirm-uid">#10</span>
+        </div>
+        <div class="user-sparks">Баланс: <b id="confirm-sparks">0</b> Sparks</div>
+      </div>
+    </div>
+    <p style="font-size: 13.5px; color: #cbd5e1; margin: 0 0 18px; line-height: 1.5; text-align: center;">
+      Привязать клиент Minecraft к аккаунту <b id="confirm-prompt-username" style="color: #fff;">User</b>?
+    </p>
+    <button type="button" class="btn-submit-pair" id="btn-confirm-pair">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+      Подтвердить вход
+    </button>
+    <button type="button" class="btn-switch-account" id="btn-switch-account">Войти в другой аккаунт</button>
+  </div>
+
+  <!-- СОСТОЯНИЕ 4: ФОРМА ВХОДА / РЕГИСТРАЦИИ ДЛЯ НЕАВТОРИЗОВАННЫХ -->
+  <div id="state-auth-form" style="display: none;">
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab-btn active" id="tab-btn-login">Вход</button>
+      <button type="button" class="auth-tab-btn" id="tab-btn-register">Регистрация</button>
+    </div>
+
+    <!-- Форма Входа -->
+    <form id="f-link-login">
+      <div class="auth-form-group">
+        <label for="link-log-query">Логин или Email</label>
+        <input type="text" id="link-log-query" class="auth-input" placeholder="player / user@mail.ru" required autocomplete="username">
+      </div>
+      <div class="auth-form-group">
+        <label for="link-log-pass">Пароль</label>
+        <input type="password" id="link-log-pass" class="auth-input" placeholder="Ваш пароль" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-submit-pair" id="btn-submit-login">Войти и привязать</button>
+    </form>
+
+    <!-- Форма Регистрации -->
+    <form id="f-link-reg" style="display: none;">
+      <div class="auth-form-group">
+        <label for="link-reg-login">Желаемый ник</label>
+        <input type="text" id="link-reg-login" class="auth-input" placeholder="3-24 символа (буквы, цифры, _)" minlength="3" maxlength="24" required autocomplete="username">
+      </div>
+      <div class="auth-form-group">
+        <label for="link-reg-email">Email</label>
+        <input type="email" id="link-reg-email" class="auth-input" placeholder="name@domain.com" required autocomplete="email">
+      </div>
+      <div class="auth-form-group">
+        <label for="link-reg-pass">Пароль (от 8 символов)</label>
+        <input type="password" id="link-reg-pass" class="auth-input" placeholder="Надежный пароль" minlength="8" required autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn-submit-pair" id="btn-submit-reg">Создать аккаунт и привязать</button>
+    </form>
+  </div>
+
+  <!-- СОСТОЯНИЕ 5: УСПЕХ! -->
+  <div id="state-success" class="status-screen" style="display: none;">
+    <div class="status-icon success">
+      <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+    </div>
+    <h3 style="margin: 0 0 8px; font-size: 18px; color: #73f087;">Клиент успешно подключен!</h3>
+    <p style="margin: 0 0 20px; font-size: 13.5px; color: #cbd5e1; line-height: 1.5;">
+      Игра привязана к аккаунту <b id="success-user-name" style="color: #fff;"></b>.<br>
+      Вы можете вернуться в Minecraft — данные профиля и Спарксы уже обновлены.
+    </p>
+    <a href="/profile.html" class="btn-secondary" style="border-color: rgba(250, 204, 21, 0.4); color: #facc15;">Перейти в личный кабинет</a>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const KEY = 'sun_key';
+const SESSION_KEY = 'sun_session';
+
+const toastEl = $('#toast');
+let toastTimer;
+function toast(msg) {
+  if (!toastEl) return;
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2800);
+}
+
+function showAlert(msg) {
+  const box = $('#alert-box');
+  if (box) {
+    box.textContent = msg;
+    box.classList.add('show');
+  }
+}
+function hideAlert() {
+  const box = $('#alert-box');
+  if (box) box.classList.remove('show');
+}
+
+async function api(path, body) {
+  const r = await fetch('/api/' + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {})
+  });
+  const d = await r.json().catch(() => null);
+  if (!r.ok || !d || !d.success) {
+    const err = new Error(d && d.error || 'Ошибка запроса');
+    err.status = r.status;
+    err.data = d;
+    throw err;
+  }
+  return d;
+}
+
+function saveSession(token, key, user) {
+  try {
+    if (token) {
+      localStorage.setItem(SESSION_KEY, token);
+      document.cookie = `sun_session=${encodeURIComponent(token)}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    }
+    if (key) {
+      localStorage.setItem(KEY, key);
+      document.cookie = `sun_key=${encodeURIComponent(key)}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    }
+    if (user) {
+      localStorage.setItem('sun_user', JSON.stringify(user));
+    }
+  } catch (e) {}
+}
+
+function clearSession() {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(KEY);
+    localStorage.removeItem('sun_user');
+    document.cookie = 'sun_session=; Path=/; Max-Age=0; SameSite=Lax';
+    document.cookie = 'sun_key=; Path=/; Max-Age=0; SameSite=Lax';
+  } catch (e) {}
+}
+
+function getStoredToken() {
+  try {
+    const fromStorage = localStorage.getItem(SESSION_KEY);
+    if (fromStorage) return fromStorage;
+    const match = document.cookie.match(/(?:^|;\s*)sun_session=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function showState(stateName) {
+  hideAlert();
+  ['state-loading', 'state-error', 'state-confirm', 'state-auth-form', 'state-success'].forEach(id => {
+    const el = $('#' + id);
+    if (el) el.style.display = (id === stateName) ? 'block' : 'none';
+  });
+}
+
+const params = new URLSearchParams(window.location.search);
+const token = (params.get('token') || '').trim();
+let currentUser = null;
+
+async function checkTokenValidity() {
+  if (!token) {
+    showState('state-error');
+    $('#error-title').textContent = 'Токен не найден';
+    $('#error-desc').textContent = 'В адресе страницы отсутствует токен привязки. Запустите привязку через кнопку «Войти» в клиенте SUN.';
+    return false;
+  }
+  try {
+    const r = await fetch('/api/auth/pair/info?token=' + encodeURIComponent(token));
+    const d = await r.json().catch(() => null);
+    if (!d || !d.valid) {
+      showState('state-error');
+      return false;
+    }
+    if (d.linked) {
+      // Уже привязан ранее
+      $('#success-user-name').textContent = d.user || 'Игрок';
+      showState('state-success');
+      return false;
+    }
+    return true;
+  } catch (e) {
+    // Если эндпоинт pair/info временно недоступен, продолжаем к подтверждению
+    return true;
+  }
+}
+
+async function init() {
+  const isValid = await checkTokenValidity();
+  if (!isValid) return;
+
+  const sessionTok = getStoredToken();
+  if (sessionTok) {
+    try {
+      const u = await api('login', { sessionToken: sessionTok });
+      if (u && u.username) {
+        currentUser = u;
+        displayConfirmState(u);
+        return;
+      }
+    } catch (e) {
+      clearSession();
+    }
+  }
+
+  // Не авторизован — показываем формы
+  showState('state-auth-form');
+}
+
+function displayConfirmState(u) {
+  showState('state-confirm');
+  $('#page-title').textContent = 'Подтверждение входа';
+  $('#page-sub').textContent = 'Привязка SUN Client к текущему аккаунту';
+  $('#confirm-username').textContent = u.username;
+  $('#confirm-prompt-username').textContent = u.username;
+  $('#confirm-uid').textContent = '#' + (u.uid !== undefined ? u.uid : '10');
+  $('#confirm-sparks').textContent = u.coins || 0;
+
+  const av = $('#confirm-avatar');
+  if (av) {
+    if (u.avatarUrl) {
+      av.innerHTML = `<img src="${u.avatarUrl}" alt="">`;
+    } else {
+      av.textContent = (u.username || 'U').charAt(0).toUpperCase();
+    }
+  }
+}
+
+// Кнопка подтверждения входа
+const btnConfirm = $('#btn-confirm-pair');
+if (btnConfirm) {
+  btnConfirm.onclick = async () => {
+    btnConfirm.disabled = true;
+    hideAlert();
+    try {
+      const res = await api('auth/pair/confirm', {
+        token: token,
+        sessionToken: currentUser?.sessionToken || getStoredToken(),
+        key: currentUser?.key || localStorage.getItem(KEY) || ''
+      });
+      $('#success-user-name').textContent = res.username || currentUser?.username || 'Игрок';
+      showState('state-success');
+      toast('Клиент успешно привязан!');
+    } catch (err) {
+      if (err.status === 404) {
+        showState('state-error');
+        $('#error-title').textContent = 'Ссылка недействительна';
+        $('#error-desc').textContent = err.message || 'Срок действия ссылки истек. Вернитесь в игру и нажмите кнопку «Войти» снова.';
+      } else {
+        showAlert(err.message || 'Ошибка сопряжения');
+      }
+      btnConfirm.disabled = false;
+    }
+  };
+}
+
+// Смена аккаунта
+const btnSwitch = $('#btn-switch-account');
+if (btnSwitch) {
+  btnSwitch.onclick = () => {
+    clearSession();
+    currentUser = null;
+    showState('state-auth-form');
+  };
+}
+
+// Переключение табов Вход / Регистрация
+const tabBtnLogin = $('#tab-btn-login');
+const tabBtnReg = $('#tab-btn-register');
+const formLogin = $('#f-link-login');
+const formReg = $('#f-link-reg');
+
+if (tabBtnLogin && tabBtnReg) {
+  tabBtnLogin.onclick = () => {
+    tabBtnLogin.classList.add('active');
+    tabBtnReg.classList.remove('active');
+    if (formLogin) formLogin.style.display = 'block';
+    if (formReg) formReg.style.display = 'none';
+    hideAlert();
+  };
+  tabBtnReg.onclick = () => {
+    tabBtnReg.classList.add('active');
+    tabBtnLogin.classList.remove('active');
+    if (formLogin) formLogin.style.display = 'none';
+    if (formReg) formReg.style.display = 'block';
+    hideAlert();
+  };
+}
+
+// Отправка формы логина
+if (formLogin) {
+  formLogin.onsubmit = async (e) => {
+    e.preventDefault();
+    hideAlert();
+    const btn = $('#btn-submit-login');
+    if (btn) btn.disabled = true;
+    const query = $('#link-log-query').value.trim();
+    const password = $('#link-log-pass').value;
+
+    try {
+      const u = await api('login', { query, password });
+      saveSession(u.sessionToken, u.key, u);
+      currentUser = u;
+
+      // Автоматически завершаем привязку
+      const pairRes = await api('auth/pair/confirm', {
+        token: token,
+        sessionToken: u.sessionToken,
+        key: u.key
+      });
+      $('#success-user-name').textContent = pairRes.username || u.username;
+      showState('state-success');
+      toast('Вход выполнен и игра привязана!');
+    } catch (err) {
+      if (err.status === 404) {
+        showState('state-error');
+        $('#error-title').textContent = 'Ссылка недействительна';
+        $('#error-desc').textContent = err.message || 'Срок действия ссылки истек. Вернитесь в игру и нажмите кнопку «Войти» снова.';
+      } else {
+        showAlert(err.message || 'Неверный логин или пароль');
+      }
+      if (btn) btn.disabled = false;
+    }
+  };
+}
+
+// Отправка формы регистрации
+if (formReg) {
+  formReg.onsubmit = async (e) => {
+    e.preventDefault();
+    hideAlert();
+    const btn = $('#btn-submit-reg');
+    if (btn) btn.disabled = true;
+    const username = $('#link-reg-login').value.trim();
+    const email = $('#link-reg-email').value.trim();
+    const password = $('#link-reg-pass').value;
+
+    try {
+      const u = await api('register', { username, email, password });
+      saveSession(u.sessionToken, u.key, u);
+      currentUser = u;
+
+      // Автоматически завершаем привязку
+      const pairRes = await api('auth/pair/confirm', {
+        token: token,
+        sessionToken: u.sessionToken,
+        key: u.key
+      });
+      $('#success-user-name').textContent = pairRes.username || u.username;
+      showState('state-success');
+      toast('Аккаунт создан и игра привязана!');
+    } catch (err) {
+      if (err.status === 404) {
+        showState('state-error');
+        $('#error-title').textContent = 'Ссылка недействительна';
+        $('#error-desc').textContent = err.message || 'Срок действия ссылки истек. Вернитесь в игру и нажмите кнопку «Войти» снова.';
+      } else {
+        showAlert(err.message || 'Ошибка регистрации');
+      }
+      if (btn) btn.disabled = false;
+    }
+  };
+}
+
+init();
+</script>
+</body>
+</html>

@@ -57,10 +57,15 @@ const activeAdminSessions = new Map();
 
 // Map of active client link codes -> { code, token, createdAt, linked, user, key, uid, sparks }
 const activeLinkCodes = new Map();
+// Map of active client pair tokens -> { code, token, createdAt, linked, user, key, uid, sparks }
+const activePairTokens = new Map();
 setInterval(() => {
     const now = Date.now();
     for (const [code, entry] of activeLinkCodes.entries()) {
         if (now - entry.createdAt > 10 * 60 * 1000) activeLinkCodes.delete(code);
+    }
+    for (const [token, entry] of activePairTokens.entries()) {
+        if (now - entry.createdAt > 10 * 60 * 1000) activePairTokens.delete(token);
     }
 }, 60 * 1000);
 
@@ -1474,16 +1479,16 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // 3.96 API САЙТА & КЛИЕНТА: Привязка аккаунта через код
-    if (parsedUrl.pathname === '/api/generate-link-code') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+    // 3.96 API САЙТА & КЛИЕНТА: Мгновенная привязка аккаунта (1-Click Pair) и коды
+    if (parsedUrl.pathname === '/api/auth/pair/start' && req.method === 'POST') {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         let code = '';
         do {
             code = Math.floor(100000 + Math.random() * 900000).toString();
         } while (activeLinkCodes.has(code));
 
         const token = crypto.randomBytes(16).toString('hex');
-        activeLinkCodes.set(code, {
+        const entry = {
             code,
             token,
             createdAt: Date.now(),
@@ -1492,8 +1497,65 @@ const server = http.createServer((req, res) => {
             key: null,
             uid: 10,
             sparks: 0
-        });
+        };
+        activeLinkCodes.set(code, entry);
+        activePairTokens.set(token, entry);
+
+        const host = req.headers['host'];
+        const protocol = (req.headers['x-forwarded-proto'] === 'https' || (req.connection && req.connection.encrypted)) ? 'https' : 'http';
+        const baseUrl = host ? `${protocol}://${host}` : DOMAIN;
+        const linkUrl = `${baseUrl}/link?token=${token}`;
+
+        return res.end(JSON.stringify({
+            success: true,
+            token,
+            code,
+            url: linkUrl
+        }));
+    }
+
+    if (parsedUrl.pathname === '/api/generate-link-code') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        let code = '';
+        do {
+            code = Math.floor(100000 + Math.random() * 900000).toString();
+        } while (activeLinkCodes.has(code));
+
+        const token = crypto.randomBytes(16).toString('hex');
+        const entry = {
+            code,
+            token,
+            createdAt: Date.now(),
+            linked: false,
+            user: null,
+            key: null,
+            uid: 10,
+            sparks: 0
+        };
+        activeLinkCodes.set(code, entry);
+        activePairTokens.set(token, entry);
         return res.end(JSON.stringify({ code, token }));
+    }
+
+    if (parsedUrl.pathname === '/api/auth/pair/info') {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        const token = (parsedUrl.query.token || '').trim();
+        let entry = null;
+        if (token) entry = activePairTokens.get(token);
+        if (!entry && token) {
+            for (const item of activeLinkCodes.values()) {
+                if (item.token === token) { entry = item; break; }
+            }
+        }
+        if (!entry) {
+            return res.end(JSON.stringify({ valid: false, error: 'not_found' }));
+        }
+        return res.end(JSON.stringify({
+            valid: true,
+            linked: entry.linked,
+            user: entry.user,
+            code: entry.code
+        }));
     }
 
     if (parsedUrl.pathname === '/api/link-status') {
@@ -1501,7 +1563,9 @@ const server = http.createServer((req, res) => {
         const code = (parsedUrl.query.code || '').replace(/[^0-9]/g, '').trim();
         const token = (parsedUrl.query.token || '').trim();
 
-        let entry = activeLinkCodes.get(code);
+        let entry = null;
+        if (token) entry = activePairTokens.get(token);
+        if (!entry && code) entry = activeLinkCodes.get(code);
         if (!entry && token) {
             for (const item of activeLinkCodes.values()) {
                 if (item.token === token) { entry = item; break; }
@@ -1526,6 +1590,86 @@ const server = http.createServer((req, res) => {
         return res.end(JSON.stringify({ linked: false, pending: true }));
     }
 
+    if (parsedUrl.pathname === '/api/auth/pair/confirm' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk;
+            if (body.length > 1024 * 64) req.destroy();
+        });
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
+                const userKey = (data.userKey || data.key || getCookie(req, 'sun_key') || '').trim();
+                const auth = getUserBySessionToken(sessionToken, userKey);
+                if (!auth) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ success: false, error: 'Необходимо войти в аккаунт на сайте' }));
+                }
+
+                const token = (data.token || '').trim();
+                const code = String(data.code || '').replace(/[^0-9]/g, '').trim();
+                if (!token && !code) {
+                    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ success: false, error: 'Токен или код сопряжения не указан' }));
+                }
+
+                let entry = null;
+                if (token) entry = activePairTokens.get(token);
+                if (!entry && code) entry = activeLinkCodes.get(code);
+                if (!entry && token) {
+                    for (const item of activeLinkCodes.values()) {
+                        if (item.token === token) { entry = item; break; }
+                    }
+                }
+
+                if (!entry) {
+                    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ success: false, error: 'Сессия привязки не найдена или истекла. Запустите вход в игре снова.' }));
+                }
+
+                if (entry.linked) {
+                    if (entry.user === auth.user.username) {
+                        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                        return res.end(JSON.stringify({
+                            success: true,
+                            message: `Клиент уже привязан к аккаунту ${auth.user.username}!`,
+                            username: auth.user.username,
+                            uid: entry.uid,
+                            sparks: entry.sparks
+                        }));
+                    } else {
+                        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                        return res.end(JSON.stringify({ success: false, error: 'Этот токен привязки уже был использован другим аккаунтом.' }));
+                    }
+                }
+
+                entry.linked = true;
+                entry.user = auth.user.username;
+                entry.key = auth.user.key || auth.key;
+                entry.uid = auth.user.uid || 10;
+                entry.sparks = typeof auth.user.coins === 'number' ? auth.user.coins : 0;
+
+                auth.user.clientLinked = true;
+                auth.user.clientLinkToken = entry.token;
+                saveDatabase(database);
+
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({
+                    success: true,
+                    message: `Клиент успешно привязан к аккаунту ${auth.user.username}!`,
+                    username: auth.user.username,
+                    uid: entry.uid,
+                    sparks: entry.sparks
+                }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ success: false, error: 'Ошибка обработки запроса: ' + e.message }));
+            }
+        });
+        return;
+    }
+
     if (parsedUrl.pathname === '/api/auth/pair/link' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk; });
@@ -1533,7 +1677,8 @@ const server = http.createServer((req, res) => {
             try {
                 const data = JSON.parse(body || '{}');
                 const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
-                const auth = getUserBySessionToken(sessionToken);
+                const userKey = (data.userKey || data.key || getCookie(req, 'sun_key') || '').trim();
+                const auth = getUserBySessionToken(sessionToken, userKey);
                 if (!auth) {
                     res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
                     return res.end(JSON.stringify({ error: 'Необходимо войти в аккаунт на сайте' }));
@@ -1548,6 +1693,19 @@ const server = http.createServer((req, res) => {
                 if (!entry) {
                     res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
                     return res.end(JSON.stringify({ error: 'Код привязки не найден или истек. Откройте окно привязки в игре.' }));
+                }
+
+                if (entry.linked) {
+                    if (entry.user === auth.user.username) {
+                        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                        return res.end(JSON.stringify({
+                            success: true,
+                            message: `Игра уже привязана к аккаунту ${auth.user.username}!`
+                        }));
+                    } else {
+                        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                        return res.end(JSON.stringify({ error: 'Этот код уже был использован другим аккаунтом.' }));
+                    }
                 }
 
                 entry.linked = true;
@@ -1842,8 +2000,11 @@ const server = http.createServer((req, res) => {
     // 7. СТАТИЧЕСКИЙ САЙТ-ВИЗИТКА (site/)
     const safeBaseDir = SITE_DIR.endsWith(path.sep) ? SITE_DIR : SITE_DIR + path.sep;
     let reqPath = parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname;
-    if (parsedUrl.pathname === '/profile' || parsedUrl.pathname === '/link') {
+    if (parsedUrl.pathname === '/profile') {
         reqPath = '/profile.html';
+    }
+    if (parsedUrl.pathname === '/link') {
+        reqPath = '/link.html';
     }
     
     // Защита от Path Traversal

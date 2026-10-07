@@ -295,40 +295,92 @@ function getStoredUser() {
 }
 
 function showAnnouncement(ann) {
-  if (!ann || !ann.text) return;
+  if (!ann) return;
+  const message = ann.message || ann.text;
+  if (!message) return;
+  const annId = ann.id || ((ann.title || '') + '_' + message);
+
+  try {
+    const dismissed = JSON.parse(localStorage.getItem('sun_dismissed_announcements') || '[]');
+    if (dismissed.includes(annId)) return;
+  } catch (e) {}
+
   const modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);padding:20px;';
   
   const box = document.createElement('div');
-  box.style.cssText = 'background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;max-width:400px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.5);text-align:center;color:#fff;animation:popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);';
+  box.style.cssText = 'background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;max-width:420px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.5);text-align:center;color:#fff;animation:popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);position:relative;';
   
+  const closeCross = document.createElement('div');
+  closeCross.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+  closeCross.style.cssText = 'position:absolute;top:14px;right:14px;cursor:pointer;opacity:0.7;padding:4px;';
+  const dismissModal = () => {
+    try {
+      const dismissed = JSON.parse(localStorage.getItem('sun_dismissed_announcements') || '[]');
+      if (!dismissed.includes(annId)) {
+        dismissed.push(annId);
+        localStorage.setItem('sun_dismissed_announcements', JSON.stringify(dismissed));
+      }
+    } catch (e) {}
+    modal.remove();
+  };
+  closeCross.onclick = dismissModal;
+
   const style = document.createElement('style');
   style.textContent = '@keyframes popIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}';
   document.head.appendChild(style);
 
   const title = document.createElement('h2');
-  title.textContent = ann.isUpdate ? '����������' : '����������';
+  title.textContent = ann.title || (ann.isUpdate ? 'Обновление клиента' : 'Объявление');
   title.style.cssText = 'font-size:20px;font-weight:700;margin-bottom:12px;color:' + (ann.isUpdate ? '#3b82f6' : '#a855f7') + ';';
   
   const text = document.createElement('p');
-  text.textContent = ann.text;
-  text.style.cssText = 'font-size:15px;color:#a1a1aa;margin-bottom:24px;line-height:1.5;';
+  text.textContent = message;
+  text.style.cssText = 'font-size:15px;color:#a1a1aa;margin-bottom:24px;line-height:1.5;white-space:pre-wrap;';
   
-  const btn = document.createElement('button');
-  btn.textContent = '�������';
-  btn.style.cssText = 'background:linear-gradient(90deg, #3b82f6, #8b5cf6);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:600;cursor:pointer;transition:transform 0.2s;';
-  btn.onmouseover = () => btn.style.transform = 'scale(1.05)';
-  btn.onmouseout = () => btn.style.transform = 'scale(1)';
-  btn.onclick = () => {
-    modal.remove();
-  };
+  const btnGroup = document.createElement('div');
+  btnGroup.style.cssText = 'display:flex;gap:10px;justify-content:center;';
+
+  if (ann.isUpdate || ann.url) {
+    const actionBtn = document.createElement('a');
+    actionBtn.textContent = ann.isUpdate ? 'Скачать с обновлением' : 'Подробнее';
+    actionBtn.href = ann.url || '/#download';
+    actionBtn.style.cssText = 'display:inline-block;text-decoration:none;background:linear-gradient(90deg, #2563eb, #3b82f6);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer;transition:transform 0.2s;';
+    actionBtn.onmouseover = () => actionBtn.style.transform = 'scale(1.05)';
+    actionBtn.onmouseout = () => actionBtn.style.transform = 'scale(1)';
+    actionBtn.onclick = () => {
+      dismissModal();
+    };
+    btnGroup.appendChild(actionBtn);
+  }
+
+  const okBtn = document.createElement('button');
+  okBtn.textContent = 'Понятно';
+  okBtn.style.cssText = 'background:' + ((ann.isUpdate || ann.url) ? 'rgba(255,255,255,0.1)' : 'linear-gradient(90deg, #3b82f6, #8b5cf6)') + ';color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer;transition:transform 0.2s;';
+  okBtn.onmouseover = () => okBtn.style.transform = 'scale(1.05)';
+  okBtn.onmouseout = () => okBtn.style.transform = 'scale(1)';
+  okBtn.onclick = dismissModal;
+  btnGroup.appendChild(okBtn);
   
+  box.appendChild(closeCross);
   box.appendChild(title);
   box.appendChild(text);
-  box.appendChild(btn);
+  box.appendChild(btnGroup);
   modal.appendChild(box);
   document.body.appendChild(modal);
 }
+
+// Автопроверка глобального объявления на страницах с app.js
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('/api/announcement')
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.active) {
+        showAnnouncement(data);
+      }
+    })
+    .catch(() => {});
+});
 function updateUserUI(u) {
   if (!u) return;
   currentUser = u;

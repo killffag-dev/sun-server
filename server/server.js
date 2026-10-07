@@ -486,10 +486,19 @@ function saveDatabase(db) {
 const database = loadDatabase();
 
 const ANNOUNCEMENT_FILE = path.join(__dirname, 'announcement.json');
-let announcement = { active: false, type: 'info', title: '', message: '', url: '' };
+let announcement = {
+    id: 'init',
+    active: false,
+    isUpdate: false,
+    version: '',
+    type: 'info',
+    title: '',
+    message: '',
+    url: '/#download'
+};
 try {
     if (fs.existsSync(ANNOUNCEMENT_FILE)) {
-        announcement = JSON.parse(fs.readFileSync(ANNOUNCEMENT_FILE, 'utf-8'));
+        announcement = { ...announcement, ...JSON.parse(fs.readFileSync(ANNOUNCEMENT_FILE, 'utf-8')) };
     }
 } catch (e) {
     console.error('[SUN-API] Error loading announcement:', e.message);
@@ -687,28 +696,34 @@ const server = http.createServer((req, res) => {
                     const text = data.text || '';
                     const isUpdate = !!data.isUpdate;
                     const version = data.version || '';
+                    const announceId = 'ann_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
                     
                     // Обновляем для всех в базе (игра)
                     for (const key of Object.keys(database)) {
-                        database[key].pendingAnnouncement = { text, isUpdate, version };
+                        database[key].pendingAnnouncement = { id: announceId, text, isUpdate, version };
                     }
                     saveDatabase(database);
                     
-                    // Обновляем для сайта
+                    // Обновляем глобальное объявление (для сайта и клиента)
                     announcement = {
+                        id: announceId,
                         active: true,
+                        isUpdate: isUpdate,
+                        version: version,
                         type: isUpdate ? 'warning' : 'info',
                         title: isUpdate ? 'Новая версия ' + version : 'Объявление',
                         message: text,
-                        url: ''
+                        url: isUpdate ? '/#download' : (data.url || '')
                     };
-                    fs.writeFileSync(ANNOUNCEMENT_FILE, JSON.stringify(announcement, null, 2));
-                    console.log('[SUN-API] Глобальное объявление отправлено!');
+                    saveAnnouncement();
+                    console.log('[SUN-API] Глобальное объявление отправлено:', announcement.title);
                 } else if (action === 'send_announcement') {
+                    const announceId = 'ann_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
                     if (data.hwids) {
                         for (let h of data.hwids) {
                             if (database[h]) {
                                 database[h].pendingAnnouncement = {
+                                    id: announceId,
                                     text: data.text,
                                     isUpdate: !!data.isUpdate,
                                     version: data.version || null
@@ -716,6 +731,18 @@ const server = http.createServer((req, res) => {
                             }
                         }
                     }
+                    // Если это было целевое обновление или обычное, также синхронизируем с global announcement
+                    announcement = {
+                        id: announceId,
+                        active: true,
+                        isUpdate: !!data.isUpdate,
+                        version: data.version || '',
+                        type: data.isUpdate ? 'warning' : 'info',
+                        title: data.isUpdate ? 'Новая версия ' + (data.version || '') : 'Объявление',
+                        message: data.text || '',
+                        url: data.isUpdate ? '/#download' : ''
+                    };
+                    saveAnnouncement();
                     saveDatabase(database);
                 } else if (action === 'soft_delete') {
                     if (database[hwid]) database[hwid].deletedAt = new Date().toISOString();
@@ -1982,11 +2009,14 @@ const server = http.createServer((req, res) => {
         return req.on('end', () => {
             try {
                 const data = JSON.parse(body);
+                announcement.id = data.id || ('ann_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
                 announcement.active = !!data.active;
-                announcement.type = data.type || 'info';
-                announcement.title = data.title || '';
+                announcement.isUpdate = !!data.isUpdate;
+                announcement.version = data.version || '';
+                announcement.type = data.type || (data.isUpdate ? 'warning' : 'info');
+                announcement.title = data.title || (data.isUpdate ? 'Новая версия ' + announcement.version : 'Объявление');
                 announcement.message = data.message || '';
-                announcement.url = data.url || '';
+                announcement.url = announcement.isUpdate ? '/#download' : (data.url || '');
                 saveAnnouncement();
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
                 res.end(JSON.stringify({ success: true }));

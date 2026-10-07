@@ -60,7 +60,7 @@
   <main class="kimiko-content">
 
 <div id="sun-global-announcement" style="display: none; background: linear-gradient(135deg, #8b5cf6, #3b82f6); padding: 16px 24px; border-radius: 12px; margin-bottom: 24px; position: relative; color: white; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
-  <div style="position: absolute; right: 16px; top: 16px; cursor: pointer; opacity: 0.8;" onclick="this.parentElement.style.display='none'">
+  <div style="position: absolute; right: 16px; top: 16px; cursor: pointer; opacity: 0.8;" onclick="closeGlobalAnnouncement()">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
   </div>
   <h3 id="ann-title" style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700;"></h3>
@@ -722,18 +722,54 @@ if (logoutBtn) logoutBtn.onclick = doLogout;
 </script>
 
 <script>
+let currentAnnounceId = null;
+
+function closeGlobalAnnouncement() {
+    const el = document.getElementById('sun-global-announcement');
+    if (el) el.style.display = 'none';
+    if (currentAnnounceId) {
+        try {
+            const dismissed = JSON.parse(localStorage.getItem('sun_dismissed_announcements') || '[]');
+            if (!dismissed.includes(currentAnnounceId)) {
+                dismissed.push(currentAnnounceId);
+                localStorage.setItem('sun_dismissed_announcements', JSON.stringify(dismissed));
+            }
+        } catch (e) {}
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     fetch('/api/announcement')
         .then(r => r.json())
         .then(data => {
-            if (data.active) {
-                document.getElementById('sun-global-announcement').style.display = 'block';
+            if (!data || !data.active) return;
+            currentAnnounceId = data.id || (data.title + '_' + data.message);
+            try {
+                const dismissed = JSON.parse(localStorage.getItem('sun_dismissed_announcements') || '[]');
+                if (dismissed.includes(currentAnnounceId)) return;
+            } catch (e) {}
+
+            const banner = document.getElementById('sun-global-announcement');
+            if (banner) {
+                banner.style.display = 'block';
+                if (data.isUpdate) {
+                    banner.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)';
+                    banner.style.boxShadow = '0 4px 15px rgba(37, 99, 235, 0.35)';
+                } else {
+                    banner.style.background = 'linear-gradient(135deg, #8b5cf6, #3b82f6)';
+                    banner.style.boxShadow = '0 4px 15px rgba(139, 92, 246, 0.3)';
+                }
                 document.getElementById('ann-title').textContent = data.title;
                 document.getElementById('ann-message').textContent = data.message;
-                if (data.url) {
-                    const btn = document.getElementById('ann-url');
-                    btn.style.display = 'inline-block';
-                    btn.href = data.url;
+                const btn = document.getElementById('ann-url');
+                if (btn) {
+                    if (data.url) {
+                        btn.style.display = 'inline-block';
+                        btn.href = data.url;
+                        btn.textContent = data.isUpdate ? 'Скачать с обновлением' : 'Подробнее';
+                    } else {
+                        btn.style.display = 'none';
+                    }
                 }
             }
         }).catch(e => console.error('Error fetching announcement:', e));

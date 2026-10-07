@@ -185,7 +185,7 @@
             // Скрываем/показываем создание пользователей и действия
             const actionsBar = document.querySelector('.bg-card.p-4.rounded-lg.mb-6');
             if (actionsBar) {
-                const addDiv = actionsBar.querySelector('.flex.gap-3:not(.w-1\/2)');
+                const addDiv = actionsBar.querySelector('.flex.gap-3:not(.w-1\\\\/2)');
                 if (addDiv) addDiv.style.display = mode ? 'flex' : 'none';
             }
             
@@ -355,16 +355,17 @@
             const search = document.getElementById('searchInput').value.toLowerCase();
             document.getElementById('pageTitle').innerText = currentView === 'active' ? 'Управление Пользователями' : 'Корзина';
             
+            const selectedIds = getSelectedIds();
+            const selectAllChecked = document.getElementById('selectAll').checked;
             tbody.innerHTML = '';
-            document.getElementById('selectAll').checked = false;
-            updateSelection();
+            document.getElementById('selectAll').checked = selectAllChecked;
             
             let total = 0;
             let gameOnlineCount = 0;
             let webOnlineCount = 0;
 
             for (const [key, user] of Object.entries(allUsers)) {
-                if (search && !(user.username||'').toLowerCase().includes(search) && !key.toLowerCase().includes(search)) continue;
+                if (search && !(user.username||'').toLowerCase().includes(search) && !key.toLowerCase().includes(search) && !(user.uid && user.uid.toString().toLowerCase().includes(search))) continue;
                 
                 const isDeleted = !!user.deletedAt;
                 if (currentView === 'active' && isDeleted) continue;
@@ -415,7 +416,7 @@
 
                 tr.innerHTML = `
                     <td class="p-4">
-                        ${isEditorMode ? `<input type="checkbox" class="user-cb" value="${key}" onclick="updateSelection()">` : ''}
+                        ${isEditorMode ? `<input type="checkbox" class="user-cb" value="${key}" onclick="updateSelection()" ${selectedIds.includes(key) ? 'checked' : ''}>` : ''}
                     </td>
                     <td class="p-4 font-medium"><div class="flex items-center">${onlineBadge}${user.username || 'Unknown'}${playtimeBadge}</div></td>
                     <td class="p-4">
@@ -445,6 +446,7 @@
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-game').textContent = gameOnlineCount;
             document.getElementById('stat-web').textContent = webOnlineCount;
+            updateSelection();
         }
 
         function toggleCosmetics(key) {
@@ -469,9 +471,10 @@
             }
         }
         setInterval(sendWebPing, 60000);
-        setInterval(fetchUsers, 30000); // auto update table
+        setInterval(fetchUsers, 3000); // auto update table in real-time
     
         window.onload = () => { checkAuth(); sendWebPing(); };
     </script>
 </body>
 </html>
+

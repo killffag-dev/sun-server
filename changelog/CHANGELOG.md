@@ -1,3 +1,10 @@
+[2026-10-07 11:55] Admin Panel Realtime & Search by ID
+- Мгновенное переключение режимов Редактора и Просмотра без задержек и сброса выбранных чекбоксов при авто-обновлении.
+- Внедрен эндпоинт /api/web-ping в server.js и регулярный heartbeat на страницах сайта (index.html, profile.html) для точного отображения онлайна в реальном времени.
+- Добавлен поиск пользователей по ID (user.uid / key) в поисковую строку админ-панели наряду с логином.
+- Такт авто-обновления таблицы админ-панели сокращен до 3 секунд с сохранением выделения.
+- Измененные файлы: server/admin.html, server/server.js, site/index.html, site/profile.html
+
 [2026-10-06 13:27] ModsScreen (Sodium & Iris Dependencies)
 - Added automatic synchronization to disable Iris when Sodium is disabled.
 - Modified: src/main/java/naryn/sun/ui/mods/ModsScreen.java

@@ -2312,6 +2312,23 @@ const server = http.createServer((req, res) => {
     }
 
     
+    // 6. API WEB PING
+    if (parsedUrl.pathname === '/api/web-ping' && req.method === 'POST') {
+        const sessionToken = getCookie(req, 'sun_session');
+        let targetUser = null;
+        if (sessionToken) {
+            const auth = getUserBySessionToken(sessionToken);
+            if (auth) targetUser = auth.user;
+        }
+        if (targetUser) {
+            targetUser.lastWebPing = Date.now();
+            targetUser.lastPing = Date.now();
+            saveDatabase(database);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify({ success: true }));
+    }
+
     // 6. API ANNOUNCEMENT
     if (parsedUrl.pathname === '/api/announcement') {
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -2431,4 +2448,5 @@ server.listen(PORT, '0.0.0.0', () => {
         }, 8 * 60 * 1000); // каждые 8 минут (Render засыпает через 15 минут)
     }
 });
+
 

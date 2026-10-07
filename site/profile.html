@@ -739,6 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).catch(e => console.error('Error fetching announcement:', e));
 });
 </script>
+<script>function sendWebPing() { fetch('/api/web-ping', { method: 'POST' }).catch(()=>{}); } setInterval(sendWebPing, 60000); sendWebPing();</script>
 </body>
 
 </html>

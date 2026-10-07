@@ -314,5 +314,6 @@
 </dialog>
 
 <script src="app.js?v=8"></script>
+<script>function sendWebPing() { fetch('/api/web-ping', { method: 'POST' }).catch(()=>{}); } setInterval(sendWebPing, 60000); sendWebPing();</script>
 </body>
 </html>

@@ -1,4 +1,44 @@
-uploads/
-site/uploads/
+# Build & Cache
+.gradle/
+build/
+.cache/
+versions/*/build/
+
+# Minecraft Runtime & Logs
+run/
+logs/
 *.log
-node_modules/
+*.txt
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Binary / Compiled Artifacts
+*.class
+*.jar
+
+# Backups & Temporary folders
+asset_backup/
+minecraft_sources/
+.tools/
+temp_skill/
+
+# Legacy root duplicate folders (active code is inside src/)
+/framework/
+/mixin/
+/protection/
+/systems/
+/ui/
+/utility/
+Rockstar.java
+
+# Server Databases & Runtime Backups
+server/database.json*
+server/database.backup.json*
+server/database.sqlite*
+server/data/
+server/*.tmp
+server/*.migrated
+

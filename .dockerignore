@@ -1,0 +1,17 @@
+node_modules/
+.git
+.gradle
+build
+versions
+src
+run
+logs
+server/database.sqlite*
+server/database.json*
+server/database.backup.json*
+server/*.migrated
+server/*.tmp
+server/data
+server/uploads
+site/uploads
+*.log

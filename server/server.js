@@ -13,8 +13,23 @@ const crypto = require('crypto');
 
 const PORT = process.env.PORT || 8080;
 const DOMAIN = (process.env.DOMAIN || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null) || process.env.RENDER_EXTERNAL_URL || 'https://sun-server-production.up.railway.app').replace(/\/+$/, '');
-const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'database.json');
-const DB_BACKUP_FILE = process.env.DB_BACKUP_FILE || path.join(__dirname, 'database.backup.json');
+function resolveStorageDir() {
+    if (process.env.DATA_DIR && fs.existsSync(process.env.DATA_DIR)) return process.env.DATA_DIR;
+    if (process.env.RAILWAY_VOLUME_MOUNT_PATH && fs.existsSync(process.env.RAILWAY_VOLUME_MOUNT_PATH)) return process.env.RAILWAY_VOLUME_MOUNT_PATH;
+    for (const d of ['/data', '/app/data']) {
+        try {
+            if (fs.existsSync(d)) {
+                fs.accessSync(d, fs.constants.W_OK);
+                return d;
+            }
+        } catch (e) {}
+    }
+    return __dirname;
+}
+
+const STORAGE_DIR = resolveStorageDir();
+const DB_FILE = process.env.DB_FILE || path.join(STORAGE_DIR, 'database.json');
+const DB_BACKUP_FILE = process.env.DB_BACKUP_FILE || path.join(STORAGE_DIR, 'database.backup.json');
 const SITE_DIR = process.env.SITE_DIR || path.resolve(path.join(__dirname, '..', 'site'));
 const UPLOADS_DIR = path.join(SITE_DIR, 'uploads');
 const AVATARS_DIR = path.join(UPLOADS_DIR, 'avatars');
@@ -216,7 +231,7 @@ function getSessionCookieHeader(req, token) {
 
 
 const DB_ENCRYPTION_KEY = crypto.scryptSync(process.env.DB_ENCRYPTION_KEY || 'SUN_SECURE_KEY', 'salt', 32);
-const SQLITE_FILE = process.env.SQLITE_FILE || path.join(__dirname, 'database.sqlite');
+const SQLITE_FILE = process.env.SQLITE_FILE || path.join(STORAGE_DIR, 'database.sqlite');
 
 let sqlDb = null;
 let sqliteEngineName = 'JSON Fallback';
@@ -362,7 +377,11 @@ function loadDatabase() {
             const rows = sqlDb.all('SELECT id, encrypted_data FROM users');
             for (const row of rows) {
                 const decrypted = decryptObject(row.encrypted_data);
-                if (decrypted) db[row.id] = decrypted;
+                if (decrypted) {
+                    if (decrypted.coins === undefined || decrypted.coins === null) decrypted.coins = 0;
+                    if (!Array.isArray(decrypted.cosmetics)) decrypted.cosmetics = [];
+                    db[row.id] = decrypted;
+                }
             }
             console.log(`[SUN-DB] Loaded ${Object.keys(db).length} users from SQLite [${sqliteEngineName}]`);
         } catch (e) {
@@ -424,6 +443,10 @@ function loadDatabase() {
 
 // Надежное транзакционное сохранение базы данных в SQLite + страховочный JSON-снапшот
 function saveDatabase(db) {
+    if (!db || typeof db !== 'object' || Object.keys(db).length === 0) {
+        console.warn('[SUN-DB] Prevented saving empty database to protect user data!');
+        return;
+    }
     if (sqlDb) {
         try {
             const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (?, ?)');
@@ -474,650 +497,7 @@ function saveAnnouncement() {
 }
 
 
-// HTML-код современной темной админ-панели
-const ADMIN_HTML = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUN Client — Панель Управления</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #0b0d13;
-            --card-bg: #141722;
-            --card-border: #232738;
-            --accent: #ff9800;
-            --accent-glow: rgba(255, 152, 0, 0.25);
-            --text-main: #f0f3fa;
-            --text-muted: #8b93a7;
-            --green: #10b981;
-            --red: #ef4444;
-            --blue: #3b82f6;
-            --purple: #8b5cf6;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text-main);
-            padding: 24px;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        /* HEADER */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 28px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--card-border);
-        }
-
-        .logo-wrap {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-badge {
-            background: linear-gradient(135deg, #ff9800, #ff5722);
-            color: #fff;
-            font-weight: 800;
-            font-size: 18px;
-            padding: 8px 14px;
-            border-radius: 10px;
-            box-shadow: 0 4px 16px var(--accent-glow);
-        }
-
-        .logo-text h1 {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        .logo-text p {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        /* STATS CARDS */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin-bottom: 28px;
-        }
-
-        .stat-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 18px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .stat-title {
-            font-size: 13px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-val {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-
-        /* TOOLBAR */
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .search-box {
-            position: relative;
-            flex: 1;
-            min-width: 260px;
-        }
-
-        .search-box input {
-            width: 100%;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            padding: 10px 16px;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .search-box input:focus {
-            border-color: var(--accent);
-        }
-
-        .btn-add {
-            background: var(--accent);
-            color: #111;
-            font-weight: 600;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: opacity 0.2s;
-        }
-        .btn-add:hover { opacity: 0.9; }
-
-        /* USERS TABLE */
-        .table-wrap {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        th {
-            background: rgba(255, 255, 255, 0.02);
-            color: var(--text-muted);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--card-border);
-        }
-
-        td {
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--card-border);
-            vertical-align: middle;
-        }
-
-        tr:last-child td { border-bottom: none; }
-        tr:hover td { background: rgba(255, 255, 255, 0.015); }
-
-        .hwid-badge {
-            font-family: 'JetBrains Mono', monospace;
-            background: #1c2130;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 12px;
-            color: #c3cadc;
-            border: 1px solid #282f45;
-            display: inline-block;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .status-active { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
-        .status-expired { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
-        .status-banned { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
-
-        .tag {
-            background: #252b3d;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            margin-right: 4px;
-            display: inline-block;
-            margin-bottom: 2px;
-        }
-
-        /* ACTIONS */
-        .actions-cell {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-
-        .action-btn {
-            background: #202637;
-            border: 1px solid #2e364e;
-            color: #d1d7e5;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .action-btn:hover {
-            background: #2e364e;
-            color: #fff;
-        }
-
-        .action-btn.ban { color: #f87171; border-color: rgba(239, 68, 68, 0.3); }
-        .action-btn.ban:hover { background: rgba(239, 68, 68, 0.2); }
-
-        /* MODAL */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .modal {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            width: 440px;
-            border-radius: 12px;
-            padding: 24px;
-        }
-        .modal h2 { font-size: 18px; margin-bottom: 16px; }
-        .modal input, .modal select {
-            width: 100%;
-            background: #0f121b;
-            border: 1px solid var(--card-border);
-            padding: 10px 12px;
-            border-radius: 6px;
-            color: #fff;
-            margin-bottom: 12px;
-            font-size: 14px;
-            outline: none;
-        }
-        .modal-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-top: 16px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <div class="logo-wrap">
-                <div class="logo-badge">SUN</div>
-                <div class="logo-text">
-                    <h1>Панель Управления Клиентом</h1>
-                    <p>Управление подписками, HWID и гардеробом</p>
-                </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 14px;">
-                <div>
-                    <span style="font-size: 13px; color: var(--text-muted);">Статус:</span>
-                    <span style="color: var(--green); font-weight: 600; font-size: 13px;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;"></span>Онлайн</span>
-                </div>
-                <button class="action-btn" onclick="logoutAdmin()" title="Выйти из админки" style="padding: 6px 12px; border-color: rgba(239, 68, 68, 0.4); color: var(--red);">Выйти</button>
-            </div>
-        </header>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-title">Всего пользователей</span>
-                <span class="stat-val" id="stat-total">0</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-title">Активных подписок</span>
-                <span class="stat-val" id="stat-active" style="color: var(--green);">0</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-title">Заблокировано</span>
-                <span class="stat-val" id="stat-banned" style="color: var(--red);">0</span>
-            </div>
-        </div>
-
-        <div class="toolbar">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Поиск по нику или HWID..." oninput="filterUsers()">
-            </div>
-            <button class="btn-add" onclick="openAddModal()">+ Добавить пользователя</button>
-            <button class="btn-add" style="background:#8b5cf6;" onclick="openAnnounceModal()">Объявление</button>
-        </div>
-
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Пользователь</th>
-                        <th>Ключ (SUN ID)</th>
-                        <th>Привязка HWID</th>
-                        <th>Искры (Sparks)</th>
-                        <th>Статус</th>
-                        <th>Истекает</th>
-                        <th>Косметика</th>
-                        <th>Действия</th>
-                    </tr>
-                </thead>
-                <tbody id="usersTableBody">
-                    <!-- Заполняется динамически -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Модальное окно добавления -->
-    <div class="modal-overlay" id="addModal">
-        <div class="modal">
-            <h2>Добавить / Активировать пользователя</h2>
-            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Никнейм</label>
-            <input type="text" id="newUsername" placeholder="Например: CoolPlayer">
-
-            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">HWID (если есть, или сгенерируется сам)</label>
-            <input type="text" id="newHwid" placeholder="SUN-XXXX-YYYY">
-
-            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Срок подписки</label>
-            <select id="newDuration">
-                <option value="7">7 дней</option>
-                <option value="30" selected>30 дней (1 месяц)</option>
-                <option value="90">90 дней (3 месяца)</option>
-                <option value="365">1 год</option>
-            </select>
-
-            <div class="modal-buttons">
-                <button class="action-btn" onclick="closeAddModal()">Отмена</button>
-                <button class="btn-add" onclick="submitAddUser()">Сохранить</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- AUTH MODAL -->
-    <div class="modal-overlay" id="authModal" style="display: flex; z-index: 9999; backdrop-filter: blur(10px); background: rgba(8, 10, 15, 0.88);">
-        <div class="modal" style="text-align: center; max-width: 380px; border-color: rgba(255, 152, 0, 0.3); box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
-            <div style="display: inline-block; background: linear-gradient(135deg, #ff9800, #ff5722); color: #fff; font-weight: 800; font-size: 18px; padding: 8px 16px; border-radius: 10px; margin-bottom: 16px; box-shadow: 0 4px 16px var(--accent-glow);">SUN ADMIN</div>
-            <h3 style="margin-bottom: 8px; font-size: 18px;">Вход в Панель Управления</h3>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Введите пароль администратора для доступа к управлению клиентом и лицензиями.</p>
-            
-            <form onsubmit="event.preventDefault(); handleAuthSubmit(event); return false;">
-                <input type="password" id="authPassword" placeholder="Пароль администратора" style="text-align: center; font-size: 15px; margin-bottom: 12px;" autofocus required>
-                <div id="authError" style="color: var(--red); font-size: 13px; margin-bottom: 12px; display: none;"></div>
-                <button type="submit" class="btn-add" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px;">Войти</button>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        
-        function openAnnounceModal() {
-            fetch('/api/announcement').then(r => r.json()).then(data => {
-                document.getElementById('annActive').value = data.active ? 'true' : 'false';
-                document.getElementById('annType').value = data.type || 'info';
-                document.getElementById('annTitle').value = data.title || '';
-                document.getElementById('annMessage').value = data.message || '';
-                document.getElementById('annUrl').value = data.url || '';
-                document.getElementById('announceModal').style.display = 'flex';
-            });
-        }
-        
-        async function submitAnnounce() {
-            const payload = {
-                active: document.getElementById('annActive').value === 'true',
-                type: document.getElementById('annType').value,
-                title: document.getElementById('annTitle').value,
-                message: document.getElementById('annMessage').value,
-                url: document.getElementById('annUrl').value
-            };
-            const res = await fetch('/api/admin/announcement', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getAuthToken() },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                document.getElementById('announceModal').style.display = 'none';
-                alert('Объявление обновлено!');
-            } else {
-                alert('Ошибка сохранения');
-            }
-        }
-
-        let allUsers = {};
-
-        function getAuthToken() {
-            return localStorage.getItem('sun_admin_token') || '';
-        }
-
-        async function handleAuthSubmit(e) {
-            e.preventDefault();
-            const password = document.getElementById('authPassword').value;
-            const errorEl = document.getElementById('authError');
-            errorEl.style.display = 'none';
-
-            try {
-                const res = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
-                });
-                const data = await res.json();
-                if (data.success && data.token) {
-                    localStorage.setItem('sun_admin_token', data.token);
-                    document.getElementById('authModal').style.display = 'none';
-                    loadUsers();
-                } else {
-                    errorEl.innerText = data.error || 'Неверный пароль администратора';
-                    errorEl.style.display = 'block';
-                }
-            } catch (err) {
-                errorEl.innerText = 'Ошибка соединения с сервером';
-                errorEl.style.display = 'block';
-            }
-        }
-
-        async function logoutAdmin() {
-            try {
-                await fetch('/api/admin/logout', { method: 'POST' });
-            } catch (e) {}
-            localStorage.removeItem('sun_admin_token');
-            document.getElementById('authModal').style.display = 'flex';
-            document.getElementById('authPassword').value = '';
-            allUsers = {};
-            renderTable();
-        }
-
-        async function loadUsers() {
-            const token = getAuthToken();
-            try {
-                const res = await fetch('/api/admin/users', {
-                    headers: token ? { 'X-Admin-Token': token } : {}
-                });
-                if (res.status === 401) {
-                    document.getElementById('authModal').style.display = 'flex';
-                    allUsers = {};
-                    renderTable();
-                    return;
-                }
-                document.getElementById('authModal').style.display = 'none';
-                allUsers = await res.json();
-                renderTable();
-            } catch (e) {
-                console.error('Ошибка загрузки пользователей', e);
-            }
-        }
-
-        function esc(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>"']/g, function(m) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-            });
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('usersTableBody');
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            tbody.innerHTML = '';
-
-            let total = 0;
-            let activeCount = 0;
-            let bannedCount = 0;
-
-            const now = new Date();
-
-            Object.entries(allUsers).forEach(([key, user]) => {
-                total++;
-                const isBanned = !!user.banned;
-                const isExpired = new Date(user.expires) < now;
-                const isActive = user.active && !isBanned && !isExpired;
-
-                if (isActive) activeCount++;
-                if (isBanned) bannedCount++;
-
-                // Фильтр поиска
-                if (search && !(user.username || '').toLowerCase().includes(search) && !key.toLowerCase().includes(search) && !(user.hwid && user.hwid.toLowerCase().includes(search))) {
-                    return;
-                }
-
-                let statusBadge = '<span class="status-badge status-active"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:5px;"></span>Активна</span>';
-                if (isBanned) {
-                    statusBadge = '<span class="status-badge status-banned"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:5px;"></span>Забанен</span>';
-                } else if (isExpired) {
-                    statusBadge = '<span class="status-badge status-expired"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--yellow);margin-right:5px;"></span>Истекла</span>';
-                }
-
-                const safeUsername = esc(user.username || 'User');
-                const safeEmail = user.email ? '<div style="font-size:11px;color:var(--text-muted);">' + esc(user.email) + '</div>' : '';
-                const safeKey = esc(key);
-                const safeExpires = esc(user.expires || '');
-                const safeCoins = Number(user.coins) || 0;
-
-                let hwidBadge = user.hwid 
-                    ? ('<span style="color:#10b981;font-size:12px;font-family:monospace;" title="' + esc(user.hwid) + '"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;margin-right:5px;"></span>' + esc(user.hwid.substring(0, 14)) + '...</span>')
-                    : '<span style="color:#8b93a7;font-size:12px;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-right:5px;"></span>Не привязан</span>';
-
-                const cosmeticsHtml = (Array.isArray(user.cosmetics) ? user.cosmetics : []).map(c => '<span class="tag">' + esc(c) + '</span>').join('') || '<span style="color:#555">нет</span>';
-                const resetHwidBtn = user.hwid ? ('<button class="action-btn" title="Сбросить привязку HWID" onclick="resetHwid(\\\\\\'' + safeKey + '\\\\\\')">Сброс HWID</button>') : '';
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = \`
-                    <td>
-                        <strong>\${safeUsername}</strong>
-                        \${safeEmail}
-                    </td>
-                    <td><span class="hwid-badge">\${safeKey}</span></td>
-                    <td>\${hwidBadge}</td>
-                    <td><strong style="color:var(--accent);">\${safeCoins} Sparks</strong></td>
-                    <td>\${statusBadge}</td>
-                    <td>\${safeExpires}</td>
-                    <td>\${cosmeticsHtml}</td>
-                    <td>
-                        <div class="actions-cell">
-                            <button class="action-btn" title="Начислить 50 Sparks" onclick="addCoins('\${safeKey}', 50)">+50 Sparks</button>
-                            \${resetHwidBtn}
-                            <button class="action-btn" title="Продлить на 30 дней" onclick="extendDays('\${safeKey}', 30)">+30д</button>
-                            <button class="action-btn" title="Выдать/забрать косметику" onclick="toggleCosmetic('\${safeKey}')">Косметика</button>
-                            <button class="action-btn ban" onclick="toggleBan('\${safeKey}', \${!isBanned})">\${isBanned ? 'Разбан' : 'Бан'}</button>
-                            <button class="action-btn" title="Удалить пользователя" onclick="deleteUser('\${safeKey}')">Удалить</button>
-                        </div>
-                    </td>
-                \`;
-                tbody.appendChild(tr);
-            });
-
-            document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-active').innerText = activeCount;
-            document.getElementById('stat-banned').innerText = bannedCount;
-        }
-
-        function filterUsers() {
-            renderTable();
-        }
-
-        async function sendAction(data) {
-            const token = getAuthToken();
-            const res = await fetch('/api/admin/action', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'X-Admin-Token': token } : {})
-                },
-                body: JSON.stringify(data)
-            });
-            if (res.status === 401) {
-                document.getElementById('authModal').style.display = 'flex';
-                return;
-            }
-            loadUsers();
-        }
-
-        function addCoins(hwid, amount) {
-            sendAction({ action: 'add_coins', hwid, amount });
-        }
-
-        function resetHwid(hwid) {
-            if (confirm('Сбросить привязку HWID для ' + hwid + '?')) {
-                sendAction({ action: 'reset_hwid', hwid });
-            }
-        }
-
-        function extendDays(hwid, days) {
-            sendAction({ action: 'extend', hwid, days });
-        }
-
-        function toggleBan(hwid, banState) {
-            sendAction({ action: 'ban', hwid, banned: banState });
-        }
-
-        function toggleCosmetic(hwid) {
-            sendAction({ action: 'toggle_cosmetics', hwid });
-        }
-
-        function deleteUser(hwid) {
-            if (confirm('Точно удалить запись ' + hwid + '?')) {
-                sendAction({ action: 'delete', hwid });
-            }
-        }
-
-        function openAddModal() {
-            document.getElementById('addModal').style.display = 'flex';
-        }
-
-        function closeAddModal() {
-            document.getElementById('addModal').style.display = 'none';
-        }
-
-        async function submitAddUser() {
-            const username = document.getElementById('newUsername').value.trim() || 'User';
-            let hwid = document.getElementById('newHwid').value.trim();
-            const days = parseInt(document.getElementById('newDuration').value);
-
-            if (!hwid) {
-                hwid = 'SUN-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-            }
-
-            await sendAction({ action: 'create', username, hwid, days });
-            closeAddModal();
-        }
-
-        // Авто-обновление раз в 3 секунды
-        loadUsers();
-        setInterval(loadUsers, 3000);
-    </script>
-</body>
-</html>`;
+// Админ-панель загружается из server/admin.html
 
 const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1221,6 +601,55 @@ const server = http.createServer((req, res) => {
         return res.end(fs.readFileSync(require('path').join(__dirname, 'admin.html'), 'utf-8'));
     }
 
+    // 1.5 API ДЛЯ АДМИНКИ: Экспорт и импорт базы данных (резервные копии)
+    if (parsedUrl.pathname === '/api/admin/export-db' && req.method === 'GET') {
+        if (!isAdminAuthorized(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+            return res.end(JSON.stringify({ error: 'Unauthorized: Требуется авторизация администратора' }));
+        }
+        const nowStr = new Date().toISOString().split('T')[0];
+        res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Content-Disposition': `attachment; filename="sun_database_backup_${nowStr}.json"`
+        });
+        return res.end(JSON.stringify(database, null, 2));
+    }
+
+    if (parsedUrl.pathname === '/api/admin/import-db' && req.method === 'POST') {
+        if (!isAdminAuthorized(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+            return res.end(JSON.stringify({ error: 'Unauthorized: Требуется авторизация администратора' }));
+        }
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk;
+            if (body.length > 10 * 1024 * 1024) req.destroy();
+        });
+        req.on('end', () => {
+            try {
+                const parsed = JSON.parse(body);
+                const imported = parsed.database || parsed;
+                if (!imported || typeof imported !== 'object') {
+                    throw new Error('Некорректный формат файла базы данных');
+                }
+                let count = 0;
+                for (const k of Object.keys(imported)) {
+                    if (imported[k] && typeof imported[k] === 'object') {
+                        database[k] = imported[k];
+                        count++;
+                    }
+                }
+                saveDatabase(database);
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ success: true, count, message: `Успешно импортировано/обновлено ${count} пользователей` }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ error: 'Ошибка импорта: ' + e.message }));
+            }
+        });
+        return;
+    }
+
     // 2. API ДЛЯ АДМИНКИ: Получение списка пользователей (строго защищено паролем)
     if (parsedUrl.pathname === '/api/admin/users' && req.method === 'GET') {
         if (!isAdminAuthorized(req)) {
@@ -1317,11 +746,14 @@ const server = http.createServer((req, res) => {
                     database[hwid].banned = !!data.banned;
                     saveDatabase(database);
                 } else if (action === 'toggle_cosmetics' && database[hwid]) {
-                    const list = database[hwid].cosmetics || [];
-                    if (list.includes("wings_fire")) {
-                        database[hwid].cosmetics = [];
+                    const list = Array.isArray(database[hwid].cosmetics) ? database[hwid].cosmetics : [];
+                    const defaults = ["wings_fire", "crown_gold", "cape_sun"];
+                    const hasAll = defaults.every(d => list.includes(d));
+                    if (hasAll) {
+                        database[hwid].cosmetics = list.filter(c => !defaults.includes(c));
                     } else {
-                        database[hwid].cosmetics = ["wings_fire", "crown_gold", "cape_sun"];
+                        const set = new Set([...list, ...defaults]);
+                        database[hwid].cosmetics = Array.from(set);
                     }
                     saveDatabase(database);
                 } else if (action === 'delete') {
@@ -1332,7 +764,54 @@ const server = http.createServer((req, res) => {
                     database[hwid].hwid_last_reset = null;
                     saveDatabase(database);
                 } else if (action === 'add_coins' && database[hwid]) {
-                    database[hwid].coins = (database[hwid].coins || 0) + (parseInt(data.amount) || 50);
+                    database[hwid].coins = Math.max(0, (database[hwid].coins || 0) + (parseInt(data.amount) || 50));
+                    saveDatabase(database);
+                } else if (action === 'set_coins' && database[hwid]) {
+                    database[hwid].coins = Math.max(0, parseInt(data.amount) || 0);
+                    saveDatabase(database);
+                } else if (action === 'set_coins_bulk' && data.hwids) {
+                    const amt = Math.max(0, parseInt(data.amount) || 0);
+                    for (let h of data.hwids) {
+                        if (database[h]) database[h].coins = amt;
+                    }
+                    saveDatabase(database);
+                } else if (action === 'set_cosmetics' && database[hwid]) {
+                    if (Array.isArray(data.cosmetics)) {
+                        database[hwid].cosmetics = data.cosmetics;
+                        saveDatabase(database);
+                    }
+                } else if (action === 'toggle_cosmetic_item' && database[hwid]) {
+                    const item = String(data.item || '').trim();
+                    if (item) {
+                        if (!Array.isArray(database[hwid].cosmetics)) database[hwid].cosmetics = [];
+                        const idx = database[hwid].cosmetics.indexOf(item);
+                        if (idx >= 0) {
+                            database[hwid].cosmetics.splice(idx, 1);
+                        } else {
+                            database[hwid].cosmetics.push(item);
+                        }
+                        saveDatabase(database);
+                    }
+                } else if (action === 'edit_user' && database[hwid]) {
+                    const u = database[hwid];
+                    if (typeof data.username === 'string' && data.username.trim()) {
+                        u.username = data.username.trim();
+                    }
+                    if (data.coins !== undefined && !isNaN(parseInt(data.coins))) {
+                        u.coins = Math.max(0, parseInt(data.coins));
+                    }
+                    if (Array.isArray(data.cosmetics)) {
+                        u.cosmetics = data.cosmetics;
+                    }
+                    if (typeof data.expires === 'string' && data.expires) {
+                        u.expires = data.expires;
+                    }
+                    if (typeof data.banned === 'boolean') {
+                        u.banned = data.banned;
+                    }
+                    if (typeof data.active === 'boolean') {
+                        u.active = data.active;
+                    }
                     saveDatabase(database);
                 } else if (action === 'create') {
                     const key = (data.hwid && data.hwid.trim()) ? data.hwid.trim() : generateLicenseKey();

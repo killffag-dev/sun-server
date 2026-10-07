@@ -1,4 +1,11 @@
-FROM node:20-slim
+FROM node:22-slim
+
+WORKDIR /app
+
+# Копируем манифесты зависимостей и устанавливаем пакеты
+COPY server/package*.json ./server/
+WORKDIR /app/server
+RUN npm install --omit=dev || true
 
 WORKDIR /app
 
@@ -13,6 +20,7 @@ COPY bot/updates/version_info.json ./bot/updates/version_info.json
 
 WORKDIR /app/server
 
+# Открываем порт 8080 для сервера и админки
 ENV PORT=8080
 EXPOSE 8080
 

@@ -9,5 +9,10 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "better-sqlite3": "^11.8.1"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.8.1"
+  }
 }

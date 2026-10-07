@@ -62,6 +62,14 @@
   - Реализован сквозной цикл привязки игрового клиента:
     - Сервер: эндпоинты /api/generate-link-code, /api/link-status, /api/auth/pair/link (с поддержкой очистки дефисов) и /api/sparks-balance (по ключу и токену).
     - Клиент: LinkCodeScreen.java теперь запрашивает уникальный код, выводит его пользователю, копирует в буфер обмена и запускает фоновый опрос сервера до момента подтверждения привязки в браузере.
-    - Автосохранение привязанного аккаунта в SparksManager.java (.minecraft/Sun/account.json), корректный опрос баланса Спарксов и динамическое отображение ника/статуса/UID в MainMenuHeaderBar.java.
-  - Изменены файлы: Dockerfile, package.json, server/Dockerfile, server/package.json, server/server.js, server/database.json, server/database.backup.json, SparksManager.java, LinkCodeScreen.java, MainMenuHeaderBar.java, ServerConfig.java, CHANGELOG.md.
+- [2026-10-07 04:50] Миграция базы данных на SQLite (Multi-Engine) и подготовка к деплою
+  - Разработан гибридный многоуровневый адаптер SQLite в server.js:
+    - 1-й приоритет: нативный встроенный модуль Node 22 (node:sqlite / DatabaseSync) — нулевые зависимости, 100% совместимость в контейнерах без C++ сборщиков.
+    - 2-й приоритет: высокопроизводительный better-sqlite3 с поддержкой WAL-журналирования.
+    - 3-й приоритет: автономный аварийный fallback на database.json при любых непредвиденных ошибках окружения.
+  - Настроено безопасное шифрование записей AES-256-CBC, транзакционная запись (BEGIN/COMMIT) и двойное сохранение (SQLite + аварийный бэкап-снапшот в JSON).
+  - Обновлены Dockerfile и server/Dockerfile до node:22-slim с безопасным npm install (не блокирующим сборку на Railway).
+  - Добавлены optionalDependencies в package.json и server/package.json.
+  - Проверена сквозная работоспособность API авторизации (/api/check) и загрузки пользователей из database.sqlite.
+  - Изменены файлы: Dockerfile, package.json, server/Dockerfile, server/package.json, server/server.js, server/database.json, server/database.backup.json, CHANGELOG.md.
 

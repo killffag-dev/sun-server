@@ -9,12 +9,7 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-let Database = null;
-try {
-    Database = require('better-sqlite3');
-} catch (e) {
-    console.warn('[SUN-DB] Native better-sqlite3 not available, using JSON fallback:', e.message);
-}
+// Database initialized in SQLite/JSON adapter section below
 
 const PORT = process.env.PORT || 8080;
 const DOMAIN = (process.env.DOMAIN || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null) || process.env.RENDER_EXTERNAL_URL || 'https://sun-server-production.up.railway.app').replace(/\/+$/, '');
@@ -221,15 +216,89 @@ function getSessionCookieHeader(req, token) {
 
 
 const DB_ENCRYPTION_KEY = crypto.scryptSync(process.env.DB_ENCRYPTION_KEY || 'SUN_SECURE_KEY', 'salt', 32);
+const SQLITE_FILE = process.env.SQLITE_FILE || path.join(__dirname, 'database.sqlite');
+
 let sqlDb = null;
-try {
-    if (Database) {
-        sqlDb = new Database(path.join(__dirname, 'database.sqlite'));
-        sqlDb.exec('CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, encrypted_data TEXT)');
+let sqliteEngineName = 'JSON Fallback';
+
+function initSqliteAdapter() {
+    let nativeDb = null;
+    // 1. Try better-sqlite3 (native fast driver)
+    try {
+        let Better = null;
+        try {
+            Better = require('better-sqlite3');
+        } catch (e1) {
+            try {
+                Better = require(path.join(__dirname, 'node_modules', 'better-sqlite3'));
+            } catch (e2) {}
+        }
+        if (Better) {
+            nativeDb = new Better(SQLITE_FILE);
+            try { nativeDb.pragma('journal_mode = WAL'); } catch (pe) {}
+            sqlDb = {
+                exec: (sql) => nativeDb.exec(sql),
+                prepare: (sql) => nativeDb.prepare(sql),
+                runTx: (fn) => nativeDb.transaction(fn)(),
+                all: (sql, params = []) => nativeDb.prepare(sql).all(...params),
+                get: (sql, params = []) => nativeDb.prepare(sql).get(...params),
+                engine: 'better-sqlite3'
+            };
+            sqliteEngineName = 'better-sqlite3';
+            console.log('[SUN-DB] SQLite adapter initialized using better-sqlite3 (WAL mode)');
+            return;
+        }
+    } catch (err) {
+        console.warn('[SUN-DB] better-sqlite3 load attempt error:', err.message);
     }
-} catch (e) {
-    console.warn('[SUN-DB] SQLite init error, using JSON fallback:', e.message);
+
+    // 2. Try Node 22+ native built-in node:sqlite (zero external compilation dependencies)
+    try {
+        const { DatabaseSync } = require('node:sqlite');
+        nativeDb = new DatabaseSync(SQLITE_FILE);
+        try { nativeDb.exec('PRAGMA journal_mode = WAL;'); } catch (pe) {}
+        sqlDb = {
+            exec: (sql) => nativeDb.exec(sql),
+            prepare: (sql) => nativeDb.prepare(sql),
+            runTx: (fn) => {
+                nativeDb.exec('BEGIN TRANSACTION;');
+                try {
+                    fn();
+                    nativeDb.exec('COMMIT;');
+                } catch (txErr) {
+                    try { nativeDb.exec('ROLLBACK;'); } catch (rbErr) {}
+                    throw txErr;
+                }
+            },
+            all: (sql, params = []) => {
+                const s = nativeDb.prepare(sql);
+                return params.length ? s.all(...params) : s.all();
+            },
+            get: (sql, params = []) => {
+                const s = nativeDb.prepare(sql);
+                return params.length ? s.get(...params) : s.get();
+            },
+            engine: 'node:sqlite'
+        };
+        sqliteEngineName = 'node:sqlite (Node 22 Native)';
+        console.log('[SUN-DB] SQLite adapter initialized using native node:sqlite (WAL mode)');
+        return;
+    } catch (err) {
+        console.warn('[SUN-DB] node:sqlite not available:', err.message);
+    }
+
+    console.warn('[SUN-DB] Running in pure JSON fallback mode (database.json active)');
     sqlDb = null;
+    sqliteEngineName = 'JSON Fallback';
+}
+
+initSqliteAdapter();
+if (sqlDb) {
+    try {
+        sqlDb.exec('CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, encrypted_data TEXT)');
+    } catch (err) {
+        console.error('[SUN-DB] Failed to create users table:', err.message);
+    }
 }
 
 function encryptObject(obj) {
@@ -256,43 +325,57 @@ function decryptObject(text) {
     }
 }
 
-// Загрузка или создание базы данных с авто-восстановлением
+// Загрузка или создание базы данных с авто-восстановлением и бесшовной миграцией
 function loadDatabase() {
     let db = {};
     if (sqlDb) {
-        // Migrate old JSON if exists
-        if (fs.existsSync(DB_FILE)) {
+        // Проверяем, есть ли уже записи в SQLite
+        let sqliteCount = 0;
+        try {
+            const countRow = sqlDb.get('SELECT count(*) as cnt FROM users');
+            if (countRow && typeof countRow.cnt === 'number') {
+                sqliteCount = countRow.cnt;
+            }
+        } catch (e) {}
+
+        // Если в SQLite пусто, но существует legacy JSON — мигрируем
+        if (sqliteCount === 0 && fs.existsSync(DB_FILE)) {
             console.log('[SUN-DB] Migrating database.json to SQLite...');
             try {
                 const raw = fs.readFileSync(DB_FILE, 'utf-8');
                 const dbJson = JSON.parse(raw);
-                const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (@id, @data)');
-                const migrateTx = sqlDb.transaction((dbObj) => {
-                    for (const key of Object.keys(dbObj)) {
-                        insert.run({ id: key, data: encryptObject(dbObj[key]) });
+                const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (?, ?)');
+                sqlDb.runTx(() => {
+                    for (const key of Object.keys(dbJson)) {
+                        insert.run(key, encryptObject(dbJson[key]));
                     }
                 });
-                migrateTx(dbJson);
-                // DB migration completed, keep DB_FILE active
-                if (fs.existsSync(DB_BACKUP_FILE)) fs.renameSync(DB_BACKUP_FILE, DB_BACKUP_FILE + '.migrated');
+                if (fs.existsSync(DB_BACKUP_FILE)) {
+                    try { fs.copyFileSync(DB_BACKUP_FILE, DB_BACKUP_FILE + '.migrated'); } catch (e) {}
+                }
             } catch (e) {
                 console.error('[SUN-DB] Error during migration:', e);
             }
         }
 
         try {
-            const stmt = sqlDb.prepare('SELECT id, encrypted_data FROM users');
-            for (const row of stmt.iterate()) {
+            const rows = sqlDb.all('SELECT id, encrypted_data FROM users');
+            for (const row of rows) {
                 const decrypted = decryptObject(row.encrypted_data);
                 if (decrypted) db[row.id] = decrypted;
             }
+            console.log(`[SUN-DB] Loaded ${Object.keys(db).length} users from SQLite [${sqliteEngineName}]`);
         } catch (e) {
             console.error('[SUN-DB] SQLite load error:', e);
         }
-    } else {
+    }
+
+    // Если в SQLite ничего не найдено или SQLite недоступен, читаем JSON
+    if (Object.keys(db).length === 0) {
         try {
             if (fs.existsSync(DB_FILE)) {
                 db = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+                console.log(`[SUN-DB] Loaded ${Object.keys(db).length} users from JSON fallback file`);
             } else if (fs.existsSync(DB_FILE + '.migrated')) {
                 db = JSON.parse(fs.readFileSync(DB_FILE + '.migrated', 'utf-8'));
             }
@@ -301,6 +384,7 @@ function loadDatabase() {
         }
     }
 
+    // Начальный дефолтный пользователь, если база совсем пуста
     if (Object.keys(db).length === 0) {
         db = {
             "SUN-WALU-DPNK": {
@@ -338,32 +422,30 @@ function loadDatabase() {
     return db;
 }
 
-// Надежное сохранение базы данных
+// Надежное транзакционное сохранение базы данных в SQLite + страховочный JSON-снапшот
 function saveDatabase(db) {
     if (sqlDb) {
         try {
-            const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (@id, @data)');
-            const saveTx = sqlDb.transaction((dbObj) => {
-                for (const key of Object.keys(dbObj)) {
-                    insert.run({ id: key, data: encryptObject(dbObj[key]) });
+            const insert = sqlDb.prepare('INSERT OR REPLACE INTO users (id, encrypted_data) VALUES (?, ?)');
+            sqlDb.runTx(() => {
+                for (const key of Object.keys(db)) {
+                    insert.run(key, encryptObject(db[key]));
                 }
             });
-            saveTx(db);
-            
+
             const existingKeys = new Set(Object.keys(db));
-            const allIds = sqlDb.prepare('SELECT id FROM users').all();
+            const allRows = sqlDb.all('SELECT id FROM users');
             const deleteStmt = sqlDb.prepare('DELETE FROM users WHERE id = ?');
-            const deleteTx = sqlDb.transaction(() => {
-                for (const row of allIds) {
+            sqlDb.runTx(() => {
+                for (const row of allRows) {
                     if (!existingKeys.has(row.id)) deleteStmt.run(row.id);
                 }
             });
-            deleteTx();
         } catch (e) {
             console.error('[SUN-DB] SQLite save error:', e);
         }
     }
-    // Также всегда сохраняем резервную копию в JSON
+    // Также всегда сохраняем резервную копию в JSON (снапшот безопасности)
     try {
         const tmpFile = DB_FILE + '.tmp';
         fs.writeFileSync(tmpFile, JSON.stringify(db, null, 2), 'utf-8');
@@ -2327,7 +2409,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`Личный кабинет:       ${DOMAIN}/profile`);
     console.log(`Админ-панель:         ${DOMAIN}/admin`);
     console.log(`API для Майнкрафта:   ${DOMAIN}/api/check`);
-    console.log(`База данных:          ${DB_FILE}`);
+    console.log(`База данных:          ${sqlDb ? `SQLite [${sqliteEngineName}] (${SQLITE_FILE})` : `JSON Fallback (${DB_FILE})`}`);
     console.log(`=============================================================\n`);
 
     // Автоматический Keep-Alive пингер против засыпания хостинга (Render / Railway / Glitch)

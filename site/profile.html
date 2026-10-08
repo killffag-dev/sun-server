@@ -131,7 +131,6 @@
           <div class="kimiko-stat-val" id="k-hwid-display" style="display:flex;align-items:center;gap:6px;">
             <span class="kimiko-dot" id="k-hwid-dot"></span>
             <span id="k-hwid-text">Не привязан</span>
-            <button type="button" id="btn-unlink-game" class="kimiko-unlink-btn" style="display:none;margin-left:6px;padding:2px 8px;font-size:11px;font-weight:600;color:#f87171;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);border-radius:6px;cursor:pointer;transition:all 0.2s;" title="Отвязать клиент игры от аккаунта">Отвязать</button>
           </div>
         </div>
 
@@ -381,19 +380,16 @@ function populateProfile(u) {
   const dot = $('#k-hwid-dot');
   const hwidText = $('#k-hwid-text');
   const guideSteps = $('.kimiko-guide-steps');
-  const unlinkBtn = $('#btn-unlink-game');
 
   const isLinked = !!(u.clientLinked || (u.hwid && u.hwid !== 'none' && u.hwid !== 'SUN-RESET'));
 
   if (isLinked) {
     if (dot) dot.className = 'kimiko-dot active';
     if (hwidText) hwidText.textContent = 'Привязан';
-    if (unlinkBtn) unlinkBtn.style.display = 'inline-flex';
     if (guideSteps) guideSteps.style.display = 'none'; // Скрываем пошаговую инструкцию при активной привязке
   } else {
     if (dot) dot.className = 'kimiko-dot warning';
     if (hwidText) hwidText.textContent = 'Не привязан';
-    if (unlinkBtn) unlinkBtn.style.display = 'none';
     if (guideSteps) guideSteps.style.display = '';
   }
 }
@@ -614,30 +610,6 @@ function initCardTilt() {
 }
 initCardTilt();
 
-
-
-// Отвязка клиента игры
-const unlinkBtn = $('#btn-unlink-game');
-if (unlinkBtn) {
-  unlinkBtn.onclick = async () => {
-    if (!confirm('Отвязать клиент игры от этого аккаунта?')) return;
-    try {
-      const res = await api('auth/pair/unlink', {
-        sessionToken: currentUser?.sessionToken || getStoredToken(),
-        key: currentUser?.key || localStorage.getItem(KEY) || ''
-      });
-      toast(res.message || 'Клиент игры успешно отвязан');
-      if (currentUser) {
-        currentUser.clientLinked = false;
-        currentUser.hwid = null;
-        saveSession(currentUser.sessionToken, currentUser.key, currentUser);
-        populateProfile(currentUser);
-      }
-    } catch (err) {
-      toast(err.message || 'Ошибка при отвязке клиента');
-    }
-  };
-}
 
 // Активация промокода / ключа
 const fActKey = $('#f-activate-key');

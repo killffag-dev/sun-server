@@ -369,7 +369,7 @@ input:focus-visible{outline:0}
 
 
 /* ===== Kimiko-Style Personal Dashboard ===== */
-.kimiko-body{background:#0e1017;color:#e5e7eb;min-height:100vh;display:flex;flex-direction:column}
+.kimiko-body{background:var(--bg);color:#e5e7eb;min-height:100vh;display:flex;flex-direction:column;position:relative}
 .kimiko-topbar{padding:1.5rem 2rem 0.5rem;max-width:1200px;margin:0 auto;width:100%}
 .kimiko-back-btn{display:inline-flex;align-items:center;gap:8px;color:#71717a;text-decoration:none;font-size:0.85rem;font-weight:500;transition:color 0.2s}
 .kimiko-back-btn:hover{color:#fff}

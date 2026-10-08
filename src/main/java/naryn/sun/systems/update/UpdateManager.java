@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
  * Проверяет наличие новой версии на сервере и перенаправляет в официального Telegram-бота: @SUN_Visuals_bot
  */
 public final class UpdateManager {
-    public static final String DEFAULT_BOT_URL = "https://t.me/SUN_Visuals_bot?start=update";
+    public static final String DEFAULT_BOT_URL = "https://t.me/SUN_Visual";
     private static final String UPDATE_API_URL = naryn.sun.systems.network.ServerConfig.API_URL + "/version";
 
     private static boolean updateAvailable = false;
@@ -70,7 +70,7 @@ public final class UpdateManager {
                                 Sun.getInstance().getNotificationManager().addNotificationOther(
                                         NotificationType.INFO,
                                         "SUN Update",
-                                        "Доступна версия v" + remoteVersion + "! Нажмите TG для загрузки"
+                                        "Доступна версия v" + remoteVersion + "! Нажмите для перехода в Telegram"
                                 );
                             }
                         } else {

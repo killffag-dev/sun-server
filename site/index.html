@@ -111,7 +111,7 @@
           <div class="dl-spec-item"><span class="dl-spec-label">Версия Minecraft</span><span class="dl-spec-val">1.21.4</span></div>
           <div class="dl-spec-item"><span class="dl-spec-label">Загрузчик</span><span class="dl-spec-val">Fabric</span></div>
           <div class="dl-spec-item"><span class="dl-spec-label">Версия мода</span><span class="dl-spec-val">v2.0_Beta</span></div>
-          <div class="dl-spec-item"><span class="dl-spec-label">Файл</span><span class="dl-spec-val">.jar · 10 MB</span></div>
+          <div class="dl-spec-item"><span class="dl-spec-label">Файл</span><span class="dl-spec-val">.jar · 13.6 MB</span></div>
         </div>
 
         <p class="dl-desc">Официальная сборка со встроенной оптимизацией FPS, кастомным ClickGUI и HUD. Подходит для любых лаунчеров (TLauncher, Prism, Modrinth, Legacy, Official).</p>
@@ -137,8 +137,8 @@
       <div class="card install-step-card st">
         <div class="step-head">
           <span class="step-badge">Шаг 01</span>
-          <h3>Профиль Fabric</h3>
-          <p>В любом лаунчере выберите чистый профиль <b>Fabric 1.21.4</b>. Необходимая среда Java 21 загрузится автоматически.</p>
+          <h3>Профиль Fabric 1.21.4</h3>
+          <p>В любом лаунчере выберите чистый профиль <b>Fabric 1.21.4</b> со стандартным <b>Fabric API</b> (в большинстве лаунчеров ставится автоматически одной галочкой).</p>
         </div>
       </div>
 
@@ -146,7 +146,7 @@
         <div class="step-head">
           <span class="step-badge">Шаг 02</span>
           <h3>Папка mods</h3>
-          <p>Поместите скачанный <code>sun-client-1.21.4.jar</code> в папку <code>mods</code> вашего Minecraft. Никаких дополнительных модов не требуется.</p>
+          <p>Поместите скачанный <code>sun-client-1.21.4.jar</code> в папку <code>mods</code>. Sodium, Iris, Lithium и шейдеры уже встроены внутри клиента — скачивать их вручную не требуется!</p>
         </div>
       </div>
 
@@ -185,9 +185,9 @@
           </div>
           <span class="banner-tag">ВАЖНОЕ ПРАВИЛО</span>
         </div>
-        <div class="banner-title">Чистая папка mods — без сторонних модов</div>
+        <div class="banner-title">Чистый профиль Fabric + Fabric API</div>
         <div class="banner-desc">
-          В SUN Client уже встроены <strong>Sodium, Iris, шейдерный движок</strong> и глубокая оптимизация FPS. Не устанавливайте <strong>Fabric API</strong>, <strong>Sodium</strong> или <strong>OptiFine</strong> в папку <code>mods</code> — это приведет к конфликту и ошибке при запуске. Если они уже есть — обязательно удалите их.
+          Для запуска требуются только <strong>Fabric 1.21.4</strong> и <strong>Fabric API</strong>. Все ключевые моды оптимизации (<strong>Sodium, Iris, Lithium, шейдерный движок</strong>) уже встроены в SUN Client и распаковываются автоматически — управлять ими можно во вкладке «Моды». Не устанавливайте <strong>OptiFine</strong> и сторонние читы, они вызовут конфликты.
         </div>
       </div>
     </div>
@@ -210,7 +210,7 @@
       </div>
       <div class="card faq-item st">
         <h4>Игра вылетает при запуске?</h4>
-        <p>В папке <code>mods</code> остались Fabric API, Sodium или другие моды. Очистите папку перед запуском SUN Client.</p>
+        <p>Убедитесь, что установлена версия <b>Fabric 1.21.4</b> и в папке <code>mods</code> присутствует <b>Fabric API</b>. Также удалите старый <b>OptiFine</b> или несовместимые сторонние моды.</p>
       </div>
     </div>
   </section>

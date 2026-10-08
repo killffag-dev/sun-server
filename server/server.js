@@ -2010,18 +2010,18 @@ const server = http.createServer((req, res) => {
         let versionData = {
             version: "2.0.0",
             minecraft_version: "1.21.4",
-            bot_username: "SUN_Visuals_bot",
-            bot_url: "https://t.me/SUN_Visuals_bot?start=update",
-            file_name: "sun-1.21.4-2.0.0.jar",
-            file_size_bytes: 10274740,
-            changelog: "Релиз SUN Client v2.0.0"
+            bot_username: "SUN_Visual",
+            bot_url: "https://t.me/SUN_Visual",
+            file_name: "sun-client-1.21.4.jar",
+            file_size_bytes: 13660738,
+            changelog: "Релиз SUN Client v2.0.0 (Открытая Бета)"
         };
         try {
             if (fs.existsSync(versionInfoPath)) {
                 const parsed = JSON.parse(fs.readFileSync(versionInfoPath, 'utf-8'));
                 versionData = { ...versionData, ...parsed };
-                versionData.bot_username = "SUN_Visuals_bot";
-                versionData.bot_url = "https://t.me/SUN_Visuals_bot?start=update";
+                versionData.bot_username = "SUN_Visual";
+                versionData.bot_url = "https://t.me/SUN_Visual";
             }
         } catch (e) {
             console.error('[SUN-API] Ошибка чтения version_info:', e);

@@ -1,3 +1,9 @@
+[2026-10-08 12:45] Beta Release Prep & Client JAR Update
+- Обновлен скачиваемый файл мода site/downloads/sun-client-1.21.4.jar до актуальной версии (13.6 МБ), включающей One-Click Connect, систему объявлений, всплывающее меню обновлений и семантическую проверку версий.
+- В site/index.html исправлены инструкции установки (Шаг 1 и 2) и плашка правил: убран ошибочный запрет на Fabric API, указано требование Fabric 1.21.4 + Fabric API, а также отмечено, что Sodium, Iris, Lithium и шейдеры уже встроены в клиент и распаковываются автоматически.
+- Ссылки на обновление клиента и Telegram-бота переведены на официальный канал https://t.me/SUN_Visual (в UpdateManager.java, server/server.js и bot/updates/version_info.json).
+- Измененные файлы: site/downloads/sun-client-1.21.4.jar, site/index.html, server/server.js, bot/updates/version_info.json, src/main/java/naryn/sun/systems/update/UpdateManager.java
+
 [2026-10-08 12:08] Semantic Version Check & Announcement Reset
 - В AnnouncementManager.java и UpdateManager.java внедрено строгое семантическое сравнение версий (SemVer): уведомление о новой версии показывается только если версия на сервере строго новее текущей версии клиента (isRemoteVersionNewer). Некорректные и тестовые строки (напр. "2/2/") больше не вызывают ложных срабатываний и спама.
 - В admin.html добавлена кнопка «Снять объявление», позволяющая в один клик отозвать активное объявление и остановить показ уведомлений об обновлении у всех игроков.

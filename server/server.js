@@ -692,7 +692,24 @@ const server = http.createServer((req, res) => {
                 const data = JSON.parse(body);
                 const { action, hwid } = data;
 
-                if (action === 'send_global_announcement') {
+                if (action === 'clear_announcement') {
+                    for (const key of Object.keys(database)) {
+                        delete database[key].pendingAnnouncement;
+                    }
+                    saveDatabase(database);
+                    announcement = {
+                        id: 'cleared_' + Date.now(),
+                        active: false,
+                        isUpdate: false,
+                        version: '',
+                        type: 'info',
+                        title: '',
+                        message: '',
+                        url: '/#download'
+                    };
+                    saveAnnouncement();
+                    console.log('[SUN-API] Все объявления отключены.');
+                } else if (action === 'send_global_announcement') {
                     const text = data.text || '';
                     const isUpdate = !!data.isUpdate;
                     const version = data.version || '';

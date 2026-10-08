@@ -1,3 +1,39 @@
+[2026-10-08 12:08] Semantic Version Check & Announcement Reset
+- В AnnouncementManager.java и UpdateManager.java внедрено строгое семантическое сравнение версий (SemVer): уведомление о новой версии показывается только если версия на сервере строго новее текущей версии клиента (isRemoteVersionNewer). Некорректные и тестовые строки (напр. "2/2/") больше не вызывают ложных срабатываний и спама.
+- В admin.html добавлена кнопка «Снять объявление», позволяющая в один клик отозвать активное объявление и остановить показ уведомлений об обновлении у всех игроков.
+- В server.js добавлен обработчик действия 'clear_announcement', сбрасывающий активное объявление на сервере и у всех пользователей в базе.
+- Тестовое объявление на сервере (server/announcement.json) деактивировано и очищено.
+- Измененные файлы: src/main/java/naryn/sun/systems/announcement/AnnouncementManager.java, src/main/java/naryn/sun/systems/update/UpdateManager.java, server/server.js, server/admin.html, server/announcement.json
+
+[2026-10-08 11:47] Profile vs Site Background Separation
+- В site/style.css переопределение `.kimiko-body .bg` исправлено на темный темно-серый лес `assets/bg.webp` (в точности как на главной странице сайта).
+- Внутренний баннер пользователя (`#banner-cover` / `.kimiko-banner-cover`) возвращен к картинке коричневого леса (`assets/Gemini_Generated_Image_...jfif`).
+- Версия стилей обновлена до `style.css?v=12` для мгновенного сброса кэша.
+- Изменения запушены на боевой сервер (git push origin main, коммит c449537).
+- Измененные файлы: site/profile.html, site/style.css
+
+[2026-10-08 11:43] Profile Background & Cache Invalidation (bg.webp)
+- Сброшен жесткий браузерный кэш CSS в site/profile.html путем инкремента версии: `style.css?v=10`.
+- В site/style.css и site/profile.html дефолтная обложка профиля переведена с коричневого леса на оригинальный темно-серый лес `assets/bg.webp`.
+- Изменения запушены на боевой сервер (git push origin main, коммит 1cde729).
+- Измененные файлы: site/profile.html, site/style.css
+
+[2026-10-08 11:37] Profile Page Background Alignment (bg.webp)
+- Фон страницы личного кабинета (site/style.css, .kimiko-body) приведен в полное соответствие с главной страницей: включен темный темно-серый фон леса (assets/bg.webp с градиентом) через общий класс `.bg`.
+- Изменения запушены на боевой сервер (git push origin main, коммит 613fd46).
+- Измененные файлы: site/style.css
+
+[2026-10-08 11:33] Profile Security (Удаление кнопки «Отвязать»)
+- Из личного кабинета (site/profile.html) полностью удалена кнопка «Отвязать», разметка и обработчики события отвязки клиента игры.
+- Изменения запушены на боевой сервер (git push origin main).
+- Измененные файлы: site/profile.html
+
+[2026-10-08 11:31] Client-Web Pairing State Synchronization
+- Устранена рассинхронизация статуса привязки в веб-профиле: в site/link.html при успешном подтверждении сопряжения (1-Click Pair, вход или регистрация) статус clientLinked, Sparks и UID мгновенно сохраняются в локальную сессию браузера.
+- В site/profile.html исправлен запрос актуализации привязки через фоновый опрос /api/sparks-balance, гарантирующий подтягивание боевого статуса и баланса даже при наличии старого кэша в браузере.
+- Изменения зафиксированы и отправлены в боевой репозиторий (git push origin main).
+- Измененные файлы: site/link.html, site/profile.html
+
 [2026-10-08 11:23] Profile UI Cleanup (Удаление блока скачивания и шагов из ЛК)
 - Из личного кабинета (site/profile.html) удален дублирующий блок скачивания мода и инструкции по сопряжению в 3 шага.
 - Измененные файлы: site/profile.html

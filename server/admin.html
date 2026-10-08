@@ -266,6 +266,9 @@
                     <button onclick="openGlobalAnnounceModal(true)" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-lg font-bold transition flex items-center gap-2 border border-blue-500">
                         <i class="fa-solid fa-code-branch"></i> О новой версии
                     </button>
+                    <button onclick="clearAnnouncement()" class="bg-gray-700 hover:bg-red-600/80 text-gray-200 hover:text-white px-3 py-3 rounded-lg font-medium transition flex items-center gap-2 border border-gray-600" title="Снять все объявления и остановить уведомления">
+                        <i class="fa-solid fa-bell-slash"></i> Снять объявление
+                    </button>
                     <div class="bg-card px-6 py-3 rounded-lg border border-gray-800 flex items-center gap-4 ml-4">
                         <i class="fa-solid fa-gamepad text-green-500 text-xl"></i>
                         <div>
@@ -666,6 +669,11 @@
                 isUpdate: !!isVersionUpdate,
                 version: version
             });
+        }
+
+        function clearAnnouncement() {
+            if (!confirm('Вы действительно хотите снять текущее объявление/уведомление об обновлении для всех пользователей?')) return;
+            sendAction({ action: 'clear_announcement' });
         }
 
         function submitAnnouncement() {

@@ -216,7 +216,7 @@ input:focus{border-color:rgba(255,255,255,.5);background:rgba(0,0,0,.55)}
 .kbd-inline{display:inline-block;font:600 .8rem ui-monospace,Consolas,monospace;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.24);box-shadow:0 1px 0 rgba(0,0,0,.35);padding:.1rem .45rem;border-radius:5px;color:#fff;white-space:nowrap}
 
 /* Two Bento Blocks Under Steps */
-.install-sub-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-top:1rem}
+.install-sub-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-top:2.6rem;padding-top:1.6rem;border-top:1px solid rgba(255,255,255,.07)}
 
 /* Launcher Guide Card */
 .launcher-guide-card{display:flex;flex-direction:column;padding:1.4rem}

@@ -590,6 +590,12 @@ if (btnConfirm) {
         key: currentUser?.key || localStorage.getItem(KEY) || ''
       });
       $('#success-user-name').textContent = res.username || currentUser?.username || 'Игрок';
+      if (currentUser) {
+        currentUser.clientLinked = true;
+        if (typeof res.sparks === 'number') currentUser.coins = res.sparks;
+        if (typeof res.uid === 'number') currentUser.uid = res.uid;
+        saveSession(currentUser.sessionToken, currentUser.key, currentUser);
+      }
       showState('state-success');
       toast('Клиент успешно привязан!');
     } catch (err) {
@@ -659,6 +665,11 @@ if (formLogin) {
         sessionToken: u.sessionToken,
         key: u.key
       });
+      u.clientLinked = true;
+      if (typeof pairRes.sparks === 'number') u.coins = pairRes.sparks;
+      if (typeof pairRes.uid === 'number') u.uid = pairRes.uid;
+      saveSession(u.sessionToken, u.key, u);
+
       $('#success-user-name').textContent = pairRes.username || u.username;
       showState('state-success');
       toast('Вход выполнен и игра привязана!');
@@ -697,6 +708,11 @@ if (formReg) {
         sessionToken: u.sessionToken,
         key: u.key
       });
+      u.clientLinked = true;
+      if (typeof pairRes.sparks === 'number') u.coins = pairRes.sparks;
+      if (typeof pairRes.uid === 'number') u.uid = pairRes.uid;
+      saveSession(u.sessionToken, u.key, u);
+
       $('#success-user-name').textContent = pairRes.username || u.username;
       showState('state-success');
       toast('Аккаунт создан и игра привязана!');

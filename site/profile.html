@@ -420,13 +420,16 @@ function populateProfile(u) {
       const storedKey = (cachedUser && cachedUser.key) || localStorage.getItem(KEY) || '';
       const res = await api('login', { sessionToken: token, userKey: storedKey });
       
-      // Страховка обратной совместимости с бэкендом (если в /api/login еще нет поля clientLinked):
-      if (!res.clientLinked && (!res.hwid || res.hwid === 'none') && (res.key || storedKey)) {
+      // Страховка актуализации статуса привязки и баланса Sparks:
+      if (!res.clientLinked && (res.key || storedKey)) {
         try {
           const checkKey = res.key || storedKey;
-          const sRes = await api('sparks-balance?key=' + encodeURIComponent(checkKey));
+          const sResRaw = await fetch('/api/sparks-balance?key=' + encodeURIComponent(checkKey) + '&t=' + Date.now());
+          const sRes = await sResRaw.json().catch(() => null);
           if (sRes && sRes.linked) {
             res.clientLinked = true;
+            if (typeof sRes.sparks === 'number') res.coins = sRes.sparks;
+            if (typeof sRes.uid === 'number') res.uid = sRes.uid;
           }
         } catch (e) {}
       }

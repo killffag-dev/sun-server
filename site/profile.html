@@ -128,9 +128,10 @@
             <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M4 6h16v12H4z"/></svg>
             <span>Клиент игры</span>
           </div>
-          <div class="kimiko-stat-val" id="k-hwid-display">
+          <div class="kimiko-stat-val" id="k-hwid-display" style="display:flex;align-items:center;gap:6px;">
             <span class="kimiko-dot" id="k-hwid-dot"></span>
             <span id="k-hwid-text">Не привязан</span>
+            <button type="button" id="btn-unlink-game" class="kimiko-unlink-btn" style="display:none;margin-left:6px;padding:2px 8px;font-size:11px;font-weight:600;color:#f87171;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);border-radius:6px;cursor:pointer;transition:all 0.2s;" title="Отвязать клиент игры от аккаунта">Отвязать</button>
           </div>
         </div>
 
@@ -144,24 +145,7 @@
         </div>
       </div>
 
-      <!-- Отдельно наверх: Блок «Подключить игру (SUN Connect)» (исчезает при сопряжении) -->
-      <div class="kimiko-activate-card kimiko-pair-standalone" id="card-pair-game">
-        <div class="kimiko-activate-header">
-          <div class="kimiko-activate-badge">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14zm-4.2-5.78v1.75l3.2-2.97-3.2-2.97v1.75c-3.15 0-4.8 1.63-4.8 4.72.93-1.3 2.1-2.28 4.8-2.28z"/></svg>
-          </div>
-          <div>
-            <h3 class="kimiko-block-title">Подключить игру (SUN Connect)</h3>
-            <p class="kimiko-block-sub">Введите 6-значный код из экрана игры</p>
-          </div>
-        </div>
-        <form id="f-pair-client" class="kimiko-activate-form">
-          <input type="text" id="pair-code" placeholder="000-000" maxlength="7" required autocomplete="off" style="letter-spacing: 2px; font-weight: 700; text-align: center;">
-          <button type="submit" class="kimiko-btn-primary">Привязать</button>
-        </form>
-      </div>
-
-      <!-- Кнопка скачать сам мод и понятная инструкция -->
+      <!-- Блок информации о скачивании и подключении мода -->
       <div class="kimiko-client-download-box">
         <div class="kimiko-download-bar">
           <div class="kimiko-dl-info">
@@ -185,15 +169,15 @@
           <div class="kimiko-guide-step">
             <span class="kimiko-guide-num">2</span>
             <div class="kimiko-guide-body">
-              <strong>Откройте меню в игре</strong>
-              <p>В игре нажмите <kbd class="kbd-inline">Правый Shift</kbd>. В левом нижнем углу или настройках нажмите «Войти в SUN ID».</p>
+              <strong>Нажмите «Войти» в игре</strong>
+              <p>В главном меню или по <kbd class="kbd-inline">Правый Shift</kbd> нажмите кнопку «Войти в SUN ID».</p>
             </div>
           </div>
           <div class="kimiko-guide-step">
             <span class="kimiko-guide-num">3</span>
             <div class="kimiko-guide-body">
-              <strong>Введите 6-значный код</strong>
-              <p>Введите код сопряжения в поле выше. Баланс Sparks и вся косметика мгновенно появятся в игре без ключей и HWID!</p>
+              <strong>Мгновенное сопряжение в 1 клик</strong>
+              <p>Браузер откроет страницу подтверждения. Нажмите «Подтвердить вход» — игра и баланс Sparks свяжутся автоматически без ввода кодов!</p>
             </div>
           </div>
         </div>
@@ -429,19 +413,24 @@ function populateProfile(u) {
   if ($('#k-role')) $('#k-role').textContent = 'Бета-тестер';
   if ($('#sparks-pane-val')) $('#sparks-pane-val').textContent = u.coins || 0;
 
-  // HWID статус и сопряжение с игрой
+  // Статус сопряжения с игрой (SUN Connect 1-Click)
   const dot = $('#k-hwid-dot');
   const hwidText = $('#k-hwid-text');
-  const pairCard = $('#card-pair-game');
+  const guideSteps = $('.kimiko-guide-steps');
+  const unlinkBtn = $('#btn-unlink-game');
 
-  if (u.hwid || u.clientLinked) {
+  const isLinked = !!(u.clientLinked || (u.hwid && u.hwid !== 'none' && u.hwid !== 'SUN-RESET'));
+
+  if (isLinked) {
     if (dot) dot.className = 'kimiko-dot active';
     if (hwidText) hwidText.textContent = 'Привязан';
-    if (pairCard) pairCard.style.display = ''; // Freemium: allow re-linking anytime
+    if (unlinkBtn) unlinkBtn.style.display = 'inline-flex';
+    if (guideSteps) guideSteps.style.display = 'none'; // Скрываем пошаговую инструкцию при активной привязке
   } else {
     if (dot) dot.className = 'kimiko-dot warning';
     if (hwidText) hwidText.textContent = 'Не привязан';
-    if (pairCard) pairCard.style.display = '';
+    if (unlinkBtn) unlinkBtn.style.display = 'none';
+    if (guideSteps) guideSteps.style.display = '';
   }
 }
 
@@ -466,6 +455,18 @@ function populateProfile(u) {
     try {
       const storedKey = (cachedUser && cachedUser.key) || localStorage.getItem(KEY) || '';
       const res = await api('login', { sessionToken: token, userKey: storedKey });
+      
+      // Страховка обратной совместимости с бэкендом (если в /api/login еще нет поля clientLinked):
+      if (!res.clientLinked && (!res.hwid || res.hwid === 'none') && (res.key || storedKey)) {
+        try {
+          const checkKey = res.key || storedKey;
+          const sRes = await api('sparks-balance?key=' + encodeURIComponent(checkKey));
+          if (sRes && sRes.linked) {
+            res.clientLinked = true;
+          }
+        } catch (e) {}
+      }
+
       populateProfile(res);
     } catch (err) {
       // Сбрасываем сессию и редиректим ТОЛЬКО при явном 401 Unauthorized
@@ -646,43 +647,27 @@ function initCardTilt() {
 }
 initCardTilt();
 
-// Привязка клиента через SUN Connect (код из игры)
-const fPairClient = $('#f-pair-client');
-const pairCodeInput = $('#pair-code');
-if (pairCodeInput) {
-  pairCodeInput.oninput = () => {
-    let raw = pairCodeInput.value.replace(/[^0-9]/g, '');
-    if (raw.length > 3) {
-      pairCodeInput.value = raw.substring(0, 3) + '-' + raw.substring(3, 6);
-    } else {
-      pairCodeInput.value = raw;
-    }
-  };
-}
 
-if (fPairClient) {
-  fPairClient.onsubmit = async (e) => {
-    e.preventDefault();
-    const code = pairCodeInput ? pairCodeInput.value.trim() : '';
-    if (!code) return;
+
+// Отвязка клиента игры
+const unlinkBtn = $('#btn-unlink-game');
+if (unlinkBtn) {
+  unlinkBtn.onclick = async () => {
+    if (!confirm('Отвязать клиент игры от этого аккаунта?')) return;
     try {
-      const res = await api('auth/pair/link', {
+      const res = await api('auth/pair/unlink', {
         sessionToken: currentUser?.sessionToken || getStoredToken(),
-        code: code
+        key: currentUser?.key || localStorage.getItem(KEY) || ''
       });
-      toast(res.message || 'Игра успешно привязана к аккаунту SUN!');
-      if ($('#k-hwid-text')) $('#k-hwid-text').textContent = 'Привязан';
-      if ($('#k-hwid-dot')) $('#k-hwid-dot').className = 'kimiko-dot active';
-      const pairCard = $('#card-pair-game');
-      if (pairCard) pairCard.style.display = ''; // Freemium: allow re-linking anytime
+      toast(res.message || 'Клиент игры успешно отвязан');
       if (currentUser) {
-        currentUser.hwid = 'SUN-CONNECTED';
-        currentUser.clientLinked = true;
+        currentUser.clientLinked = false;
+        currentUser.hwid = null;
         saveSession(currentUser.sessionToken, currentUser.key, currentUser);
+        populateProfile(currentUser);
       }
-      if (pairCodeInput) pairCodeInput.value = '';
     } catch (err) {
-      toast(err.message || 'Ошибка сопряжения игры');
+      toast(err.message || 'Ошибка при отвязке клиента');
     }
   };
 }

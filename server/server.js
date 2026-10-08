@@ -1063,6 +1063,7 @@ const server = http.createServer((req, res) => {
                     bannerUrl: user.bannerUrl || null,
                     coins: user.coins || 0,
                     hwid: user.hwid || null,
+                    clientLinked: !!(user.clientLinked || (user.hwid && user.hwid !== 'none')),
                     hwid_last_reset: user.hwid_last_reset || null,
                     expires: user.expires,
                     active: user.active && !user.banned,
@@ -1120,6 +1121,7 @@ const server = http.createServer((req, res) => {
                             bannerUrl: u.bannerUrl || null,
                             coins: u.coins || 0,
                             hwid: u.hwid || null,
+                            clientLinked: !!(u.clientLinked || (u.hwid && u.hwid !== 'none')),
                             hwid_last_reset: u.hwid_last_reset || null,
                             expires: u.expires,
                             active: u.active && !u.banned,
@@ -1185,6 +1187,7 @@ const server = http.createServer((req, res) => {
                     bannerUrl: u.bannerUrl || null,
                     coins: u.coins || 0,
                     hwid: u.hwid || null,
+                    clientLinked: !!(u.clientLinked || (u.hwid && u.hwid !== 'none')),
                     hwid_last_reset: u.hwid_last_reset || null,
                     expires: u.expires,
                     active: u.active && !u.banned,
@@ -1679,6 +1682,7 @@ const server = http.createServer((req, res) => {
 
                 auth.user.clientLinked = true;
                 auth.user.clientLinkToken = entry.token;
+                if (!auth.user.hwid) auth.user.hwid = 'SUN-CONNECTED';
                 saveDatabase(database);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1743,12 +1747,47 @@ const server = http.createServer((req, res) => {
 
                 auth.user.clientLinked = true;
                 auth.user.clientLinkToken = entry.token;
+                if (!auth.user.hwid) auth.user.hwid = 'SUN-CONNECTED';
                 saveDatabase(database);
 
                 res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
                 return res.end(JSON.stringify({
                     success: true,
                     message: `Игра успешно привязана к аккаунту ${auth.user.username}!`
+                }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({ error: 'Ошибка обработки запроса: ' + e.message }));
+            }
+        });
+        return;
+    }
+
+    // 3.97 API САЙТА: Отвязка клиента игры пользователем
+    if (parsedUrl.pathname === '/api/auth/pair/unlink' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const sessionToken = (data.sessionToken || getCookie(req, 'sun_session') || '').trim();
+                const userKey = (data.userKey || data.key || getCookie(req, 'sun_key') || '').trim();
+                const auth = getUserBySessionToken(sessionToken, userKey);
+                if (!auth) {
+                    res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: 'Необходимо войти в аккаунт' }));
+                }
+
+                auth.user.clientLinked = false;
+                auth.user.clientLinkToken = null;
+                auth.user.hwid = null;
+                saveDatabase(database);
+
+                console.log(`[SUN-API] [UNLINK] Пользователь ${auth.user.username} отвязал клиент игры`);
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                return res.end(JSON.stringify({
+                    success: true,
+                    message: 'Клиент игры успешно отвязан от аккаунта'
                 }));
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });

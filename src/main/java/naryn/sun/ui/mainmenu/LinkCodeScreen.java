@@ -9,10 +9,13 @@ import naryn.sun.framework.objects.BorderRadius;
 import naryn.sun.systems.network.ServerConfig;
 import naryn.sun.systems.sparks.SparksManager;
 import naryn.sun.ui.menu.skin.MenuSkin;
+import naryn.sun.utility.animation.base.Animation;
+import naryn.sun.utility.animation.base.Easing;
 import naryn.sun.utility.colors.ColorRGBA;
 import naryn.sun.utility.colors.Colors;
 import naryn.sun.utility.game.cursor.CursorType;
 import naryn.sun.utility.game.cursor.CursorUtility;
+import naryn.sun.utility.sounds.ClientSoundManager;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
@@ -24,17 +27,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
+/**
+ * Экран мгновенной авторизации и сопряжения с сайтом SUN (One-Click Connect).
+ * Генерирует токен, открывает браузер и ожидает подтверждения от пользователя.
+ */
 public class LinkCodeScreen extends Screen {
     private final Screen parent;
-    private String code = "Загрузка...";
+    private String code = "......";
     private String clientToken = "";
+    private String linkUrl = "";
     private boolean loaded = false;
     private boolean linked = false;
-    private String statusMessage = "Получение кода от сервера...";
+    private String statusMessage = "Подготовка ссылки для входа...";
     private boolean copied = false;
     private volatile boolean running = true;
-    private final naryn.sun.utility.animation.base.Animation slideAnim =
-            new naryn.sun.utility.animation.base.Animation(300L, naryn.sun.utility.animation.base.Easing.CUBIC_OUT);
+    private final Animation slideAnim = new Animation(280L, Easing.CUBIC_OUT);
 
     public LinkCodeScreen(Screen parent) {
         super(Text.literal("Привязка аккаунта SUN"));
@@ -42,38 +49,88 @@ public class LinkCodeScreen extends Screen {
         fetchCodeAndStartPolling();
     }
 
-    private void fetchCodeAndStartPolling() {
+    public synchronized void fetchCodeAndStartPolling() {
+        if (!running) return;
+        this.loaded = false;
+        this.copied = false;
+        this.statusMessage = "Подготовка ссылки для входа...";
+
         Thread worker = new Thread(() -> {
             try {
                 HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(4)).build();
                 HttpRequest req = HttpRequest.newBuilder()
-                        .uri(URI.create(ServerConfig.API_URL + "/generate-link-code"))
+                        .uri(URI.create(ServerConfig.API_URL + "/auth/pair/start"))
                         .timeout(Duration.ofSeconds(5))
-                        .GET()
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.noBody())
                         .build();
+
                 HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+                if (!running) return;
+
                 if (res.statusCode() == 200) {
                     JsonObject obj = JsonParser.parseString(res.body()).getAsJsonObject();
-                    if (obj.has("code")) {
-                        code = obj.get("code").getAsString();
-                        if (obj.has("token")) {
-                            clientToken = obj.get("token").getAsString();
-                        }
+                    if (obj.has("token")) {
+                        clientToken = obj.get("token").getAsString();
+                        if (obj.has("code")) code = obj.get("code").getAsString();
+                        linkUrl = ServerConfig.BASE_URL + "/link?token=" + clientToken;
                         loaded = true;
-                        statusMessage = "Введите код в профиле на сайте";
+                        statusMessage = "Ожидание подтверждения...";
+                        openBrowser(linkUrl);
                         startPollingLoop();
                         return;
                     }
                 }
-                code = "Ошибка";
-                statusMessage = "Не удалось сгенерировать код";
+
+                // Запасной fallback на старый эндпоинт
+                HttpRequest fallbackReq = HttpRequest.newBuilder()
+                        .uri(URI.create(ServerConfig.API_URL + "/generate-link-code"))
+                        .timeout(Duration.ofSeconds(5))
+                        .GET()
+                        .build();
+                HttpResponse<String> fallbackRes = client.send(fallbackReq, HttpResponse.BodyHandlers.ofString());
+                if (!running) return;
+
+                if (fallbackRes.statusCode() == 200) {
+                    JsonObject obj = JsonParser.parseString(fallbackRes.body()).getAsJsonObject();
+                    if (obj.has("code")) {
+                        code = obj.get("code").getAsString();
+                        if (obj.has("token")) clientToken = obj.get("token").getAsString();
+                        linkUrl = ServerConfig.BASE_URL + "/link?token=" + clientToken;
+                        loaded = true;
+                        statusMessage = "Ожидание подтверждения...";
+                        openBrowser(linkUrl);
+                        startPollingLoop();
+                        return;
+                    }
+                }
+
+                if (running) {
+                    statusMessage = "Не удалось сгенерировать ссылку";
+                }
             } catch (Exception e) {
-                code = "Ошибка сети";
-                statusMessage = "Проверьте подключение к серверу";
+                if (running) {
+                    statusMessage = "Ошибка подключения к серверу";
+                }
             }
         });
         worker.setDaemon(true);
         worker.start();
+    }
+
+    private void openBrowser(String url) {
+        if (url == null || url.isEmpty() || !running) return;
+        try {
+            Util.getOperatingSystem().open(URI.create(url));
+        } catch (Exception e) {
+            if (this.client != null) {
+                this.client.execute(() -> {
+                    if (this.client.keyboard != null) {
+                        this.client.keyboard.setClipboard(url);
+                    }
+                });
+            }
+        }
     }
 
     private void startPollingLoop() {
@@ -81,12 +138,12 @@ public class LinkCodeScreen extends Screen {
             HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
             while (running && !linked) {
                 try {
-                    Thread.sleep(1500L);
+                    Thread.sleep(1400L);
                     if (!running) break;
 
-                    String pollUrl = ServerConfig.API_URL + "/link-status?code=" + code;
-                    if (clientToken != null && !clientToken.isEmpty()) {
-                        pollUrl += "&token=" + clientToken;
+                    String pollUrl = ServerConfig.API_URL + "/link-status?token=" + clientToken;
+                    if (code != null && !code.isEmpty()) {
+                        pollUrl += "&code=" + code;
                     }
                     HttpRequest req = HttpRequest.newBuilder()
                             .uri(URI.create(pollUrl))
@@ -94,6 +151,8 @@ public class LinkCodeScreen extends Screen {
                             .GET()
                             .build();
                     HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+                    if (!running) break;
+
                     if (res.statusCode() == 200) {
                         JsonObject obj = JsonParser.parseString(res.body()).getAsJsonObject();
                         if (obj.has("linked") && obj.get("linked").getAsBoolean()) {
@@ -104,12 +163,19 @@ public class LinkCodeScreen extends Screen {
                             int sparks = obj.has("sparks") ? obj.get("sparks").getAsInt() : 0;
 
                             SparksManager.saveAccount(key, username, uid, sparks, clientToken);
-                            statusMessage = "✓ Успешно привязано к " + username + "!";
-
-                            Thread.sleep(1200L);
+                            statusMessage = "✓ Привязано к " + username + "!";
                             if (this.client != null) {
-                                this.client.execute(() -> this.client.setScreen(parent));
+                                this.client.execute(() -> ClientSoundManager.getInstance().playButtonClick());
                             }
+
+                            Thread.sleep(1100L);
+                            if (running && this.client != null) {
+                                this.client.execute(() -> this.client.setScreen(parent != null ? parent : new SunMainMenuScreen()));
+                            }
+                            break;
+                        } else if (obj.has("error") && "not_found".equals(obj.get("error").getAsString())) {
+                            statusMessage = "Время действия ссылки истекло";
+                            loaded = false;
                             break;
                         }
                     }
@@ -127,7 +193,7 @@ public class LinkCodeScreen extends Screen {
     public void close() {
         this.running = false;
         if (this.client != null) {
-            this.client.setScreen(parent);
+            this.client.setScreen(parent != null ? parent : new SunMainMenuScreen());
         }
     }
 
@@ -143,40 +209,50 @@ public class LinkCodeScreen extends Screen {
         float prog = slideAnim.update(1.0F);
         context.drawRect(0, 0, (float) this.width, (float) this.height, new ColorRGBA(0, 0, 0, (int) (160 * prog)));
 
-        float w = 240;
-        float h = 145;
+        float w = 250.0F;
+        float h = 152.0F;
         float x = (this.width - w) / 2.0F;
-        float targetY = this.height - h - 25.0F;
-        float y = targetY + (1.0F - prog) * (h + 35.0F);
+        float targetY = (this.height - h) / 2.0F;
+        float y = targetY + (1.0F - prog) * 16.0F;
 
         BorderRadius radius = BorderRadius.all(6.0F);
         skin.renderCard(context, x, y, w, h, radius, false, 0, 1, 1);
 
         Font titleFont = Fonts.SEMIBOLD.getFont(10.0F);
-        context.drawCenteredText(titleFont, "Привязка к сайту SUN", this.width / 2.0F, y + 18, ColorRGBA.WHITE);
+        context.drawCenteredText(titleFont, "Подключение к сайту SUN", this.width / 2.0F, y + 16.0F, ColorRGBA.WHITE);
 
-        String displayCode = code;
-        if (loaded && code.length() == 6) {
-            displayCode = code.substring(0, 3) + " " + code.substring(3, 6);
+        if (linked) {
+            Font boldFont = Fonts.BOLD.getFont(8.0F);
+            context.drawCenteredText(boldFont, statusMessage, this.width / 2.0F, y + 44.0F, new ColorRGBA(115, 240, 135, 255));
+        } else if (loaded) {
+            Font subFont = Fonts.REGULAR.getFont(6.2F);
+            context.drawCenteredText(subFont, "В браузере открыта страница входа", this.width / 2.0F, y + 36.0F, new ColorRGBA(220, 225, 235, 255));
+
+            Font statusFont = Fonts.SEMIBOLD.getFont(7.0F);
+            context.drawCenteredText(statusFont, statusMessage, this.width / 2.0F, y + 52.0F, Colors.ACCENT);
+        } else {
+            Font subFont = Fonts.REGULAR.getFont(6.5F);
+            context.drawCenteredText(subFont, statusMessage, this.width / 2.0F, y + 44.0F, new ColorRGBA(170, 175, 185, 255));
         }
 
-        Font codeFont = Fonts.BOLD.getFont(20.0F);
-        ColorRGBA codeColor = linked ? new ColorRGBA(115, 240, 135, 255) : Colors.ACCENT;
-        context.drawCenteredText(codeFont, displayCode, this.width / 2.0F, y + 46, codeColor);
+        // Кнопки
+        float btnW = 110.0F, btnH = 21.0F;
+        float btnY1 = y + 84.0F;
+        float b1X = this.width / 2.0F - btnW - 5.0F;
+        float b2X = this.width / 2.0F + 5.0F;
 
-        Font subFont = Fonts.REGULAR.getFont(6.2F);
-        ColorRGBA subColor = linked ? new ColorRGBA(115, 240, 135, 255) : new ColorRGBA(170, 175, 185, 255);
-        context.drawCenteredText(subFont, statusMessage, this.width / 2.0F, y + 76, subColor);
+        if (loaded) {
+            drawButton(context, b1X, btnY1, btnW, btnH, "Открыть снова", mouseX, mouseY);
+            drawButton(context, b2X, btnY1, btnW, btnH, copied ? "Скопировано!" : "Копировать ссылку", mouseX, mouseY);
+        } else {
+            drawButton(context, b1X, btnY1, btnW, btnH, "Повторить", mouseX, mouseY);
+            drawButton(context, b2X, btnY1, btnW, btnH, "Закрыть", mouseX, mouseY);
+        }
 
-        float btnW = 96;
-        float btnH = 22;
-        float copyX = this.width / 2.0F - btnW - 6;
-        float siteX = this.width / 2.0F + 6;
-        float btnY = y + 104;
-
-        String copyLabel = copied ? "Скопировано!" : "Копировать код";
-        drawButton(context, copyX, btnY, btnW, btnH, copyLabel, mouseX, mouseY);
-        drawButton(context, siteX, btnY, btnW, btnH, "Переход на сайт", mouseX, mouseY);
+        float cancelW = 84.0F, cancelH = 19.0F;
+        float cancelX = this.width / 2.0F - cancelW / 2.0F;
+        float cancelY = y + 115.0F;
+        drawButton(context, cancelX, cancelY, cancelW, cancelH, "Отмена", mouseX, mouseY);
     }
 
     private void drawButton(UIContext context, float x, float y, float w, float h, String text, int mouseX, int mouseY) {
@@ -187,38 +263,67 @@ public class LinkCodeScreen extends Screen {
         } else {
             context.drawRoundedRect(x, y, w, h, BorderRadius.all(4.0F), new ColorRGBA(28, 31, 40, 255));
         }
-        context.drawRoundedBorder(x, y, w, h, 1.0F, BorderRadius.all(4.0F), Colors.ACCENT);
-        Font font = Fonts.REGULAR.getFont(6.5F);
+        ColorRGBA borderCol = hovered ? Colors.ACCENT : new ColorRGBA(255, 255, 255, 30);
+        context.drawRoundedBorder(x, y, w, h, 1.0F, BorderRadius.all(4.0F), borderCol);
+        Font font = Fonts.REGULAR.getFont(6.3F);
         context.drawCenteredText(font, text, x + w / 2.0F, y + (h - font.height()) / 2.0F, ColorRGBA.WHITE);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        float w = 240, h = 145;
-        float sx = (this.width - w) / 2.0F;
-        float sy = this.height - h - 25.0F;
-        float btnW = 96, btnH = 22;
-        float copyX = this.width / 2.0F - btnW - 6;
-        float siteX = this.width / 2.0F + 6;
-        float btnY = sy + 104;
+        float w = 250.0F;
+        float h = 152.0F;
+        float x = (this.width - w) / 2.0F;
+        float y = (this.height - h) / 2.0F;
+
+        float btnW = 110.0F, btnH = 21.0F;
+        float btnY1 = y + 84.0F;
+        float b1X = this.width / 2.0F - btnW - 5.0F;
+        float b2X = this.width / 2.0F + 5.0F;
+
+        float cancelW = 84.0F, cancelH = 19.0F;
+        float cancelX = this.width / 2.0F - cancelW / 2.0F;
+        float cancelY = y + 115.0F;
 
         if (button == 0) {
-            if (mouseX >= copyX && mouseX <= copyX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
-                if (loaded && this.client != null) {
-                    this.client.keyboard.setClipboard(code);
-                    copied = true;
+            if (mouseX >= b1X && mouseX <= b1X + btnW && mouseY >= btnY1 && mouseY <= btnY1 + btnH) {
+                ClientSoundManager.getInstance().playButtonClick();
+                if (loaded && !linkUrl.isEmpty()) {
+                    openBrowser(linkUrl);
+                } else if (!loaded) {
+                    fetchCodeAndStartPolling();
                 }
                 return true;
             }
-            if (mouseX >= siteX && mouseX <= siteX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
-                Util.getOperatingSystem().open(ServerConfig.BASE_URL + "/profile.html");
+            if (mouseX >= b2X && mouseX <= b2X + btnW && mouseY >= btnY1 && mouseY <= btnY1 + btnH) {
+                ClientSoundManager.getInstance().playButtonClick();
+                if (loaded && !linkUrl.isEmpty() && this.client != null) {
+                    this.client.keyboard.setClipboard(linkUrl);
+                    copied = true;
+                } else if (!loaded) {
+                    close();
+                }
                 return true;
             }
-            if (mouseX < sx || mouseX > sx + w || mouseY < sy || mouseY > sy + h) {
+            if (mouseX >= cancelX && mouseX <= cancelX + cancelW && mouseY >= cancelY && mouseY <= cancelY + cancelH) {
+                ClientSoundManager.getInstance().playButtonClick();
+                close();
+                return true;
+            }
+            if (mouseX < x || mouseX > x + w || mouseY < y || mouseY > y + h) {
                 close();
                 return true;
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256) {
+            close();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 }
